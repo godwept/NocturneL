@@ -17,11 +17,11 @@ import coil.compose.AsyncImage
 
 @Composable
 fun AlbumArtwork(album: AlbumEntity, modifier: Modifier = Modifier) {
-    val uri = album.manualArtworkUri ?: album.folderArtworkUri
     val bitmap = remember(album.embeddedArtwork) { album.embeddedArtwork?.let { BitmapFactory.decodeByteArray(it, 0, it.size) } }
     when {
-        uri != null -> AsyncImage(model = uri, contentDescription = "Cover art for ${album.title}", modifier = modifier)
+        album.manualArtworkUri != null -> AsyncImage(model = album.manualArtworkUri, contentDescription = "Cover art for ${album.title}", modifier = modifier)
         bitmap != null -> Image(bitmap = bitmap.asImageBitmap(), contentDescription = "Cover art for ${album.title}", modifier = modifier)
+        album.folderArtworkUri != null -> AsyncImage(model = album.folderArtworkUri, contentDescription = "Cover art for ${album.title}", modifier = modifier)
         else -> Box(modifier, contentAlignment = Alignment.Center) { Text("▓▓", color = TerminalArtworkPlaceholder.accentFor(album.id), style = MaterialTheme.typography.displayLarge) }
     }
 }

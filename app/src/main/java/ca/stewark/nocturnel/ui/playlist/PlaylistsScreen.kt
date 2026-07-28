@@ -22,12 +22,19 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ca.stewark.nocturnel.data.entity.PlaylistEntity
 import ca.stewark.nocturnel.ui.components.TerminalFrame
+import ca.stewark.nocturnel.playback.PlaybackConnection
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 @Composable
 fun PlaylistsScreen(viewModel: PlaylistViewModel = viewModel()) {
     val playlists by viewModel.playlists.collectAsState()
     var newName by remember { mutableStateOf("") }
     var exportPlaylist by remember { mutableStateOf<PlaylistEntity?>(null) }
+    val context = LocalContext.current
+    val playback = remember(context) { PlaybackConnection(context) }
+    val scope = rememberCoroutineScope()
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(viewModel::import) }
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("audio/x-mpegurl")) { uri ->
         exportPlaylist?.let { playlist -> uri?.let { viewModel.export(playlist.id, it) } }
@@ -43,6 +50,7 @@ fun PlaylistsScreen(viewModel: PlaylistViewModel = viewModel()) {
         LazyColumn(Modifier.padding(top = 12.dp)) {
             items(playlists, key = { it.id }) { playlist ->
                 TerminalFrame(playlist.name, Modifier.padding(vertical = 4.dp)) {
+                    Button(onClick = { scope.launch { playback.playQueue(viewModel.playableTracks(playlist.id)) } }, modifier = Modifier.padding(top = 8.dp)) { Text("[PLAY]") }
                     Button(onClick = { viewModel.rename(playlist.id, "${playlist.name} (edited)") }, modifier = Modifier.padding(top = 8.dp)) { Text("[RENAME]") }
                     Button(onClick = { viewModel.delete(playlist.id) }, modifier = Modifier.padding(top = 8.dp)) { Text("[DELETE]") }
                     Button(onClick = { exportPlaylist = playlist; exportLauncher.launch("${playlist.name}.m3u8") }, modifier = Modifier.padding(top = 8.dp)) { Text("EXPORT M3U8") }

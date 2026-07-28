@@ -8,14 +8,27 @@ import ca.stewark.nocturnel.library.model.ScanIssue
 import ca.stewark.nocturnel.library.model.TrackStatus
 import java.security.MessageDigest
 
-data class ScanResult(val albums: List<AlbumEntity>, val tracks: List<TrackEntity>, val issues: List<ScanIssue>, val skipped: Int, val unsupported: Int)
+enum class ScanOutcome { COMPLETED, CANCELLED, ACCESS_LOST }
+
+data class ScanResult(
+    val albums: List<AlbumEntity>,
+    val tracks: List<TrackEntity>,
+    val issues: List<ScanIssue>,
+    val skipped: Int,
+    val unsupported: Int,
+    val outcome: ScanOutcome,
+)
 
 class LibraryScanner(
     private val treeAccess: LibraryTreeAccess,
     private val metadataReader: AndroidMediaMetadataReader,
 ) {
+    fun canAccess(treeUri: String): Boolean = treeAccess.canRead(treeUri)
+
     fun scan(treeUri: String, scanEpochMillis: Long, cancelled: () -> Boolean = { false }, onProgress: (Int) -> Unit = {}): ScanResult {
-        val root = treeAccess.openTree(treeUri) ?: return ScanResult(emptyList(), emptyList(), listOf(ScanIssue("", "Music folder is unavailable")), 0, 0)
+        val root = treeAccess.openTree(treeUri)
+            ?.takeIf { it.canRead() }
+            ?: return ScanResult(emptyList(), emptyList(), listOf(ScanIssue("", "Music folder is unavailable")), 0, 0, ScanOutcome.ACCESS_LOST)
         val albums = linkedMapOf<String, AlbumEntity>()
         val tracks = mutableListOf<TrackEntity>()
         val issues = mutableListOf<ScanIssue>()
@@ -23,6 +36,7 @@ class LibraryScanner(
         var unsupported = 0
         var count = 0
         val documents = DocumentTreeWalker.walk(root, cancelled).toList()
+        if (cancelled()) return ScanResult(emptyList(), emptyList(), emptyList(), 0, 0, ScanOutcome.CANCELLED)
         val folderCovers = documents.filter { ArtworkResolver.isFolderCoverFile(it.document.name.orEmpty()) }
             .associateBy { it.relativePath.substringBeforeLast('/', "") }
         documents.forEach { discovered ->
@@ -66,7 +80,8 @@ class LibraryScanner(
                 lastSeenScanEpochMillis = scanEpochMillis,
             )
         }
-        return ScanResult(albums.values.toList(), tracks, issues, skipped, unsupported)
+        val outcome = if (cancelled()) ScanOutcome.CANCELLED else ScanOutcome.COMPLETED
+        return ScanResult(albums.values.toList(), tracks, issues, skipped, unsupported, outcome)
     }
 
     private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256").digest(value.toByteArray()).joinToString("") { "%02x".format(it) }

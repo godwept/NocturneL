@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import ca.stewark.nocturnel.NocturneLApplication
 import ca.stewark.nocturnel.data.CatalogRepository
+import ca.stewark.nocturnel.data.LibraryAccessLostException
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.data.entity.TrackEntity
 import ca.stewark.nocturnel.library.model.LibrarySource
@@ -16,6 +17,9 @@ import ca.stewark.nocturnel.library.model.ScanReport
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 data class RescanUiState(val running: Boolean = false, val progress: Int = 0, val report: ScanReport? = null, val message: String? = null)
@@ -29,8 +33,18 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
         private set
     var scanState: RescanUiState by mutableStateOf(RescanUiState())
         private set
+    private var scanJob: Job? = null
 
-    init { viewModelScope.launch { source = catalog.source(); if (source != null && !app.treeAccess.canRead(source!!.treeUri)) catalog.markAccessLost() } }
+    init {
+        viewModelScope.launch {
+            source = catalog.source()
+            if (source != null && !app.treeAccess.canRead(source!!.treeUri)) {
+                catalog.markAccessLost()
+                source = catalog.source()
+                scanState = RescanUiState(message = "Access to the selected music folder was lost. Choose the folder again in settings.")
+            }
+        }
+    }
 
     fun selectFolder(uri: Uri) = viewModelScope.launch {
         runCatching {
@@ -43,13 +57,44 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
 
     fun rescan() {
         if (scanState.running) return
-        viewModelScope.launch {
+        scanJob = viewModelScope.launch {
             scanState = RescanUiState(running = true)
-            runCatching { catalog.rescan(onProgress = { scanState = scanState.copy(progress = it) }) }
-                .onSuccess { scanState = RescanUiState(report = it, message = "Rescan complete") }
-                .onFailure { scanState = RescanUiState(message = it.message ?: "Rescan failed") }
+            val runningContext = currentCoroutineContext()
+            try {
+                val report = catalog.rescan(
+                    cancelled = { !runningContext.isActive },
+                    onProgress = { scanState = scanState.copy(progress = it) },
+                )
+                source = catalog.source()
+                scanState = RescanUiState(report = report, message = "Rescan complete")
+            } catch (error: LibraryAccessLostException) {
+                source = catalog.source()
+                scanState = RescanUiState(message = error.message)
+            } catch (error: Exception) {
+                if (runningContext.isActive) scanState = RescanUiState(message = error.message ?: "Rescan failed")
+            }
         }
     }
 
+    fun cancelRescan() {
+        if (!scanState.running) return
+        scanJob?.cancel()
+        scanJob = null
+        scanState = RescanUiState(message = "Rescan cancelled; the previous catalog was preserved.")
+    }
+
     fun tracks(albumId: String) = app.database.libraryDao().tracksForAlbum(albumId)
+    fun setManualArtwork(albumId: String, uri: Uri?) = viewModelScope.launch {
+        try {
+            uri?.let {
+                getApplication<android.app.Application>().contentResolver.takePersistableUriPermission(
+                    it,
+                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+            }
+            app.database.libraryDao().updateManualArtwork(albumId, uri?.toString())
+        } catch (_: SecurityException) {
+            scanState = scanState.copy(message = "Could not retain access to that cover image.")
+        }
+    }
 }

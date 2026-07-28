@@ -14,6 +14,7 @@ import ca.stewark.nocturnel.playlist.PlaylistRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import ca.stewark.nocturnel.data.entity.TrackEntity
 
 class PlaylistViewModel(application: Application) : AndroidViewModel(application) {
     private val app = application as NocturneLApplication
@@ -47,4 +48,5 @@ class PlaylistViewModel(application: Application) : AndroidViewModel(application
             .onSuccess { message = "Playlist exported" }
             .onFailure { message = "Playlist export failed" }
     }
+    suspend fun playableTracks(playlistId: Long): List<TrackEntity> = repository.playableTracks(playlistId)
 }

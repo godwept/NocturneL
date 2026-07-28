@@ -26,16 +26,19 @@ import ca.stewark.nocturnel.ui.library.AlbumDetailScreen
 import ca.stewark.nocturnel.ui.library.AlbumGridScreen
 import ca.stewark.nocturnel.ui.library.LibrarySetupScreen
 import ca.stewark.nocturnel.ui.library.SearchScreen
+import ca.stewark.nocturnel.ui.library.ArtistsScreen
 import ca.stewark.nocturnel.ui.library.LibrarySourceViewModel
 import ca.stewark.nocturnel.ui.playlist.PlaylistsScreen
 
-private enum class Destination { LIBRARY, SEARCH, PLAYLISTS, NOW_PLAYING, SETTINGS }
+private enum class Destination { LIBRARY, SEARCH, ARTISTS, PLAYLISTS, NOW_PLAYING, SETTINGS }
 
 @Composable
 fun NocturneLApp(viewModel: LibrarySourceViewModel = viewModel()) {
     val albums by viewModel.albums.collectAsState()
     val tracks by viewModel.playableTracks.collectAsState()
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri -> uri?.let(viewModel::selectFolder) }
+    var artworkAlbum by remember { mutableStateOf<AlbumEntity?>(null) }
+    val artworkLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> artworkAlbum?.let { viewModel.setManualArtwork(it.id, uri) }; artworkAlbum = null }
     val context = LocalContext.current
     val playback = remember(context) { PlaybackConnection(context) }
     var destination by remember { mutableStateOf(Destination.LIBRARY) }
@@ -48,7 +51,7 @@ fun NocturneLApp(viewModel: LibrarySourceViewModel = viewModel()) {
     }
     selectedAlbum?.let { album ->
         val tracks by viewModel.tracks(album.id).collectAsState(emptyList())
-        AlbumDetailScreen(album, tracks, onBack = { selectedAlbum = null }, onPlay = playback::play, onPlayAlbum = playback::playQueue)
+        AlbumDetailScreen(album, tracks, onBack = { selectedAlbum = null }, onPlay = playback::play, onPlayAlbum = playback::playQueue, onChooseArtwork = { artworkAlbum = album; artworkLauncher.launch(arrayOf("image/*")) }, onClearArtwork = { viewModel.setManualArtwork(album.id, null) })
         return
     }
 
@@ -65,12 +68,16 @@ fun NocturneLApp(viewModel: LibrarySourceViewModel = viewModel()) {
             Destination.LIBRARY -> Column(Modifier.fillMaxSize().padding(inset)) {
                 TerminalFrame("${viewModel.source?.displayName ?: "MUSIC FOLDER"}") {
                     Button(onClick = viewModel::rescan, enabled = !viewModel.scanState.running) { Text(if (viewModel.scanState.running) "SCANNING ${viewModel.scanState.progress}" else "RESCAN LIBRARY") }
+                    if (viewModel.scanState.running) {
+                        Button(onClick = viewModel::cancelRescan, modifier = Modifier.padding(top = 8.dp)) { Text("CANCEL RESCAN") }
+                    }
                     viewModel.scanState.message?.let { Text(it, modifier = Modifier.padding(top = 8.dp)) }
-                    viewModel.scanState.report?.let { Text("Added ${it.added} · Missing ${it.missing} · Skipped ${it.skipped}") }
+                    viewModel.scanState.report?.let { Text("Added ${it.added} · Changed ${it.changed} · Missing ${it.missing} · Skipped ${it.skipped} · Unsupported ${it.unsupported}") }
                 }
                 AlbumGridScreen(albums, onAlbumSelected = { selectedAlbum = it })
             }
             Destination.SEARCH -> SearchScreen(tracks, playback::play)
+            Destination.ARTISTS -> ArtistsScreen(tracks)
             Destination.PLAYLISTS -> PlaylistsScreen()
             Destination.NOW_PLAYING -> NowPlayingScreen(playback)
             Destination.SETTINGS -> SettingsScreen(onChooseFolder = { launcher.launch(null) }, effectsEnabled = effectsEnabled, onEffectsChanged = { effectsEnabled = it })
@@ -90,6 +97,7 @@ private fun NowPlayingScreen(playback: PlaybackConnection) {
         TerminalFrame("NOW PLAYING") {
             Text(state.title ?: "NO TRACK SELECTED", modifier = Modifier.padding(top = 8.dp))
             state.artist?.let { Text(it, color = androidx.compose.material3.MaterialTheme.colorScheme.secondary) }
+            state.error?.let { Text(it, color = ca.stewark.nocturnel.ui.theme.AlertAmber, modifier = Modifier.padding(top = 8.dp)) }
             Text("${state.positionMs / 1000}s / ${state.durationMs / 1000}s", modifier = Modifier.padding(top = 8.dp))
             Button(onClick = playback::previous, modifier = Modifier.padding(top = 12.dp)) { Text("PREVIOUS") }
             Button(onClick = playback::toggle, modifier = Modifier.padding(top = 8.dp)) { Text("PLAY / PAUSE") }

@@ -5,16 +5,24 @@ import ca.stewark.nocturnel.data.entity.LibrarySourceEntity
 import ca.stewark.nocturnel.data.entity.ScanIssueEntity
 import ca.stewark.nocturnel.data.entity.ScanReportEntity
 import ca.stewark.nocturnel.library.LibraryScanner
+import ca.stewark.nocturnel.library.ScanOutcome
 import ca.stewark.nocturnel.library.model.LibrarySource
 import ca.stewark.nocturnel.library.model.ScanReport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+class LibraryAccessLostException : IllegalStateException("Access to the selected music folder was lost.")
+class ScanCancelledException : IllegalStateException("Library scan was cancelled.")
+
 class CatalogRepository(private val dao: LibraryDao, private val scanner: LibraryScanner) {
     suspend fun source(): LibrarySource? = dao.librarySource()?.let { LibrarySource(it.treeUri, it.displayName, it.lastScanEpochMillis, it.accessLost) }
 
     suspend fun saveSource(treeUri: String, displayName: String) {
-        dao.saveLibrarySource(LibrarySourceEntity(treeUri = treeUri, displayName = displayName, lastScanEpochMillis = null, accessLost = false))
+        val previous = dao.librarySource()
+        dao.selectLibrarySource(
+            LibrarySourceEntity(treeUri = treeUri, displayName = displayName, lastScanEpochMillis = null, accessLost = false),
+            sourceChanged = previous != null && previous.treeUri != treeUri,
+        )
     }
 
     suspend fun markAccessLost() {
@@ -23,13 +31,23 @@ class CatalogRepository(private val dao: LibraryDao, private val scanner: Librar
 
     suspend fun rescan(cancelled: () -> Boolean = { false }, onProgress: (Int) -> Unit = {}): ScanReport = withContext(Dispatchers.IO) {
         val source = requireNotNull(dao.librarySource()) { "Choose a music folder first." }
+        if (!scanner.canAccess(source.treeUri)) {
+            markAccessLost()
+            throw LibraryAccessLostException()
+        }
         val now = System.currentTimeMillis()
         val result = scanner.scan(source.treeUri, now, cancelled, onProgress)
-        if (cancelled()) return@withContext ScanReport(now, 0, 0, 0, result.skipped, result.unsupported, result.issues)
-        val existingPaths = dao.allTracks().map { it.relativePath }.toSet()
-        val added = result.tracks.count { it.relativePath !in existingPaths }
-        val missing = ScanReconciler.missingPaths(existingPaths, result.tracks.map { it.relativePath }.toSet()).size
-        val report = ScanReport(now, added, 0, missing, result.skipped, result.unsupported, result.issues)
+        when (result.outcome) {
+            ScanOutcome.ACCESS_LOST -> {
+                markAccessLost()
+                throw LibraryAccessLostException()
+            }
+            ScanOutcome.CANCELLED -> throw ScanCancelledException()
+            ScanOutcome.COMPLETED -> Unit
+        }
+        val existing = dao.allTracks()
+        val counts = ScanReconciler.count(existing.map(::fingerprint), result.tracks.map(::fingerprint))
+        val report = ScanReport(now, counts.added, counts.changed, counts.missing, result.skipped, result.unsupported, result.issues)
         dao.replaceCompletedScan(
             result.albums,
             result.tracks,
@@ -39,4 +57,20 @@ class CatalogRepository(private val dao: LibraryDao, private val scanner: Librar
         dao.saveLibrarySource(LibrarySourceEntity(0, source.treeUri, source.displayName, now, false))
         report
     }
+
+    private fun fingerprint(track: ca.stewark.nocturnel.data.entity.TrackEntity): TrackFingerprint =
+        TrackFingerprint(
+            track.relativePath,
+            listOf(
+                track.documentUri,
+                track.albumId,
+                track.title,
+                track.artist,
+                track.album,
+                track.durationMs,
+                track.trackNumber,
+                track.discNumber,
+                track.status,
+            ).joinToString("\u0000"),
+        )
 }
