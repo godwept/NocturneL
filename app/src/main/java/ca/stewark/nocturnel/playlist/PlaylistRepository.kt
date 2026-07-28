@@ -12,5 +12,8 @@ class PlaylistRepository(private val dao: LibraryDao) {
         dao.savePlaylistEntries(paths.mapIndexed { index, path -> PlaylistEntryEntity(playlistId, index, path) })
     }
 
+    suspend fun rename(playlistId: Long, name: String) = dao.renamePlaylist(playlistId, name.trim().ifBlank { "Untitled playlist" }, System.currentTimeMillis())
+    suspend fun delete(playlistId: Long) = dao.deletePlaylist(playlistId)
+
     suspend fun paths(playlistId: Long): List<String> = dao.playlistEntries(playlistId).map { it.relativePath }
 }

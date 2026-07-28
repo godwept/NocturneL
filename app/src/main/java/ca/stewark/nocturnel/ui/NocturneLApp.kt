@@ -25,14 +25,16 @@ import ca.stewark.nocturnel.ui.components.Scanlines
 import ca.stewark.nocturnel.ui.library.AlbumDetailScreen
 import ca.stewark.nocturnel.ui.library.AlbumGridScreen
 import ca.stewark.nocturnel.ui.library.LibrarySetupScreen
+import ca.stewark.nocturnel.ui.library.SearchScreen
 import ca.stewark.nocturnel.ui.library.LibrarySourceViewModel
 import ca.stewark.nocturnel.ui.playlist.PlaylistsScreen
 
-private enum class Destination { LIBRARY, PLAYLISTS, NOW_PLAYING, SETTINGS }
+private enum class Destination { LIBRARY, SEARCH, PLAYLISTS, NOW_PLAYING, SETTINGS }
 
 @Composable
 fun NocturneLApp(viewModel: LibrarySourceViewModel = viewModel()) {
     val albums by viewModel.albums.collectAsState()
+    val tracks by viewModel.playableTracks.collectAsState()
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri -> uri?.let(viewModel::selectFolder) }
     val context = LocalContext.current
     val playback = remember(context) { PlaybackConnection(context) }
@@ -68,6 +70,7 @@ fun NocturneLApp(viewModel: LibrarySourceViewModel = viewModel()) {
                 }
                 AlbumGridScreen(albums, onAlbumSelected = { selectedAlbum = it })
             }
+            Destination.SEARCH -> SearchScreen(tracks, playback::play)
             Destination.PLAYLISTS -> PlaylistsScreen()
             Destination.NOW_PLAYING -> NowPlayingScreen(playback)
             Destination.SETTINGS -> SettingsScreen(onChooseFolder = { launcher.launch(null) }, effectsEnabled = effectsEnabled, onEffectsChanged = { effectsEnabled = it })

@@ -29,6 +29,9 @@ class PlaylistViewModel(application: Application) : AndroidViewModel(application
         message = "Playlist created"
     }
 
+    fun rename(id: Long, name: String) = viewModelScope.launch { repository.rename(id, name); message = "Playlist renamed" }
+    fun delete(id: Long) = viewModelScope.launch { repository.delete(id); message = "Playlist deleted" }
+
     fun import(uri: Uri) = viewModelScope.launch {
         runCatching {
             val known = dao.allTracks().map { it.relativePath }.toSet()

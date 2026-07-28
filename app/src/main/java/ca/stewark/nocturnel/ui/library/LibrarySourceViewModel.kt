@@ -24,6 +24,7 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
     private val app = application as NocturneLApplication
     private val catalog = CatalogRepository(app.database.libraryDao(), app.scanner)
     val albums: StateFlow<List<AlbumEntity>> = app.database.libraryDao().albums().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val playableTracks = app.database.libraryDao().playableTracks().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     var source: LibrarySource? by mutableStateOf(null)
         private set
     var scanState: RescanUiState by mutableStateOf(RescanUiState())
