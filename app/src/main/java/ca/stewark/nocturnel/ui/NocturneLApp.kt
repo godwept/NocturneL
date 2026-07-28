@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.playback.PlaybackConnection
 import ca.stewark.nocturnel.ui.components.TerminalFrame
+import ca.stewark.nocturnel.ui.components.Scanlines
 import ca.stewark.nocturnel.ui.library.AlbumDetailScreen
 import ca.stewark.nocturnel.ui.library.AlbumGridScreen
 import ca.stewark.nocturnel.ui.library.LibrarySetupScreen
@@ -38,6 +37,7 @@ fun NocturneLApp(viewModel: LibrarySourceViewModel = viewModel()) {
     val context = LocalContext.current
     val playback = remember(context) { PlaybackConnection(context) }
     var destination by remember { mutableStateOf(Destination.LIBRARY) }
+    var effectsEnabled by remember { mutableStateOf(true) }
     var selectedAlbum by remember { mutableStateOf<AlbumEntity?>(null) }
 
     if (viewModel.source == null) {
@@ -50,13 +50,15 @@ fun NocturneLApp(viewModel: LibrarySourceViewModel = viewModel()) {
         return
     }
 
-    Scaffold(bottomBar = {
-        NavigationBar {
+    Scaffold(containerColor = androidx.compose.ui.graphics.Color.Transparent, topBar = {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+            Text("NOCTURNEL", style = androidx.compose.material3.MaterialTheme.typography.titleLarge, color = androidx.compose.material3.MaterialTheme.colorScheme.primary)
             Destination.entries.forEach { item ->
-                NavigationBarItem(selected = destination == item, onClick = { destination = item }, icon = { Text("•") }, label = { Text(item.name.replace('_', ' ')) })
+                Button(onClick = { destination = item }, modifier = Modifier.padding(end = 4.dp), colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = if (destination == item) ca.stewark.nocturnel.ui.theme.AlertAmber else androidx.compose.material3.MaterialTheme.colorScheme.primary)) { Text("[${item.name.take(3)}]") }
             }
         }
     }) { inset ->
+        Scanlines(effectsEnabled)
         when (destination) {
             Destination.LIBRARY -> Column(Modifier.fillMaxSize().padding(inset)) {
                 TerminalFrame("${viewModel.source?.displayName ?: "MUSIC FOLDER"}") {
@@ -68,7 +70,7 @@ fun NocturneLApp(viewModel: LibrarySourceViewModel = viewModel()) {
             }
             Destination.PLAYLISTS -> PlaylistsScreen()
             Destination.NOW_PLAYING -> NowPlayingScreen(playback)
-            Destination.SETTINGS -> SettingsScreen(onChooseFolder = { launcher.launch(null) })
+            Destination.SETTINGS -> SettingsScreen(onChooseFolder = { launcher.launch(null) }, effectsEnabled = effectsEnabled, onEffectsChanged = { effectsEnabled = it })
         }
     }
 }
@@ -91,6 +93,9 @@ private fun NowPlayingScreen(playback: PlaybackConnection) {
 }
 
 @Composable
-private fun SettingsScreen(onChooseFolder: () -> Unit) {
-    Column(Modifier.fillMaxSize().padding(16.dp)) { TerminalFrame("SETTINGS") { Button(onClick = onChooseFolder, modifier = Modifier.padding(top = 8.dp)) { Text("CHANGE MUSIC FOLDER") } } }
+private fun SettingsScreen(onChooseFolder: () -> Unit, effectsEnabled: Boolean, onEffectsChanged: (Boolean) -> Unit) {
+    Column(Modifier.fillMaxSize().padding(16.dp)) { TerminalFrame("SETTINGS") {
+        Button(onClick = onChooseFolder, modifier = Modifier.padding(top = 8.dp)) { Text("[CHANGE MUSIC FOLDER]") }
+        Button(onClick = { onEffectsChanged(!effectsEnabled) }, modifier = Modifier.padding(top = 8.dp)) { Text("[CRT EFFECTS: ${if (effectsEnabled) "ON" else "OFF"}]") }
+    } }
 }
