@@ -46,7 +46,7 @@ fun NocturneLApp(viewModel: LibrarySourceViewModel = viewModel()) {
     }
     selectedAlbum?.let { album ->
         val tracks by viewModel.tracks(album.id).collectAsState(emptyList())
-        AlbumDetailScreen(album, tracks, onBack = { selectedAlbum = null }, onPlay = playback::play)
+        AlbumDetailScreen(album, tracks, onBack = { selectedAlbum = null }, onPlay = playback::play, onPlayAlbum = playback::playQueue)
         return
     }
 
@@ -82,12 +82,17 @@ private fun PlaceholderScreen(title: String, message: String) {
 
 @Composable
 private fun NowPlayingScreen(playback: PlaybackConnection) {
+    val state by playback.state.collectAsState()
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         TerminalFrame("NOW PLAYING") {
-            Text("Playback controls remain available from Android's notification and lock screen.", modifier = Modifier.padding(top = 8.dp))
+            Text(state.title ?: "NO TRACK SELECTED", modifier = Modifier.padding(top = 8.dp))
+            state.artist?.let { Text(it, color = androidx.compose.material3.MaterialTheme.colorScheme.secondary) }
+            Text("${state.positionMs / 1000}s / ${state.durationMs / 1000}s", modifier = Modifier.padding(top = 8.dp))
             Button(onClick = playback::previous, modifier = Modifier.padding(top = 12.dp)) { Text("PREVIOUS") }
             Button(onClick = playback::toggle, modifier = Modifier.padding(top = 8.dp)) { Text("PLAY / PAUSE") }
             Button(onClick = playback::next, modifier = Modifier.padding(top = 8.dp)) { Text("NEXT") }
+            Button(onClick = playback::toggleShuffle, modifier = Modifier.padding(top = 8.dp)) { Text("[SHUFFLE: ${if (state.shuffle) "ON" else "OFF"}]") }
+            Button(onClick = playback::cycleRepeat, modifier = Modifier.padding(top = 8.dp)) { Text("[REPEAT: ${state.repeatMode}]") }
         }
     }
 }
