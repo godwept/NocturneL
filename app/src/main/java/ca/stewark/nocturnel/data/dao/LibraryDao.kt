@@ -12,6 +12,7 @@ import ca.stewark.nocturnel.data.entity.PlaylistEntryEntity
 import ca.stewark.nocturnel.data.entity.ScanIssueEntity
 import ca.stewark.nocturnel.data.entity.ScanReportEntity
 import ca.stewark.nocturnel.data.entity.TrackEntity
+import ca.stewark.nocturnel.data.model.PlaylistEntryRow
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -36,12 +37,26 @@ interface LibraryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun saveReport(report: ScanReportEntity)
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun saveIssues(issues: List<ScanIssueEntity>)
     @Query("SELECT * FROM playlists ORDER BY name") fun playlists(): Flow<List<PlaylistEntity>>
+    @Query("SELECT * FROM playlists WHERE id = :id") suspend fun playlist(id: Long): PlaylistEntity?
     @Insert suspend fun createPlaylist(playlist: PlaylistEntity): Long
     @Query("UPDATE playlists SET name = :name, updatedEpochMillis = :updated WHERE id = :id") suspend fun renamePlaylist(id: Long, name: String, updated: Long)
     @Query("DELETE FROM playlists WHERE id = :id") suspend fun deletePlaylist(id: Long)
     @Query("DELETE FROM playlist_entries WHERE playlistId = :playlistId") suspend fun clearPlaylistEntries(playlistId: Long)
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun savePlaylistEntries(entries: List<PlaylistEntryEntity>)
     @Query("SELECT * FROM playlist_entries WHERE playlistId = :playlistId ORDER BY position") suspend fun playlistEntries(playlistId: Long): List<PlaylistEntryEntity>
+    @Query("""
+        SELECT entry.position AS position,
+               entry.relativePath AS relativePath,
+               track.title AS title,
+               track.artist AS artist,
+               track.durationMs AS durationMs,
+               track.status AS trackStatus
+        FROM playlist_entries AS entry
+        LEFT JOIN tracks AS track ON track.relativePath = entry.relativePath
+        WHERE entry.playlistId = :playlistId
+        ORDER BY entry.position
+    """)
+    suspend fun playlistEntryRows(playlistId: Long): List<PlaylistEntryRow>
     @Query("SELECT * FROM tracks WHERE relativePath IN (:paths) AND status = 'PLAYABLE'") suspend fun tracksByPaths(paths: List<String>): List<TrackEntity>
 
     @Transaction

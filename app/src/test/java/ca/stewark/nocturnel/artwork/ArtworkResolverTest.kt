@@ -11,5 +11,9 @@ class ArtworkResolverTest {
         assertEquals(ArtworkKind.EMBEDDED, ArtworkResolver.resolve(ArtworkCandidates(embeddedUri = "embedded", folderCoverUri = "folder")).kind)
         assertEquals(ArtworkKind.FOLDER, ArtworkResolver.resolve(ArtworkCandidates(folderCoverUri = "folder")).kind)
         assertEquals(ArtworkKind.PLACEHOLDER, ArtworkResolver.resolve(ArtworkCandidates()).kind)
+        assertEquals(
+            listOf(ArtworkKind.MANUAL, ArtworkKind.EMBEDDED, ArtworkKind.FOLDER, ArtworkKind.PLACEHOLDER),
+            ArtworkResolver.ordered(ArtworkCandidates("manual", "embedded", "folder")).map { it.kind },
+        )
     }
 }

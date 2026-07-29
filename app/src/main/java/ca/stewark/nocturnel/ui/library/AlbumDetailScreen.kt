@@ -1,31 +1,66 @@
 package ca.stewark.nocturnel.ui.library
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.data.entity.TrackEntity
-import ca.stewark.nocturnel.ui.components.TerminalFrame
+import ca.stewark.nocturnel.ui.artwork.RetroArtwork
+import ca.stewark.nocturnel.ui.components.AsciiFrame
+import ca.stewark.nocturnel.ui.components.BracketButton
+import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 
 @Composable
-fun AlbumDetailScreen(album: AlbumEntity, tracks: List<TrackEntity>, onBack: () -> Unit, onPlay: (TrackEntity) -> Unit, onPlayAlbum: (List<TrackEntity>) -> Unit, onChooseArtwork: () -> Unit, onClearArtwork: () -> Unit) {
-    Column(Modifier.fillMaxSize().padding(12.dp)) {
-        Button(onClick = onBack) { Text("BACK") }
-        TerminalFrame(album.title, Modifier.padding(top = 12.dp)) { Text(album.artist) }
-        Button(onClick = { onPlayAlbum(tracks) }, modifier = Modifier.padding(top = 8.dp)) { Text("[PLAY ALBUM]") }
-        Button(onClick = onChooseArtwork, modifier = Modifier.padding(top = 8.dp)) { Text("[SET COVER ART]") }
-        if (album.manualArtworkUri != null) Button(onClick = onClearArtwork, modifier = Modifier.padding(top = 8.dp)) { Text("[CLEAR COVER ART]") }
-        LazyColumn(Modifier.padding(top = 12.dp)) {
+fun AlbumDetailScreen(
+    album: AlbumEntity,
+    tracks: List<TrackEntity>,
+    onBack: () -> Unit,
+    onPlay: (TrackEntity) -> Unit,
+    onPlayAlbum: (List<TrackEntity>) -> Unit,
+    onChooseArtwork: () -> Unit,
+    onClearArtwork: () -> Unit,
+    onShuffleAlbum: (List<TrackEntity>) -> Unit = { onPlayAlbum(it.shuffled()) },
+) {
+    Column(Modifier.fillMaxSize().padding(TerminalDimensions.sm)) {
+        Row {
+            BracketButton("BACK", onBack)
+            BracketButton("PLAY", { onPlayAlbum(tracks) }, enabled = tracks.isNotEmpty())
+            BracketButton("SHUFFLE", { onShuffleAlbum(tracks) }, enabled = tracks.isNotEmpty())
+        }
+        LazyColumn {
+            item {
+                AsciiFrame(album.title, Modifier.padding(top = TerminalDimensions.xs)) {
+                    RetroArtwork(album, Modifier.fillMaxWidth().aspectRatio(1f))
+                    Text(album.artist, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = TerminalDimensions.xs))
+                    album.year?.let { Text(it, color = MaterialTheme.colorScheme.secondary) }
+                    Row {
+                        BracketButton("SET COVER", onChooseArtwork)
+                        if (album.manualArtworkUri != null) BracketButton("CLEAR", onClearArtwork)
+                    }
+                }
+            }
             items(tracks, key = { it.relativePath }) { track ->
-                Button(onClick = { onPlay(track) }, modifier = Modifier.padding(vertical = 4.dp)) {
-                    Text("${track.trackNumber?.toString()?.padStart(2, '0') ?: "--"}  ${track.title}")
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .defaultMinSize(minHeight = TerminalDimensions.minimumTouchTarget)
+                        .clickable { onPlay(track) }
+                        .padding(horizontal = TerminalDimensions.xs, vertical = TerminalDimensions.sm),
+                ) {
+                    Text(track.trackNumber?.toString()?.padStart(2, '0') ?: "--", color = MaterialTheme.colorScheme.secondary)
+                    Text(track.title, Modifier.weight(1f).padding(horizontal = TerminalDimensions.xs))
+                    Text(formatDuration(track.durationMs), color = MaterialTheme.colorScheme.secondary)
                 }
             }
         }

@@ -1,21 +1,32 @@
 package ca.stewark.nocturnel.ui.theme
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.graphics.Color
 
 private val NocturneLColors = darkColorScheme(
     primary = Phosphor,
     onPrimary = TerminalBlack,
     secondary = PhosphorDim,
+    onSecondary = TerminalBlack,
+    tertiary = AlertAmber,
     background = TerminalBlack,
-    surface = TerminalPanel,
-    onBackground = TerminalText,
-    onSurface = TerminalText,
-    error = AlertAmber,
+    surface = TerminalBlackAlt,
+    surfaceVariant = TerminalBlackAlt,
+    onBackground = Phosphor,
+    onSurface = Phosphor,
+    onSurfaceVariant = PhosphorDim,
+    error = TerminalError,
+    onError = Color.Black,
+    outline = Phosphor,
 )
 
 @Composable
 fun NocturneLTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = NocturneLColors, typography = NocturneLTypography, content = content)
+    MaterialTheme(colorScheme = NocturneLColors, typography = NocturneLTypography) {
+        CompositionLocalProvider(LocalContentColor provides Phosphor, content = content)
+    }
 }

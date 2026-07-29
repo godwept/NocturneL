@@ -1,5 +1,6 @@
 package ca.stewark.nocturnel.playback
 
+import android.os.Bundle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -135,6 +136,7 @@ class NocturneLPlaybackService : MediaSessionService() {
                     .setTitle(track.title)
                     .setArtist(track.artist)
                     .setAlbumTitle(track.album)
+                    .setExtras(Bundle().apply { putString("album_id", track.albumId) })
                     .build(),
             )
             .build()

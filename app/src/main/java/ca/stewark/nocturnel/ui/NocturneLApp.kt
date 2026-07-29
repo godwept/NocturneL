@@ -1,117 +1,167 @@
 package ca.stewark.nocturnel.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.playback.PlaybackConnection
-import ca.stewark.nocturnel.ui.components.TerminalFrame
-import ca.stewark.nocturnel.ui.components.Scanlines
+import ca.stewark.nocturnel.ui.components.AsciiFrame
+import ca.stewark.nocturnel.ui.components.BracketButton
+import ca.stewark.nocturnel.ui.components.TerminalNotice
+import ca.stewark.nocturnel.ui.components.TerminalScaffold
 import ca.stewark.nocturnel.ui.library.AlbumDetailScreen
 import ca.stewark.nocturnel.ui.library.AlbumGridScreen
-import ca.stewark.nocturnel.ui.library.LibrarySetupScreen
-import ca.stewark.nocturnel.ui.library.SearchScreen
+import ca.stewark.nocturnel.ui.library.ArtistDetailScreen
+import ca.stewark.nocturnel.ui.library.ArtistRow
 import ca.stewark.nocturnel.ui.library.ArtistsScreen
+import ca.stewark.nocturnel.ui.library.LibrarySetupScreen
 import ca.stewark.nocturnel.ui.library.LibrarySourceViewModel
+import ca.stewark.nocturnel.ui.library.SearchScreen
+import ca.stewark.nocturnel.ui.library.groupArtists
+import ca.stewark.nocturnel.ui.navigation.NocturneLDestination
+import ca.stewark.nocturnel.ui.playback.NowPlayingScreen
 import ca.stewark.nocturnel.ui.playlist.PlaylistsScreen
-
-private enum class Destination { LIBRARY, SEARCH, ARTISTS, PLAYLISTS, NOW_PLAYING, SETTINGS }
+import ca.stewark.nocturnel.ui.settings.SettingsScreen
+import ca.stewark.nocturnel.ui.settings.SettingsViewModel
+import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 
 @Composable
-fun NocturneLApp(viewModel: LibrarySourceViewModel = viewModel()) {
+fun NocturneLApp(
+    viewModel: LibrarySourceViewModel = viewModel(),
+    settingsViewModel: SettingsViewModel = viewModel(),
+) {
     val albums by viewModel.albums.collectAsState()
     val tracks by viewModel.playableTracks.collectAsState()
+    val settings by settingsViewModel.state.collectAsState()
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri -> uri?.let(viewModel::selectFolder) }
     var artworkAlbum by remember { mutableStateOf<AlbumEntity?>(null) }
-    val artworkLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> artworkAlbum?.let { viewModel.setManualArtwork(it.id, uri) }; artworkAlbum = null }
+    val artworkLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        artworkAlbum?.let { viewModel.setManualArtwork(it.id, uri) }
+        artworkAlbum = null
+    }
     val context = LocalContext.current
     val playback = remember(context) { PlaybackConnection(context) }
-    var destination by remember { mutableStateOf(Destination.LIBRARY) }
-    var effectsEnabled by remember { mutableStateOf(true) }
-    var selectedAlbum by remember { mutableStateOf<AlbumEntity?>(null) }
+    val playbackState by playback.state.collectAsState()
+    DisposableEffect(playback) { onDispose(playback::release) }
+
+    var destinationName by rememberSaveable { mutableStateOf(NocturneLDestination.LIBRARY.name) }
+    val destination = NocturneLDestination.entries.firstOrNull { it.name == destinationName } ?: NocturneLDestination.LIBRARY
+    var selectedAlbumId by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
+    val selectedAlbum = albums.firstOrNull { it.id == selectedAlbumId }
+    val selectedArtist: ArtistRow? = groupArtists(albums).firstOrNull { it.name == selectedArtistName }
+    BackHandler(enabled = selectedAlbumId != null || selectedArtistName != null) {
+        if (selectedAlbumId != null) selectedAlbumId = null else selectedArtistName = null
+    }
 
     if (viewModel.source == null) {
         LibrarySetupScreen { launcher.launch(null) }
         return
     }
-    selectedAlbum?.let { album ->
-        val tracks by viewModel.tracks(album.id).collectAsState(emptyList())
-        AlbumDetailScreen(album, tracks, onBack = { selectedAlbum = null }, onPlay = playback::play, onPlayAlbum = playback::playQueue, onChooseArtwork = { artworkAlbum = album; artworkLauncher.launch(arrayOf("image/*")) }, onClearArtwork = { viewModel.setManualArtwork(album.id, null) })
-        return
-    }
 
-    Scaffold(containerColor = androidx.compose.ui.graphics.Color.Transparent, topBar = {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-            Text("NOCTURNEL", style = androidx.compose.material3.MaterialTheme.typography.titleLarge, color = androidx.compose.material3.MaterialTheme.colorScheme.primary)
-            Destination.entries.forEach { item ->
-                Button(onClick = { destination = item }, modifier = Modifier.padding(end = 4.dp), colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = if (destination == item) ca.stewark.nocturnel.ui.theme.AlertAmber else androidx.compose.material3.MaterialTheme.colorScheme.primary)) { Text("[${item.name.take(3)}]") }
+    TerminalScaffold(
+        selected = destination,
+        onSelected = {
+            destinationName = it.name
+            selectedAlbumId = null
+            selectedArtistName = null
+        },
+        effectsEnabled = settings.effectiveEffectsEnabled,
+        status = viewModel.scanState.message,
+    ) {
+        when {
+            selectedAlbum != null -> {
+                val albumTracks by viewModel.tracks(selectedAlbum.id).collectAsState(emptyList())
+                AlbumDetailScreen(
+                    selectedAlbum,
+                    albumTracks,
+                    onBack = { selectedAlbumId = null },
+                    onPlay = playback::play,
+                    onPlayAlbum = playback::playQueue,
+                    onChooseArtwork = {
+                        artworkAlbum = selectedAlbum
+                        artworkLauncher.launch(arrayOf("image/*"))
+                    },
+                    onClearArtwork = { viewModel.setManualArtwork(selectedAlbum.id, null) },
+                )
+            }
+            selectedArtist != null -> ArtistDetailScreen(
+                selectedArtist,
+                onBack = { selectedArtistName = null },
+                onAlbumSelected = { selectedAlbumId = it.id },
+            )
+            else -> when (destination) {
+                NocturneLDestination.LIBRARY -> LibraryScreen(
+                    albums,
+                    viewModel,
+                    onAlbumSelected = { selectedAlbumId = it.id },
+                )
+                NocturneLDestination.SEARCH -> SearchScreen(
+                    tracks,
+                    albums,
+                    playback::play,
+                    onAlbumSelected = { selectedAlbumId = it.id },
+                    onArtistSelected = { selectedArtistName = it.name },
+                )
+                NocturneLDestination.ARTISTS -> ArtistsScreen(albums) { selectedArtistName = it.name }
+                NocturneLDestination.PLAYLISTS -> PlaylistsScreen(playback = playback)
+                NocturneLDestination.NOW_PLAYING -> NowPlayingScreen(
+                    state = playbackState,
+                    albumArtwork = albums.firstOrNull { it.id == playbackState.albumId },
+                    effectsEnabled = settings.effectiveEffectsEnabled,
+                    onPrevious = playback::previous,
+                    onToggle = playback::toggle,
+                    onNext = playback::next,
+                    onShuffle = playback::toggleShuffle,
+                    onRepeat = playback::cycleRepeat,
+                    onSeek = playback::seekTo,
+                )
+                NocturneLDestination.SETTINGS -> SettingsScreen(
+                    onChooseFolder = { launcher.launch(null) },
+                    onRescan = viewModel::rescan,
+                    state = settings,
+                    onEffectsChanged = settingsViewModel::setEffectsEnabled,
+                )
             }
         }
-    }) { inset ->
-        Scanlines(effectsEnabled)
-        when (destination) {
-            Destination.LIBRARY -> Column(Modifier.fillMaxSize().padding(inset)) {
-                TerminalFrame("${viewModel.source?.displayName ?: "MUSIC FOLDER"}") {
-                    Button(onClick = viewModel::rescan, enabled = !viewModel.scanState.running) { Text(if (viewModel.scanState.running) "SCANNING ${viewModel.scanState.progress}" else "RESCAN LIBRARY") }
-                    if (viewModel.scanState.running) {
-                        Button(onClick = viewModel::cancelRescan, modifier = Modifier.padding(top = 8.dp)) { Text("CANCEL RESCAN") }
-                    }
-                    viewModel.scanState.message?.let { Text(it, modifier = Modifier.padding(top = 8.dp)) }
-                    viewModel.scanState.report?.let { Text("Added ${it.added} · Changed ${it.changed} · Missing ${it.missing} · Skipped ${it.skipped} · Unsupported ${it.unsupported}") }
-                }
-                AlbumGridScreen(albums, onAlbumSelected = { selectedAlbum = it })
+    }
+}
+
+@Composable
+private fun LibraryScreen(
+    albums: List<AlbumEntity>,
+    viewModel: LibrarySourceViewModel,
+    onAlbumSelected: (AlbumEntity) -> Unit,
+) {
+    Column(Modifier.fillMaxSize()) {
+        AsciiFrame(viewModel.source?.displayName ?: "MUSIC FOLDER", Modifier.padding(TerminalDimensions.sm)) {
+            Row {
+                BracketButton(
+                    if (viewModel.scanState.running) "SCANNING ${viewModel.scanState.progress}" else "RESCAN",
+                    viewModel::rescan,
+                    enabled = !viewModel.scanState.running,
+                )
+                if (viewModel.scanState.running) BracketButton("CANCEL", viewModel::cancelRescan)
             }
-            Destination.SEARCH -> SearchScreen(tracks, playback::play)
-            Destination.ARTISTS -> ArtistsScreen(tracks)
-            Destination.PLAYLISTS -> PlaylistsScreen()
-            Destination.NOW_PLAYING -> NowPlayingScreen(playback)
-            Destination.SETTINGS -> SettingsScreen(onChooseFolder = { launcher.launch(null) }, effectsEnabled = effectsEnabled, onEffectsChanged = { effectsEnabled = it })
+            viewModel.scanState.report?.let {
+                TerminalNotice("ADD ${it.added} · CHG ${it.changed} · MISS ${it.missing} · SKIP ${it.skipped}")
+            }
         }
+        AlbumGridScreen(albums, onAlbumSelected)
     }
-}
-
-@Composable
-private fun PlaceholderScreen(title: String, message: String) {
-    Column(Modifier.fillMaxSize().padding(16.dp)) { TerminalFrame(title) { Text(message, modifier = Modifier.padding(top = 8.dp)) } }
-}
-
-@Composable
-private fun NowPlayingScreen(playback: PlaybackConnection) {
-    val state by playback.state.collectAsState()
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
-        TerminalFrame("NOW PLAYING") {
-            Text(state.title ?: "NO TRACK SELECTED", modifier = Modifier.padding(top = 8.dp))
-            state.artist?.let { Text(it, color = androidx.compose.material3.MaterialTheme.colorScheme.secondary) }
-            state.error?.let { Text(it, color = ca.stewark.nocturnel.ui.theme.AlertAmber, modifier = Modifier.padding(top = 8.dp)) }
-            Text("${state.positionMs / 1000}s / ${state.durationMs / 1000}s", modifier = Modifier.padding(top = 8.dp))
-            Button(onClick = playback::previous, modifier = Modifier.padding(top = 12.dp)) { Text("PREVIOUS") }
-            Button(onClick = playback::toggle, modifier = Modifier.padding(top = 8.dp)) { Text("PLAY / PAUSE") }
-            Button(onClick = playback::next, modifier = Modifier.padding(top = 8.dp)) { Text("NEXT") }
-            Button(onClick = playback::toggleShuffle, modifier = Modifier.padding(top = 8.dp)) { Text("[SHUFFLE: ${if (state.shuffle) "ON" else "OFF"}]") }
-            Button(onClick = playback::cycleRepeat, modifier = Modifier.padding(top = 8.dp)) { Text("[REPEAT: ${state.repeatMode}]") }
-        }
-    }
-}
-
-@Composable
-private fun SettingsScreen(onChooseFolder: () -> Unit, effectsEnabled: Boolean, onEffectsChanged: (Boolean) -> Unit) {
-    Column(Modifier.fillMaxSize().padding(16.dp)) { TerminalFrame("SETTINGS") {
-        Button(onClick = onChooseFolder, modifier = Modifier.padding(top = 8.dp)) { Text("[CHANGE MUSIC FOLDER]") }
-        Button(onClick = { onEffectsChanged(!effectsEnabled) }, modifier = Modifier.padding(top = 8.dp)) { Text("[CRT EFFECTS: ${if (effectsEnabled) "ON" else "OFF"}]") }
-    } }
 }

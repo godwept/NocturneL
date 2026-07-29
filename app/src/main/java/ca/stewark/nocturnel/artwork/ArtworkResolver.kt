@@ -10,6 +10,13 @@ data class ArtworkCandidates(
 )
 
 object ArtworkResolver {
+    fun ordered(candidates: ArtworkCandidates): List<ArtworkSource> = buildList {
+        candidates.manualUri?.takeIf(String::isNotBlank)?.let { add(ArtworkSource(ArtworkKind.MANUAL, it)) }
+        candidates.embeddedUri?.takeIf(String::isNotBlank)?.let { add(ArtworkSource(ArtworkKind.EMBEDDED, it)) }
+        candidates.folderCoverUri?.takeIf(String::isNotBlank)?.let { add(ArtworkSource(ArtworkKind.FOLDER, it)) }
+        add(ArtworkSource(ArtworkKind.PLACEHOLDER))
+    }
+
     fun resolve(candidates: ArtworkCandidates): ArtworkSource = when {
         !candidates.manualUri.isNullOrBlank() -> ArtworkSource(ArtworkKind.MANUAL, candidates.manualUri)
         !candidates.embeddedUri.isNullOrBlank() -> ArtworkSource(ArtworkKind.EMBEDDED, candidates.embeddedUri)

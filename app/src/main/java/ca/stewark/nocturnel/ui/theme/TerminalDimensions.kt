@@ -1,0 +1,14 @@
+package ca.stewark.nocturnel.ui.theme
+
+import androidx.compose.ui.unit.dp
+
+object TerminalDimensions {
+    val xxs = 4.dp
+    val xs = 8.dp
+    val sm = 12.dp
+    val md = 16.dp
+    val lg = 24.dp
+    val xl = 32.dp
+    val border = 1.dp
+    val minimumTouchTarget = 48.dp
+}
