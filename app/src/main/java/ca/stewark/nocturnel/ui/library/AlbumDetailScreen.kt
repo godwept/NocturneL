@@ -15,10 +15,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import ca.stewark.nocturnel.data.entity.AlbumEntity
+import ca.stewark.nocturnel.data.entity.PlaylistEntity
 import ca.stewark.nocturnel.data.entity.TrackEntity
 import ca.stewark.nocturnel.ui.artwork.RetroArtwork
 import ca.stewark.nocturnel.ui.components.AsciiFrame
 import ca.stewark.nocturnel.ui.components.BracketButton
+import ca.stewark.nocturnel.ui.playlist.AlbumPlaylistUiState
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 
 @Composable
@@ -31,7 +33,14 @@ fun AlbumDetailScreen(
     onChooseArtwork: () -> Unit,
     onClearArtwork: () -> Unit,
     onShuffleAlbum: (List<TrackEntity>) -> Unit = { onPlayAlbum(it.shuffled()) },
+    playlists: List<PlaylistEntity> = emptyList(),
+    playlistPickerExpanded: Boolean = false,
+    albumPlaylistState: AlbumPlaylistUiState = AlbumPlaylistUiState.Idle,
+    onTogglePlaylistPicker: () -> Unit = {},
+    onAddAlbumToPlaylist: (PlaylistEntity) -> Unit = {},
+    onCreatePlaylistAndAdd: (String) -> Unit = {},
 ) {
+    val playableTracks = tracks.filter { it.status == "PLAYABLE" }
     Column(Modifier.fillMaxSize().padding(TerminalDimensions.sm)) {
         Row {
             BracketButton("BACK", onBack)
@@ -48,7 +57,26 @@ fun AlbumDetailScreen(
                         BracketButton("SET COVER", onChooseArtwork)
                         if (album.manualArtworkUri != null) BracketButton("CLEAR", onClearArtwork)
                     }
+                    BracketButton(
+                        "ADD TO PLAYLIST",
+                        onTogglePlaylistPicker,
+                        enabled = playableTracks.isNotEmpty(),
+                        selected = playlistPickerExpanded,
+                    )
                 }
+            }
+            if (playlistPickerExpanded) {
+                item {
+                    AlbumPlaylistPicker(
+                        playlists = playlists,
+                        state = albumPlaylistState,
+                        onPlaylistSelected = onAddAlbumToPlaylist,
+                        onCreateAndAdd = onCreatePlaylistAndAdd,
+                        modifier = Modifier.padding(top = TerminalDimensions.xs),
+                    )
+                }
+            } else if (albumPlaylistState is AlbumPlaylistUiState.Success) {
+                item { AlbumPlaylistFeedback(albumPlaylistState, Modifier.padding(TerminalDimensions.xs)) }
             }
             items(tracks, key = { it.relativePath }) { track ->
                 Row(

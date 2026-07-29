@@ -8,6 +8,8 @@ import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.data.entity.LibrarySourceEntity
 import ca.stewark.nocturnel.data.entity.PlaylistEntity
 import ca.stewark.nocturnel.data.entity.PlaylistEntryEntity
+import ca.stewark.nocturnel.playlist.PlaylistNotFoundException
+import ca.stewark.nocturnel.playlist.PlaylistRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -55,6 +57,27 @@ class NocturneLDatabaseTest {
         dao.deletePlaylistAndEntries(id)
 
         assertTrue(dao.playlistEntries(id).isEmpty())
+    }
+
+    @Test
+    fun albumAppendPreservesOrderAndSkipsExistingPaths() = runTest {
+        val dao = database.libraryDao()
+        val id = dao.createPlaylist(PlaylistEntity(name = "Test", updatedEpochMillis = 1))
+        dao.replacePlaylistEntries(id, listOf(PlaylistEntryEntity(id, 0, "existing.flac")))
+
+        val result = PlaylistRepository(dao).appendAlbum(
+            id,
+            listOf("01.flac", "existing.flac", "03.flac"),
+        )
+
+        assertEquals(listOf("existing.flac", "01.flac", "03.flac"), dao.playlistEntries(id).map { it.relativePath })
+        assertEquals(2, result.added)
+        assertEquals(1, result.skipped)
+    }
+
+    @Test(expected = PlaylistNotFoundException::class)
+    fun albumAppendRejectsDeletedPlaylist() = runTest {
+        PlaylistRepository(database.libraryDao()).appendAlbum(999, listOf("01.flac"))
     }
 
     @Test

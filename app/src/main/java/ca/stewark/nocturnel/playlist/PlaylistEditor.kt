@@ -1,6 +1,18 @@
 package ca.stewark.nocturnel.playlist
 
+data class AppendDistinctResult(val paths: List<String>, val added: Int, val skipped: Int)
+
 object PlaylistEditor {
+    fun appendDistinct(existing: List<String>, candidates: List<String>): AppendDistinctResult {
+        val known = existing.toMutableSet()
+        val addedPaths = candidates.filter { known.add(it) }
+        return AppendDistinctResult(
+            paths = existing + addedPaths,
+            added = addedPaths.size,
+            skipped = candidates.size - addedPaths.size,
+        )
+    }
+
     fun add(paths: List<String>, relativePath: String, index: Int = paths.size): List<String> {
         val target = index.coerceIn(0, paths.size)
         return paths.toMutableList().apply { add(target, relativePath) }

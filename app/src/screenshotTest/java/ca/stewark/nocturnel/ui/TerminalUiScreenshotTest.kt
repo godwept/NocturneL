@@ -55,7 +55,7 @@ fun AlbumGridPreview() = TerminalPreview { AlbumGridScreen(previewAlbums) {} }
 @Composable
 fun RootPreview() = TerminalPreview {
     TerminalScaffold(NocturneLDestination.LIBRARY, {}, effectsEnabled = false, status = "LIBRARY READY") {
-        AlbumGridScreen(previewAlbums) {}
+        LibraryScreen(previewAlbums) {}
     }
 }
 
@@ -68,7 +68,36 @@ fun SetupPreview() = TerminalPreview { LibrarySetupScreen {} }
 @Preview(name = "Album detail", widthDp = 412, heightDp = 915)
 @Composable
 fun AlbumDetailPreview() = TerminalPreview {
-    AlbumDetailScreen(previewAlbums.first(), previewTracks.take(2), {}, {}, {}, {}, {})
+    AlbumDetailScreen(
+        album = previewAlbums.first(),
+        tracks = previewTracks.take(2),
+        onBack = {},
+        onPlay = {},
+        onPlayAlbum = {},
+        onChooseArtwork = {},
+        onClearArtwork = {},
+        playlists = listOf(
+            PlaylistEntity(1, "Night Run", 1),
+            PlaylistEntity(2, "Deep Focus", 2),
+        ),
+        playlistPickerExpanded = true,
+    )
+}
+
+@PreviewTest
+@Preview(name = "Album detail empty playlist", widthDp = 412, heightDp = 915)
+@Composable
+fun AlbumDetailEmptyPlaylistPreview() = TerminalPreview {
+    AlbumDetailScreen(
+        album = previewAlbums.first(),
+        tracks = previewTracks.take(2),
+        onBack = {},
+        onPlay = {},
+        onPlayAlbum = {},
+        onChooseArtwork = {},
+        onClearArtwork = {},
+        playlistPickerExpanded = true,
+    )
 }
 
 @PreviewTest

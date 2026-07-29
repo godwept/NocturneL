@@ -4,6 +4,11 @@ import ca.stewark.nocturnel.data.dao.LibraryDao
 import ca.stewark.nocturnel.data.entity.PlaylistEntity
 import ca.stewark.nocturnel.data.entity.PlaylistEntryEntity
 
+data class AppendAlbumResult(val added: Int, val skipped: Int)
+
+class PlaylistNotFoundException(playlistId: Long) :
+    IllegalStateException("Playlist $playlistId no longer exists.")
+
 class PlaylistRepository(private val dao: LibraryDao) {
     suspend fun create(name: String): Long = dao.createPlaylist(PlaylistEntity(name = name.trim().ifBlank { "Untitled playlist" }, updatedEpochMillis = System.currentTimeMillis()))
 
@@ -14,6 +19,13 @@ class PlaylistRepository(private val dao: LibraryDao) {
     suspend fun add(playlistId: Long, relativePath: String, index: Int? = null) {
         val paths = paths(playlistId)
         replaceEntries(playlistId, PlaylistEditor.add(paths, relativePath, index ?: paths.size))
+    }
+
+    suspend fun appendAlbum(playlistId: Long, orderedPaths: List<String>): AppendAlbumResult {
+        if (dao.playlist(playlistId) == null) throw PlaylistNotFoundException(playlistId)
+        val result = PlaylistEditor.appendDistinct(paths(playlistId), orderedPaths)
+        if (result.added > 0) replaceEntries(playlistId, result.paths)
+        return AppendAlbumResult(result.added, result.skipped)
     }
 
     suspend fun removeAt(playlistId: Long, index: Int) =

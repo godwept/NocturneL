@@ -11,6 +11,7 @@ import ca.stewark.nocturnel.NocturneLApplication
 import ca.stewark.nocturnel.playlist.M3u8Codec
 import ca.stewark.nocturnel.playlist.M3u8DocumentService
 import ca.stewark.nocturnel.playlist.PlaylistRepository
+import ca.stewark.nocturnel.playlist.AppendAlbumResult
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +30,12 @@ class PlaylistViewModel(application: Application) : AndroidViewModel(application
         private set
     private val _detail = MutableStateFlow<PlaylistDetailState?>(null)
     val detail: StateFlow<PlaylistDetailState?> = _detail.asStateFlow()
+    private val _albumPlaylistState = MutableStateFlow<AlbumPlaylistUiState>(AlbumPlaylistUiState.Idle)
+    val albumPlaylistState: StateFlow<AlbumPlaylistUiState> = _albumPlaylistState.asStateFlow()
+    private val albumPlaylistCommand = AlbumPlaylistCommand(
+        appendAlbum = repository::appendAlbum,
+        createPlaylist = repository::create,
+    )
 
     fun create(name: String = "New playlist") = viewModelScope.launch {
         repository.create(name)
@@ -52,6 +59,20 @@ class PlaylistViewModel(application: Application) : AndroidViewModel(application
     fun remove(id: Long, index: Int) = viewModelScope.launch { repository.removeAt(id, index); refresh(id) }
     fun move(id: Long, from: Int, to: Int) = viewModelScope.launch { repository.move(id, from, to); refresh(id) }
 
+    fun addAlbum(playlistId: Long, playlistName: String, tracks: List<TrackEntity>) = viewModelScope.launch {
+        _albumPlaylistState.value = AlbumPlaylistUiState.Working
+        _albumPlaylistState.value = albumPlaylistCommand.add(playlistId, playlistName, tracks)
+    }
+
+    fun createAndAddAlbum(name: String, tracks: List<TrackEntity>) = viewModelScope.launch {
+        _albumPlaylistState.value = AlbumPlaylistUiState.Working
+        _albumPlaylistState.value = albumPlaylistCommand.createAndAdd(name, tracks)
+    }
+
+    fun clearAlbumPlaylistState() {
+        _albumPlaylistState.value = AlbumPlaylistUiState.Idle
+    }
+
     fun import(uri: Uri) = viewModelScope.launch {
         runCatching {
             val known = dao.allTracks().map { it.relativePath }.toSet()
@@ -73,4 +94,32 @@ class PlaylistViewModel(application: Application) : AndroidViewModel(application
         val playlist = dao.playlist(id) ?: run { _detail.value = null; return }
         _detail.value = playlistDetailState(playlist, dao.playlistEntryRows(id), dao.allTracks())
     }
+}
+
+internal class AlbumPlaylistCommand(
+    private val appendAlbum: suspend (Long, List<String>) -> AppendAlbumResult,
+    private val createPlaylist: suspend (String) -> Long,
+) {
+    suspend fun add(playlistId: Long, playlistName: String, tracks: List<TrackEntity>): AlbumPlaylistUiState =
+        runCatching {
+            appendAlbum(playlistId, tracks.playablePaths())
+        }.fold(
+            onSuccess = { albumAppendResultState(playlistName, it) },
+            onFailure = ::albumAppendFailureState,
+        )
+
+    suspend fun createAndAdd(name: String, tracks: List<TrackEntity>): AlbumPlaylistUiState {
+        val trimmed = name.trim()
+        if (trimmed.isBlank()) return AlbumPlaylistUiState.Error("PLAYLIST NAME IS REQUIRED")
+        return runCatching {
+            val playlistId = createPlaylist(trimmed)
+            appendAlbum(playlistId, tracks.playablePaths())
+        }.fold(
+            onSuccess = { albumAppendResultState(trimmed, it) },
+            onFailure = { AlbumPlaylistUiState.Error("COULD NOT ADD ALBUM TO PLAYLIST") },
+        )
+    }
+
+    private fun List<TrackEntity>.playablePaths(): List<String> =
+        filter { it.status == "PLAYABLE" }.map { it.relativePath }
 }
