@@ -19,12 +19,17 @@ fun SettingsScreen(
     onRescan: () -> Unit,
     state: TerminalSettingsState,
     onEffectsChanged: (Boolean) -> Unit,
+    scanRunning: Boolean = false,
 ) {
     Column(Modifier.fillMaxSize().padding(TerminalDimensions.md)) {
         AsciiFrame("SETTINGS") {
             Text("LOCAL LIBRARY")
             BracketButton("CHANGE MUSIC FOLDER", onChooseFolder)
-            BracketButton("RESCAN LIBRARY", onRescan)
+            BracketButton(
+                label = if (scanRunning) "SCANNING..." else "RESCAN LIBRARY",
+                onClick = onRescan,
+                enabled = !scanRunning,
+            )
             TerminalToggle("CRT EFFECTS", state.savedEffectsEnabled, onEffectsChanged)
             if (state.reducedMotion && state.savedEffectsEnabled) {
                 TerminalNotice("Effects are paused by Android reduced-motion settings.", severity = NoticeSeverity.WARNING)

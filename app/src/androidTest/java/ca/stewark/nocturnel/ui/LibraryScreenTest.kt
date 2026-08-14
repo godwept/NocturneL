@@ -2,6 +2,7 @@ package ca.stewark.nocturnel.ui
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -43,5 +44,23 @@ class LibraryScreenTest {
 
         compose.onNodeWithText("[ RESCAN LIBRARY ]").assertIsDisplayed().performClick()
         assertTrue(rescanned)
+    }
+
+    @Test fun settingsShowsThatARescanTapWasAccepted() {
+        compose.setContent {
+            NocturneLTheme {
+                SettingsScreen(
+                    onChooseFolder = {},
+                    onRescan = {},
+                    scanRunning = true,
+                    state = TerminalSettingsState(),
+                    onEffectsChanged = {},
+                )
+            }
+        }
+
+        compose.onNodeWithText("[ SCANNING... ]")
+            .assertIsDisplayed()
+            .assertIsNotEnabled()
     }
 }

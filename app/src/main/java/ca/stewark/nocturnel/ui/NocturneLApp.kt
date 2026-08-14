@@ -157,6 +157,7 @@ fun NocturneLApp(
                     onRescan = viewModel::rescan,
                     state = settings,
                     onEffectsChanged = settingsViewModel::setEffectsEnabled,
+                    scanRunning = viewModel.scanState.running,
                 )
             }
         }
