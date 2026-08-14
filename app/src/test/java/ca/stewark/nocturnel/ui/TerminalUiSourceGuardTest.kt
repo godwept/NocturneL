@@ -19,4 +19,13 @@ class TerminalUiSourceGuardTest {
             .toList()
         assertTrue("Material-shaped controls remain: $violations", violations.isEmpty())
     }
+
+    @Test fun `album artwork first paint is not blocked by a bitmap transformation`() {
+        val artworkSource = File("src/main/java/ca/stewark/nocturnel/ui/artwork/RetroArtwork.kt").readText()
+
+        assertTrue(
+            "RetroArtwork must display the decoded source without waiting for a CPU bitmap transformation.",
+            ".transformations(" !in artworkSource,
+        )
+    }
 }
