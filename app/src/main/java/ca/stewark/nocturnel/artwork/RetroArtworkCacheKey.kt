@@ -10,7 +10,7 @@ data class RetroArtworkCacheKey(
         "retro-artwork-v$ALGORITHM_VERSION:$sourceIdentity:$modificationToken:$paletteSize:$ditherVersion"
 
     companion object {
-        const val ALGORITHM_VERSION = 1
+        const val ALGORITHM_VERSION = 2
         const val DITHER_VERSION = 1
     }
 }
