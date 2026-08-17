@@ -16,4 +16,8 @@
 - [ ] Switch visualization modes rapidly and confirm there are no audible glitches.
 - [ ] Confirm silence settles to an idle trace and an unavailable signal shows `SIGNAL UNAVAILABLE` without affecting playback.
 - [ ] Toggle CRT effects and confirm all three visualizers remain readable with effects both on and off.
+- [ ] Play a balanced or pink-noise-like track and confirm the spectrum's right half remains visibly active without becoming stronger than the left by default.
+- [ ] Play a quiet passage and confirm the spectrum expands gradually without pumping, then enters a loud passage promptly without widespread clipping.
+- [ ] Play a treble-rich track and confirm upper bands respond while silence and near-silence still settle to baseline.
+- [ ] After a quiet passage, seek and change tracks; confirm the learned spectrum gain does not carry into the new signal.
 - [ ] Run a visualizer for 30 minutes and check for dropped audio, animation stutter, excessive heat, or unreasonable battery drain.
