@@ -1,12 +1,23 @@
 package ca.stewark.nocturnel.ui
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
 import ca.stewark.nocturnel.ui.settings.SettingsScreen
 import ca.stewark.nocturnel.ui.settings.TerminalSettingsState
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
@@ -27,6 +38,34 @@ class LibraryScreenTest {
         compose.onNodeWithText(sampleAlbum.title).assertIsDisplayed()
         compose.onAllNodesWithText("[ RESCAN ]").assertCountEquals(0)
         compose.onAllNodesWithText("[ CANCEL ]").assertCountEquals(0)
+    }
+
+    @Test fun libraryRestoresScrollPositionAfterReturningFromAnAlbum() {
+        val albums = (0 until 20).map { index ->
+            sampleAlbum.copy(id = "album-$index", title = "Album $index")
+        }
+        var gridState: LazyGridState? = null
+
+        compose.setContent {
+            NocturneLTheme {
+                var selectedAlbum by remember { mutableStateOf(false) }
+                val rememberedGridState = rememberLazyGridState()
+                gridState = rememberedGridState
+                if (selectedAlbum) {
+                    Text("BACK", modifier = Modifier.clickable { selectedAlbum = false })
+                } else {
+                    LibraryScreen(albums, rememberedGridState) { selectedAlbum = true }
+                }
+            }
+        }
+
+        compose.onNode(hasScrollAction()).performScrollToIndex(12)
+        compose.onNodeWithText("ALBUM 12").performClick()
+        compose.onNodeWithText("BACK").performClick()
+
+        compose.runOnIdle {
+            assertTrue(gridState!!.firstVisibleItemIndex >= 12)
+        }
     }
 
     @Test fun settingsRetainsRescanAction() {

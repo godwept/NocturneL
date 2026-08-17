@@ -3,6 +3,8 @@ package ca.stewark.nocturnel.ui
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -60,6 +62,7 @@ fun NocturneLApp(
     var destinationName by rememberSaveable { mutableStateOf(NocturneLDestination.LIBRARY.name) }
     val destination = NocturneLDestination.entries.firstOrNull { it.name == destinationName } ?: NocturneLDestination.LIBRARY
     var selectedAlbumId by rememberSaveable { mutableStateOf<String?>(null) }
+    val libraryGridState = rememberLazyGridState()
     var playlistPickerExpanded by rememberSaveable(selectedAlbumId) { mutableStateOf(false) }
     var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
     val selectedAlbum = albums.firstOrNull { it.id == selectedAlbumId }
@@ -132,7 +135,7 @@ fun NocturneLApp(
                 onAlbumSelected = { selectedAlbumId = it.id },
             )
             else -> when (destination) {
-                NocturneLDestination.LIBRARY -> LibraryScreen(albums) { selectedAlbumId = it.id }
+                NocturneLDestination.LIBRARY -> LibraryScreen(albums, libraryGridState) { selectedAlbumId = it.id }
                 NocturneLDestination.SEARCH -> SearchScreen(
                     tracks,
                     albums,
@@ -170,7 +173,8 @@ fun NocturneLApp(
 @Composable
 internal fun LibraryScreen(
     albums: List<AlbumEntity>,
+    state: LazyGridState = rememberLazyGridState(),
     onAlbumSelected: (AlbumEntity) -> Unit,
 ) {
-    AlbumGridScreen(albums, onAlbumSelected)
+    AlbumGridScreen(albums, state, onAlbumSelected)
 }

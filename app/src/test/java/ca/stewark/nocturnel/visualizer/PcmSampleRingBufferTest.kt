@@ -15,6 +15,16 @@ class PcmSampleRingBufferTest {
         assertArrayEquals(floatArrayOf(7f, 8f, 9f, 10f), output, 0f)
     }
 
+    @Test fun returnsWindowEndingAtAudiblePlaybackPosition() {
+        val ring = PcmSampleRingBuffer(10)
+        val output = FloatArray(4)
+        (1..10).forEach { ring.write(it.toFloat()) }
+
+        assertTrue(ring.copyLatest(output, samplesBehind = 2))
+
+        assertArrayEquals(floatArrayOf(5f, 6f, 7f, 8f), output, 0f)
+    }
+
     @Test fun resetRejectsOldSamples() {
         val ring = PcmSampleRingBuffer(8)
         repeat(4) { ring.write(it.toFloat()) }

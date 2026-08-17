@@ -25,7 +25,11 @@ class AudioAnalysisRepositoryTest {
         val pcm = ByteBuffer.allocateDirect(AudioAnalyzer.FFT_SIZE * 2).order(ByteOrder.nativeOrder())
         repeat(AudioAnalyzer.FFT_SIZE) { pcm.putShort((if (it % 2 == 0) 16_000 else -16_000).toShort()) }
         pcm.flip()
+        repository.bufferSink.beginInputBuffer(0, 0)
         repository.bufferSink.handleBuffer(pcm)
+        repository.bufferSink.updatePlaybackPosition(
+            AudioAnalyzer.FFT_SIZE.toLong() * C.MICROS_PER_SECOND / 48_000,
+        )
         advanceTimeBy(34)
         runCurrent()
         assertEquals(AnalysisStatus.ACTIVE, repository.state.value.status)

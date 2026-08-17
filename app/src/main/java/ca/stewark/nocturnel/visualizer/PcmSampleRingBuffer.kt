@@ -21,10 +21,11 @@ class PcmSampleRingBuffer(private val capacity: Int = 131_072) {
         publishedCount.lazySet(count + 1)
     }
 
-    fun copyLatest(destination: FloatArray): Boolean {
+    fun copyLatest(destination: FloatArray, samplesBehind: Long = 0): Boolean {
         require(destination.size <= capacity)
+        require(samplesBehind >= 0)
         val beforeGeneration = resetGeneration.get()
-        val end = publishedCount.get()
+        val end = publishedCount.get() - samplesBehind
         if (end - resetAtCount.get() < destination.size) return false
         val start = end - destination.size
         for (index in destination.indices) {

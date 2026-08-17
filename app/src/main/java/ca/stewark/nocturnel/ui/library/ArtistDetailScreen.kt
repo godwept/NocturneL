@@ -11,6 +11,6 @@ import ca.stewark.nocturnel.ui.components.BracketButton
 fun ArtistDetailScreen(artist: ArtistRow, onBack: () -> Unit, onAlbumSelected: (AlbumEntity) -> Unit) {
     Column(Modifier.fillMaxSize()) {
         BracketButton("BACK · ${artist.name}", onBack)
-        AlbumGridScreen(artist.albums, onAlbumSelected)
+        AlbumGridScreen(artist.albums, onAlbumSelected = onAlbumSelected)
     }
 }

@@ -10,7 +10,7 @@ import androidx.media3.exoplayer.audio.TeeAudioProcessor
 @UnstableApi
 internal class VisualizerRenderersFactory(
     context: Context,
-    bufferSink: TeeAudioProcessor.AudioBufferSink,
+    private val bufferSink: PcmAnalysisBufferSink,
 ) : DefaultRenderersFactory(context) {
     private val teeAudioProcessor = TeeAudioProcessor(bufferSink)
 
@@ -18,9 +18,12 @@ internal class VisualizerRenderersFactory(
         context: Context,
         enableFloatOutput: Boolean,
         enableAudioTrackPlaybackParams: Boolean,
-    ): AudioSink = DefaultAudioSink.Builder(context)
-        .setEnableFloatOutput(enableFloatOutput)
-        .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
-        .setAudioProcessors(arrayOf(teeAudioProcessor))
-        .build()
+    ): AudioSink {
+        val audioSink = DefaultAudioSink.Builder(context)
+            .setEnableFloatOutput(enableFloatOutput)
+            .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+            .setAudioProcessors(arrayOf(teeAudioProcessor))
+            .build()
+        return PlaybackPositionAudioSink(audioSink, bufferSink)
+    }
 }

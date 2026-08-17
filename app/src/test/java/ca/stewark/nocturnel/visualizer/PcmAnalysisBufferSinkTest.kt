@@ -50,6 +50,29 @@ class PcmAnalysisBufferSinkTest {
         assertArrayEquals(floatArrayOf(0f, 1f), floatOutput, 0f)
     }
 
+    @Test fun copiesPcmEndingAtReportedPlaybackPosition() {
+        val ring = PcmSampleRingBuffer(16)
+        val sink = PcmAnalysisBufferSink(ring)
+        val input = ByteBuffer.allocateDirect(20).order(ByteOrder.nativeOrder())
+        (1..10).forEach { input.putShort((it * 1_000).toShort()) }
+        input.flip()
+        sink.flush(1_000, 1, C.ENCODING_PCM_16BIT)
+        sink.setCaptureEnabled(true)
+        sink.beginInputBuffer(1_000_000, 0)
+
+        sink.handleBuffer(input)
+        sink.updatePlaybackPosition(1_008_000)
+        assertEquals(8L, sink.playbackAlignedSampleCount())
+
+        val output = FloatArray(4)
+        assertTrue(sink.copyPlaybackAligned(output))
+        assertArrayEquals(
+            floatArrayOf(5_000f / 32_768f, 6_000f / 32_768f, 7_000f / 32_768f, 8_000f / 32_768f),
+            output,
+            .0001f,
+        )
+    }
+
     @Test fun disabledAndUnsupportedFormatsWriteNothing() {
         val ring = PcmSampleRingBuffer(8)
         val sink = PcmAnalysisBufferSink(ring)

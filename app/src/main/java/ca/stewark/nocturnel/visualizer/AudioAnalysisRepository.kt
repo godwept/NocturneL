@@ -61,23 +61,23 @@ class AudioAnalysisRepository(
         worker = scope.launch {
             val analyzer = AudioAnalyzer()
             val window = FloatArray(AudioAnalyzer.FFT_SIZE)
-            var lastWriteCount = -1L
+            var lastAnalyzedSampleCount = -1L
             var lastGeneration = sampleBuffer.generation
             while (isActive) {
                 val generation = sampleBuffer.generation
                 if (generation != lastGeneration) {
                     analyzer.reset()
-                    lastWriteCount = -1L
+                    lastAnalyzedSampleCount = -1L
                     lastGeneration = generation
                 }
                 if (!bufferSink.available && bufferSink.sampleRateHz > 0) {
                     _state.value = AudioAnalysisFrame.Unavailable
                 } else {
-                    val writeCount = sampleBuffer.writeCount
-                    if (writeCount != lastWriteCount && sampleBuffer.copyLatest(window)) {
+                    val audibleSampleCount = bufferSink.playbackAlignedSampleCount()
+                    if (audibleSampleCount != lastAnalyzedSampleCount && bufferSink.copyPlaybackAligned(window)) {
                         _state.value = runCatching { analyzer.analyze(window, bufferSink.sampleRateHz) }
                             .getOrElse { AudioAnalysisFrame.Unavailable }
-                        lastWriteCount = writeCount
+                        lastAnalyzedSampleCount = audibleSampleCount
                     }
                 }
                 delay(frameIntervalMs)
