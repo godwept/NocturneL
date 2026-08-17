@@ -10,3 +10,10 @@
 - [ ] Disconnect headphones/Bluetooth and confirm audio focus behavior is acceptable.
 - [ ] In airplane mode, rescan, browse, and play local files.
 - [ ] Test known intended gapless album transitions; report device/codec behavior without enabling silence trimming.
+- [ ] On Now Playing, confirm taps cycle album art → radar → bands → scope → album art, and leaving/re-entering resets to album art.
+- [ ] With bass- and percussion-heavy tracks, confirm kick/snare transients align visibly in radar, bands, and scope.
+- [ ] Confirm pause, resume, seek, previous, next, and a known gapless transition reset or resume the visualizer cleanly.
+- [ ] Switch visualization modes rapidly and confirm there are no audible glitches.
+- [ ] Confirm silence settles to an idle trace and an unavailable signal shows `SIGNAL UNAVAILABLE` without affecting playback.
+- [ ] Toggle CRT effects and confirm all three visualizers remain readable with effects both on and off.
+- [ ] Run a visualizer for 30 minutes and check for dropped audio, animation stutter, excessive heat, or unreasonable battery drain.

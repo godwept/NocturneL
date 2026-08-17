@@ -31,6 +31,7 @@ class PlaybackConnection(context: Context) {
     private val future = MediaController.Builder(appContext, SessionToken(appContext, ComponentName(appContext, NocturneLPlaybackService::class.java))).buildAsync()
     private val _state = MutableStateFlow(PlaybackUiState())
     val state = _state.asStateFlow()
+    val analysisState = app.audioAnalysis.state
 
     init {
         scope.launch {
@@ -109,7 +110,8 @@ class PlaybackConnection(context: Context) {
     fun seekTo(positionMs: Long) { controller?.seekTo(positionMs) }
     fun toggleShuffle() { controller?.let { it.shuffleModeEnabled = !it.shuffleModeEnabled; refresh(it) } }
     fun cycleRepeat() { controller?.let { it.repeatMode = when (it.repeatMode) { Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL; Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE; else -> Player.REPEAT_MODE_OFF }; refresh(it) } }
-    fun release() { pendingQueue = null; scope.cancel(); MediaController.releaseFuture(future); controller = null }
+    fun setVisualizerActive(active: Boolean) { app.audioAnalysis.setConsumerActive(active) }
+    fun release() { pendingQueue = null; setVisualizerActive(false); scope.cancel(); MediaController.releaseFuture(future); controller = null }
 
     private fun itemFor(track: TrackEntity) = MediaItem.Builder().setUri(track.documentUri).setMediaId(track.relativePath)
         .setMediaMetadata(

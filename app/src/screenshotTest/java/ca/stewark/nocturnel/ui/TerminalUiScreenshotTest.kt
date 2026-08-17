@@ -19,6 +19,8 @@ import ca.stewark.nocturnel.ui.library.ArtistsScreen
 import ca.stewark.nocturnel.ui.library.LibrarySetupScreen
 import ca.stewark.nocturnel.ui.library.SearchScreen
 import ca.stewark.nocturnel.ui.playback.NowPlayingScreen
+import ca.stewark.nocturnel.ui.playback.visualizer.TerminalVisualizerScene
+import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerDisplayMode
 import ca.stewark.nocturnel.ui.playlist.PlaylistDetailScreen
 import ca.stewark.nocturnel.ui.playlist.playlistDetailState
 import ca.stewark.nocturnel.ui.settings.SettingsScreen
@@ -27,6 +29,10 @@ import ca.stewark.nocturnel.ui.theme.NocturneLTheme
 import ca.stewark.nocturnel.ui.components.TerminalScaffold
 import ca.stewark.nocturnel.ui.navigation.NocturneLDestination
 import com.android.tools.screenshot.PreviewTest
+import ca.stewark.nocturnel.visualizer.AnalysisStatus
+import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
+import kotlin.math.PI
+import kotlin.math.sin
 
 private val previewAlbums = listOf(
     AlbumEntity("red", "red", "Red Horizon", "Signal One", "2026", null, null, null),
@@ -39,6 +45,28 @@ private val previewTracks = previewAlbums.flatMapIndexed { index, album ->
         TrackEntity("${album.id}/02.flac", "content://${album.id}/2", album.id, "Afterimage ${index + 1}", album.artist, album.title, 241_000, 2, 1, "PLAYABLE", 1),
     )
 }
+
+private val radarFrame = AudioAnalysisFrame(
+    waveform = List(128) { 0f },
+    bands = List(32) { index -> if (index < 10) .85f - index * .04f else .12f },
+    energy = .72f,
+    lowEnergy = .88f,
+    midEnergy = .45f,
+    highEnergy = .18f,
+    transient = .9f,
+    frameId = 41,
+    status = AnalysisStatus.ACTIVE,
+)
+private val spectrumFrame = radarFrame.copy(
+    bands = List(32) { index -> ((index % 8) + 1) / 8f },
+    transient = .35f,
+    frameId = 42,
+)
+private val scopeFrame = radarFrame.copy(
+    waveform = List(128) { index -> (sin(2.0 * PI * index / 24.0) * .8).toFloat() },
+    transient = .2f,
+    frameId = 43,
+)
 
 @Composable
 private fun TerminalPreview(content: @Composable () -> Unit) = NocturneLTheme {
@@ -145,6 +173,42 @@ fun NowPlayingPreview() = TerminalPreview {
         true,
         {}, {}, {}, {}, {}, {},
     )
+}
+
+@Preview(name = "Visualizer radar", widthDp = 320, heightDp = 320)
+@Composable
+fun VisualizerRadarPreview() = TerminalPreview {
+    TerminalVisualizerScene(VisualizerDisplayMode.RADAR, radarFrame, true, Modifier.fillMaxSize())
+}
+
+@Preview(name = "Visualizer bands", widthDp = 320, heightDp = 320)
+@Composable
+fun VisualizerBandsPreview() = TerminalPreview {
+    TerminalVisualizerScene(VisualizerDisplayMode.BANDS, spectrumFrame, true, Modifier.fillMaxSize())
+}
+
+@Preview(name = "Visualizer scope", widthDp = 320, heightDp = 320)
+@Composable
+fun VisualizerScopePreview() = TerminalPreview {
+    TerminalVisualizerScene(VisualizerDisplayMode.SCOPE, scopeFrame, true, Modifier.fillMaxSize())
+}
+
+@Preview(name = "Visualizer scope effects off", widthDp = 320, heightDp = 320)
+@Composable
+fun VisualizerScopeEffectsOffPreview() = TerminalPreview {
+    TerminalVisualizerScene(VisualizerDisplayMode.SCOPE, scopeFrame, false, Modifier.fillMaxSize())
+}
+
+@Preview(name = "Visualizer radar idle", widthDp = 320, heightDp = 320)
+@Composable
+fun VisualizerRadarIdlePreview() = TerminalPreview {
+    TerminalVisualizerScene(VisualizerDisplayMode.RADAR, AudioAnalysisFrame.Idle, true, Modifier.fillMaxSize())
+}
+
+@Preview(name = "Visualizer unavailable", widthDp = 320, heightDp = 320)
+@Composable
+fun VisualizerUnavailablePreview() = TerminalPreview {
+    TerminalVisualizerScene(VisualizerDisplayMode.BANDS, AudioAnalysisFrame.Unavailable, true, Modifier.fillMaxSize())
 }
 
 @PreviewTest

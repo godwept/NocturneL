@@ -24,6 +24,8 @@ import ca.stewark.nocturnel.ui.components.TerminalNotice
 import ca.stewark.nocturnel.ui.components.TerminalSeekBar
 import ca.stewark.nocturnel.ui.library.formatDuration
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
+import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerDeck
+import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
 
 @Composable
 fun NowPlayingScreen(
@@ -36,12 +38,21 @@ fun NowPlayingScreen(
     onShuffle: () -> Unit,
     onRepeat: () -> Unit,
     onSeek: (Long) -> Unit,
+    analysisFrame: AudioAnalysisFrame = AudioAnalysisFrame.Idle,
+    onVisualizerActiveChanged: (Boolean) -> Unit = {},
 ) {
     LazyColumn(Modifier.fillMaxSize().padding(TerminalDimensions.md)) {
         item {
             AsciiFrame("NOW PLAYING") {
-                if (albumArtwork != null) CrtArtwork(albumArtwork, effectsEnabled, Modifier.fillMaxWidth().aspectRatio(1f))
-                else Text("▓▓", style = MaterialTheme.typography.displayLarge)
+                VisualizerDeck(
+                    frame = analysisFrame,
+                    effectsEnabled = effectsEnabled,
+                    onVisualizerActiveChanged = onVisualizerActiveChanged,
+                    modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                ) {
+                    if (albumArtwork != null) CrtArtwork(albumArtwork, effectsEnabled, Modifier.fillMaxSize())
+                    else Text("▓▓", style = MaterialTheme.typography.displayLarge)
+                }
                 TerminalMarquee(state.title ?: "NO TRACK SELECTED", effectsEnabled, Modifier.padding(top = TerminalDimensions.sm))
                 TerminalMarquee(state.artist.orEmpty(), effectsEnabled)
                 TerminalMarquee(state.album.orEmpty(), effectsEnabled)

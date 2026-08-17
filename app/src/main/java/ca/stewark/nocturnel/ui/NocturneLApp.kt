@@ -54,6 +54,7 @@ fun NocturneLApp(
     val context = LocalContext.current
     val playback = remember(context) { PlaybackConnection(context) }
     val playbackState by playback.state.collectAsState()
+    val analysisFrame by playback.analysisState.collectAsState()
     DisposableEffect(playback) { onDispose(playback::release) }
 
     var destinationName by rememberSaveable { mutableStateOf(NocturneLDestination.LIBRARY.name) }
@@ -151,6 +152,8 @@ fun NocturneLApp(
                     onShuffle = playback::toggleShuffle,
                     onRepeat = playback::cycleRepeat,
                     onSeek = playback::seekTo,
+                    analysisFrame = analysisFrame,
+                    onVisualizerActiveChanged = playback::setVisualizerActive,
                 )
                 NocturneLDestination.SETTINGS -> SettingsScreen(
                     onChooseFolder = { launcher.launch(null) },

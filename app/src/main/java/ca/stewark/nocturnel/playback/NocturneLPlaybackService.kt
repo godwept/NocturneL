@@ -6,6 +6,7 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.C
 import androidx.media3.common.AudioAttributes
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
@@ -20,7 +21,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import ca.stewark.nocturnel.visualizer.VisualizerRenderersFactory
 
+@OptIn(UnstableApi::class)
 class NocturneLPlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
     private lateinit var player: ExoPlayer
@@ -30,8 +33,9 @@ class NocturneLPlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
+        val app = application as NocturneLApplication
         stateRepository = SharedPreferencesPlaybackStateRepository(this)
-        player = ExoPlayer.Builder(this).build().apply {
+        player = ExoPlayer.Builder(this, VisualizerRenderersFactory(this, app.audioAnalysis.bufferSink)).build().apply {
             setAudioAttributes(
                 AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(),
                 true,
@@ -51,9 +55,18 @@ class NocturneLPlaybackService : MediaSessionService() {
                     ) {
                         savePlaybackState()
                     }
+                    if (
+                        events.containsAny(
+                            Player.EVENT_MEDIA_ITEM_TRANSITION,
+                            Player.EVENT_POSITION_DISCONTINUITY,
+                        )
+                    ) {
+                        app.audioAnalysis.resetStream()
+                    }
                 }
 
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    app.audioAnalysis.setPlaybackActive(isPlaying)
                     positionSaveJob?.cancel()
                     positionSaveJob = if (isPlaying) {
                         serviceScope.launch {
@@ -76,6 +89,7 @@ class NocturneLPlaybackService : MediaSessionService() {
 
     override fun onDestroy() {
         savePlaybackState()
+        (application as NocturneLApplication).audioAnalysis.setPlaybackActive(false)
         serviceScope.cancel()
         mediaSession?.release()
         mediaSession = null
