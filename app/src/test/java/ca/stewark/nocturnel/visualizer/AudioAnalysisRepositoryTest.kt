@@ -12,7 +12,8 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-@OptIn(ExperimentalCoroutinesApi::class, UnstableApi::class)
+@OptIn(ExperimentalCoroutinesApi::class)
+@UnstableApi
 class AudioAnalysisRepositoryTest {
     @Test fun requiresPlaybackAndConsumerAndReturnsIdleWhenDisabled() = runTest {
         val repository = AudioAnalysisRepository(StandardTestDispatcher(testScheduler), 33)

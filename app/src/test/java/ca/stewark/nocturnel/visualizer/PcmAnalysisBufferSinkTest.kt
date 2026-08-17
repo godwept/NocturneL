@@ -10,7 +10,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-@OptIn(UnstableApi::class)
+@UnstableApi
 class PcmAnalysisBufferSinkTest {
     @Test fun downmixes16BitStereoWithoutAdvancingInput() {
         val ring = PcmSampleRingBuffer(8)

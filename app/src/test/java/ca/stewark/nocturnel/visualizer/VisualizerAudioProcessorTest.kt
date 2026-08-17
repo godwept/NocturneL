@@ -10,7 +10,7 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-@OptIn(UnstableApi::class)
+@UnstableApi
 class VisualizerAudioProcessorTest {
     @Test fun teePublishesSamplesAndLeavesOutputByteIdentical() {
         val ring = PcmSampleRingBuffer(8)
@@ -18,7 +18,7 @@ class VisualizerAudioProcessorTest {
         sink.setCaptureEnabled(true)
         val processor = TeeAudioProcessor(sink)
         processor.configure(AudioProcessor.AudioFormat(48_000, 2, C.ENCODING_PCM_16BIT))
-        processor.flush(AudioProcessor.StreamMetadata.Builder().build())
+        processor.flush()
         val input = ByteBuffer.allocateDirect(8).order(ByteOrder.nativeOrder())
             .putShort(16_384.toShort()).putShort(0.toShort())
             .putShort((-16_384).toShort()).putShort(0.toShort())

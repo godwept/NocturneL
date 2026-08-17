@@ -5,7 +5,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.audio.TeeAudioProcessor
 import java.nio.ByteBuffer
 
-@OptIn(UnstableApi::class)
+@UnstableApi
 class PcmAnalysisBufferSink(private val samples: PcmSampleRingBuffer) : TeeAudioProcessor.AudioBufferSink {
     @Volatile private var captureEnabled = false
     @Volatile private var channelCount = 0

@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ca.stewark.nocturnel.visualizer.VisualizerRenderersFactory
 
-@OptIn(UnstableApi::class)
+@UnstableApi
 class NocturneLPlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
     private lateinit var player: ExoPlayer

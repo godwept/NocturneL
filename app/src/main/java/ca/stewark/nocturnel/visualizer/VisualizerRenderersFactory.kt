@@ -7,7 +7,7 @@ import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.audio.TeeAudioProcessor
 
-@OptIn(UnstableApi::class)
+@UnstableApi
 internal class VisualizerRenderersFactory(
     context: Context,
     bufferSink: TeeAudioProcessor.AudioBufferSink,
