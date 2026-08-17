@@ -40,9 +40,16 @@ fun PlaylistsScreen(viewModel: PlaylistViewModel = viewModel(), playback: Playba
     val context = LocalContext.current
     val player = playback ?: remember(context) { PlaybackConnection(context) }
     val scope = rememberCoroutineScope()
-    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> uri?.let(viewModel::import) }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) viewModel.importCancelled() else viewModel.import(uri)
+    }
+    val exportAllLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+        if (uri == null) viewModel.exportCancelled() else viewModel.exportAll(uri)
+    }
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("audio/x-mpegurl")) { uri ->
-        exportPlaylist?.let { playlist -> uri?.let { viewModel.export(playlist.id, it) } }
+        exportPlaylist?.let { playlist ->
+            if (uri == null) viewModel.exportCancelled() else viewModel.export(playlist.id, uri)
+        }
         exportPlaylist = null
     }
     detail?.let { state ->
@@ -58,23 +65,61 @@ fun PlaylistsScreen(viewModel: PlaylistViewModel = viewModel(), playback: Playba
         )
         return
     }
+    PlaylistIndexScreen(
+        playlists = playlists,
+        message = viewModel.message,
+        newName = newName,
+        onNewNameChange = { newName = it },
+        onCreate = { viewModel.create(newName); newName = "" },
+        onImport = {
+            importLauncher.launch(arrayOf(
+                "audio/x-mpegurl",
+                "application/vnd.apple.mpegurl",
+                "text/plain",
+                "application/zip",
+                "application/x-zip-compressed",
+            ))
+        },
+        onExportAll = { exportAllLauncher.launch("NocturneL Playlists.zip") },
+        onOpen = viewModel::open,
+        onPlay = { playlist -> scope.launch { player.playQueue(viewModel.playableTracks(playlist.id)) } },
+        onExport = { playlist -> exportPlaylist = playlist; exportLauncher.launch("${playlist.name}.m3u8") },
+        onDelete = viewModel::delete,
+    )
+}
+
+@Composable
+internal fun PlaylistIndexScreen(
+    playlists: List<PlaylistEntity>,
+    message: String?,
+    newName: String,
+    onNewNameChange: (String) -> Unit,
+    onCreate: () -> Unit,
+    onImport: () -> Unit,
+    onExportAll: () -> Unit,
+    onOpen: (Long) -> Unit,
+    onPlay: (PlaylistEntity) -> Unit,
+    onExport: (PlaylistEntity) -> Unit,
+    onDelete: (Long) -> Unit,
+) {
     Column(Modifier.fillMaxSize().padding(TerminalDimensions.md)) {
         AsciiFrame("PLAYLISTS") {
-            TerminalTextField(newName, { newName = it }, "NEW PLAYLIST")
+            TerminalTextField(newName, onNewNameChange, "NEW PLAYLIST")
             Row {
-                BracketButton("CREATE", { viewModel.create(newName); newName = "" }, enabled = newName.isNotBlank())
-                BracketButton("IMPORT M3U8", { importLauncher.launch(arrayOf("audio/x-mpegurl", "application/vnd.apple.mpegurl", "text/plain")) })
+                BracketButton("CREATE", onCreate, enabled = newName.isNotBlank())
+                BracketButton("IMPORT", onImport)
+                BracketButton("EXPORT ALL", onExportAll)
             }
-            viewModel.message?.let { TerminalNotice(it) }
+            message?.let { TerminalNotice(it) }
         }
         LazyColumn(Modifier.padding(top = TerminalDimensions.sm)) {
             items(playlists, key = { it.id }) { playlist ->
-                AsciiFrame(playlist.name, Modifier.padding(vertical = TerminalDimensions.xxs).clickable { viewModel.open(playlist.id) }) {
+                AsciiFrame(playlist.name, Modifier.padding(vertical = TerminalDimensions.xxs).clickable { onOpen(playlist.id) }) {
                     Row(Modifier.fillMaxWidth()) {
-                        BracketButton("OPEN", { viewModel.open(playlist.id) })
-                        BracketButton("PLAY", { scope.launch { player.playQueue(viewModel.playableTracks(playlist.id)) } })
-                        BracketButton("EXPORT", { exportPlaylist = playlist; exportLauncher.launch("${playlist.name}.m3u8") })
-                        BracketButton("DELETE", { viewModel.delete(playlist.id) })
+                        BracketButton("OPEN", { onOpen(playlist.id) })
+                        BracketButton("PLAY", { onPlay(playlist) })
+                        BracketButton("EXPORT", { onExport(playlist) })
+                        BracketButton("DELETE", { onDelete(playlist.id) })
                     }
                     Text("Select OPEN to rename or edit tracks.")
                 }

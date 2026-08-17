@@ -9,7 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import ca.stewark.nocturnel.NocturneLApplication
 import ca.stewark.nocturnel.playlist.M3u8Codec
-import ca.stewark.nocturnel.playlist.M3u8DocumentService
+import ca.stewark.nocturnel.playlist.PlaylistDocumentService
 import ca.stewark.nocturnel.playlist.PlaylistRepository
 import ca.stewark.nocturnel.playlist.AppendAlbumResult
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,7 +24,7 @@ class PlaylistViewModel(application: Application) : AndroidViewModel(application
     private val app = application as NocturneLApplication
     private val dao = app.database.libraryDao()
     private val repository = PlaylistRepository(dao)
-    private val documentService = M3u8DocumentService(application.contentResolver)
+    private val documentService = PlaylistDocumentService(application.contentResolver)
     val playlists = dao.playlists().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     var message: String? by mutableStateOf(null)
         private set
@@ -36,6 +36,12 @@ class PlaylistViewModel(application: Application) : AndroidViewModel(application
         appendAlbum = repository::appendAlbum,
         createPlaylist = repository::create,
     )
+    private val importCommand = PlaylistImportCommand(
+        existingNames = { dao.allPlaylists().map { it.name } },
+        knownPaths = { dao.allTracks().map { it.relativePath }.toSet() },
+        createWithEntries = { name, paths -> repository.createWithEntries(name, paths); Unit },
+    )
+    private val exportCommand = PlaylistExportCommand(dao::allPlaylists, repository::paths)
 
     fun create(name: String = "New playlist") = viewModelScope.launch {
         repository.create(name)
@@ -74,20 +80,27 @@ class PlaylistViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun import(uri: Uri) = viewModelScope.launch {
-        runCatching {
-            val known = dao.allTracks().map { it.relativePath }.toSet()
-            val parsed = M3u8Codec.parse(documentService.read(uri), known)
-            val id = repository.create(uri.lastPathSegment?.substringBeforeLast('.') ?: "Imported playlist")
-            repository.replaceEntries(id, parsed.paths)
-            "Imported ${parsed.paths.size} track(s); skipped ${parsed.skipped.size}."
-        }.onSuccess { message = it }.onFailure { message = "Playlist import failed" }
+        runCatching { importCommand.import(documentService.readImport(uri)).message }
+            .onSuccess { message = it }
+            .onFailure { message = PlaylistTransferMessages.IMPORT_FAILED }
     }
 
     fun export(playlistId: Long, uri: Uri) = viewModelScope.launch {
-        runCatching { documentService.write(uri, M3u8Codec.encode(repository.paths(playlistId))) }
-            .onSuccess { message = "Playlist exported" }
-            .onFailure { message = "Playlist export failed" }
+        runCatching { documentService.writeM3u8(uri, M3u8Codec.encode(repository.paths(playlistId))) }
+            .onSuccess { message = PlaylistTransferMessages.PLAYLIST_EXPORTED }
+            .onFailure { message = PlaylistTransferMessages.EXPORT_FAILED }
     }
+
+    fun exportAll(uri: Uri) = viewModelScope.launch {
+        runCatching {
+            val playlists = exportCommand.collect()
+            documentService.writeBundle(uri, playlists)
+            PlaylistExportSummary(playlists.size).message
+        }.onSuccess { message = it }.onFailure { message = PlaylistTransferMessages.EXPORT_FAILED }
+    }
+
+    fun importCancelled() { message = PlaylistTransferMessages.IMPORT_CANCELLED }
+    fun exportCancelled() { message = PlaylistTransferMessages.EXPORT_CANCELLED }
     suspend fun playableTracks(playlistId: Long): List<TrackEntity> = repository.playableTracks(playlistId)
 
     private suspend fun refresh(id: Long) {

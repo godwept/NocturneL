@@ -6,6 +6,8 @@
 - [ ] Confirm `cover.jpg` or `folder.jpg` appears for an album without embedded art.
 - [ ] Confirm a missing/untagged track receives a readable folder/filename fallback.
 - [ ] Create a playlist; import and export a relative-path `.m3u8` file.
+- [ ] Create five playlists, including an empty playlist and duplicate names; export all to one ZIP, delete them, import the ZIP, and verify exact track ordering plus conflict suffixes.
+- [ ] Import a NocturneL ZIP with one malformed playlist member and verify the remaining valid playlists import while the skipped counts are reported.
 - [ ] Start an album track, lock the phone, and verify notification/lock-screen/headset controls.
 - [ ] Disconnect headphones/Bluetooth and confirm audio focus behavior is acceptable.
 - [ ] In airplane mode, rescan, browse, and play local files.

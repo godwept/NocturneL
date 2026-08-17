@@ -12,4 +12,4 @@ For local development, install JDK 17 and the Android SDK, then run `./gradlew.b
 
 Choose a single root folder in Android's system picker. NocturneL scans only that folder and its descendants when you explicitly request a rescan. Album art resolves from embedded artwork, then `cover.jpg`, `folder.jpg`, `albumart.jpg`, or `front.jpg` in the album folder, then a terminal placeholder.
 
-Playlists import and export as relative-path UTF-8 `.m3u8` files, so they remain portable when placed alongside the same music library.
+Individual playlists export as portable relative-path UTF-8 `.m3u8` files. `EXPORT ALL` creates one NocturneL ZIP backup containing every playlist, including empty playlists; `IMPORT` accepts either a standalone `.m3u8`/`.m3u` file or that ZIP backup. Imported name conflicts are kept by adding a numeric suffix instead of replacing an existing playlist.

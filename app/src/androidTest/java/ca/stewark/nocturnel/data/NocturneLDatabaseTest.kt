@@ -75,6 +75,13 @@ class NocturneLDatabaseTest {
         assertEquals(1, result.skipped)
     }
 
+    @Test fun createsPlaylistAndMissingEntriesAtomically() = runTest {
+        val dao = database.libraryDao()
+        val id = PlaylistRepository(dao).createWithEntries("Backup", listOf("present.flac", "missing.flac"))
+        assertEquals(listOf("Backup"), dao.allPlaylists().map { it.name })
+        assertEquals(listOf("present.flac", "missing.flac"), dao.playlistEntries(id).map { it.relativePath })
+    }
+
     @Test(expected = PlaylistNotFoundException::class)
     fun albumAppendRejectsDeletedPlaylist() = runTest {
         PlaylistRepository(database.libraryDao()).appendAlbum(999, listOf("01.flac"))

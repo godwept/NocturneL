@@ -37,6 +37,7 @@ interface LibraryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun saveReport(report: ScanReportEntity)
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun saveIssues(issues: List<ScanIssueEntity>)
     @Query("SELECT * FROM playlists ORDER BY name") fun playlists(): Flow<List<PlaylistEntity>>
+    @Query("SELECT * FROM playlists ORDER BY name") suspend fun allPlaylists(): List<PlaylistEntity>
     @Query("SELECT * FROM playlists WHERE id = :id") suspend fun playlist(id: Long): PlaylistEntity?
     @Insert suspend fun createPlaylist(playlist: PlaylistEntity): Long
     @Query("UPDATE playlists SET name = :name, updatedEpochMillis = :updated WHERE id = :id") suspend fun renamePlaylist(id: Long, name: String, updated: Long)
@@ -81,6 +82,17 @@ interface LibraryDao {
     suspend fun replacePlaylistEntries(playlistId: Long, entries: List<PlaylistEntryEntity>) {
         clearPlaylistEntries(playlistId)
         if (entries.isNotEmpty()) savePlaylistEntries(entries)
+    }
+
+    @Transaction
+    suspend fun createPlaylistWithEntries(playlist: PlaylistEntity, paths: List<String>): Long {
+        val playlistId = createPlaylist(playlist)
+        if (paths.isNotEmpty()) {
+            savePlaylistEntries(paths.mapIndexed { index, path ->
+                PlaylistEntryEntity(playlistId, index, path)
+            })
+        }
+        return playlistId
     }
 
     @Transaction

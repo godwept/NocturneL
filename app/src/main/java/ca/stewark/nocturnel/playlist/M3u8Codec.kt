@@ -6,11 +6,33 @@ object M3u8Codec {
     fun parse(text: String, knownPaths: Set<String>): M3u8ImportResult {
         val paths = mutableListOf<String>()
         val skipped = mutableListOf<String>()
-        text.lineSequence().map(String::trim).filter { it.isNotEmpty() && !it.startsWith('#') }.forEach { raw ->
-            val normalized = raw.replace('\\', '/').removePrefix("./")
-            if (normalized.startsWith('/') || normalized.contains(":") || normalized.split('/').any { it == ".." } || normalized !in knownPaths) skipped += raw else paths += normalized
+        playlistLines(text).forEach { raw ->
+            val normalized = normalizedSafePath(raw)
+            if (normalized != null && normalized in knownPaths) paths += normalized else skipped += raw
         }
         return M3u8ImportResult(paths, skipped)
+    }
+
+    fun parsePortable(text: String): M3u8ImportResult {
+        val paths = mutableListOf<String>()
+        val skipped = mutableListOf<String>()
+        playlistLines(text).forEach { raw ->
+            val normalized = normalizedSafePath(raw)
+            if (normalized == null) skipped += raw else paths += normalized
+        }
+        return M3u8ImportResult(paths, skipped)
+    }
+
+    private fun playlistLines(text: String) = text.lineSequence()
+        .map(String::trim)
+        .filter { it.isNotEmpty() && !it.startsWith('#') }
+
+    private fun normalizedSafePath(raw: String): String? {
+        val normalized = raw.replace('\\', '/').removePrefix("./")
+        return normalized.takeIf {
+            it.isNotBlank() && !it.startsWith('/') && !it.contains(":") &&
+                it.split('/').none { segment -> segment == ".." }
+        }
     }
 
     fun encode(paths: List<String>): String = buildString {

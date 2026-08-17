@@ -16,4 +16,10 @@ class M3u8CodecTest {
     fun exportsUtf8RelativePathsInPlaylistOrder() {
         assertTrue(M3u8Codec.encode(listOf("A/02.mp3", "A/01.mp3")).endsWith("A/02.mp3\nA/01.mp3\n"))
     }
+
+    @Test fun portableParseRetainsUnknownRelativePathsAndSkipsUnsafePaths() {
+        val result = M3u8Codec.parsePortable("#EXTM3U\nArtist/Album/01.flac\nmissing.flac\n../escape.flac\nC:/outside.flac\n")
+        assertEquals(listOf("Artist/Album/01.flac", "missing.flac"), result.paths)
+        assertEquals(listOf("../escape.flac", "C:/outside.flac"), result.skipped)
+    }
 }

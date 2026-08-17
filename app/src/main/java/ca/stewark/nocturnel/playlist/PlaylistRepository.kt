@@ -12,6 +12,15 @@ class PlaylistNotFoundException(playlistId: Long) :
 class PlaylistRepository(private val dao: LibraryDao) {
     suspend fun create(name: String): Long = dao.createPlaylist(PlaylistEntity(name = name.trim().ifBlank { "Untitled playlist" }, updatedEpochMillis = System.currentTimeMillis()))
 
+    suspend fun createWithEntries(name: String, paths: List<String>): Long =
+        dao.createPlaylistWithEntries(
+            PlaylistEntity(
+                name = name.trim().ifBlank { "Untitled playlist" },
+                updatedEpochMillis = System.currentTimeMillis(),
+            ),
+            paths,
+        )
+
     suspend fun replaceEntries(playlistId: Long, paths: List<String>) {
         dao.replacePlaylistEntries(playlistId, paths.mapIndexed { index, path -> PlaylistEntryEntity(playlistId, index, path) })
     }

@@ -14,6 +14,7 @@ junit = "4.13.2"
 androidxJunit = "1.2.1"
 espresso = "3.6.1"
 coroutines = "1.10.2"
+serializationJson = "1.7.3"
 documentFile = "1.0.1"
 screenshot = "0.0.1-alpha15"
 
@@ -31,6 +32,7 @@ androidx-media3-session = { module = "androidx.media3:media3-session", version.r
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentFile" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serializationJson" }
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-junit = { module = "androidx.test.ext:junit", version.ref = "androidxJunit" }
 androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
