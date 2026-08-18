@@ -13,6 +13,7 @@ class PcmAnalysisBufferSink(private val samples: PcmSampleRingBuffer) : TeeAudio
     @Volatile private var inputBufferStartPositionUs = POSITION_UNSET
     @Volatile private var capturedThroughPositionUs = POSITION_UNSET
     @Volatile private var playbackPositionUs = POSITION_UNSET
+    @Volatile private var visualizerSyncOffsetMs = VisualizerSyncOffset.DEFAULT_MS
 
     @Volatile var sampleRateHz: Int = 0
         private set
@@ -45,14 +46,18 @@ class PcmAnalysisBufferSink(private val samples: PcmSampleRingBuffer) : TeeAudio
         playbackPositionUs = positionUs
     }
 
+    fun setVisualizerSyncOffsetMs(offsetMs: Int) {
+        visualizerSyncOffsetMs = VisualizerSyncOffset.clamp(offsetMs)
+    }
+
     fun copyPlaybackAligned(destination: FloatArray): Boolean {
-        val samplesAhead = samplesAheadOfPlayback() ?: return false
-        return samples.copyLatest(destination, samplesAhead)
+        val samplesBehind = adjustedSamplesBehind() ?: return false
+        return samples.copyLatest(destination, samplesBehind)
     }
 
     fun playbackAlignedSampleCount(): Long {
-        val samplesAhead = samplesAheadOfPlayback() ?: return SAMPLE_COUNT_UNSET
-        return samples.writeCount - samplesAhead
+        val samplesBehind = adjustedSamplesBehind() ?: return SAMPLE_COUNT_UNSET
+        return samples.writeCount - samplesBehind
     }
 
     override fun handleBuffer(buffer: ByteBuffer) {
@@ -87,11 +92,14 @@ class PcmAnalysisBufferSink(private val samples: PcmSampleRingBuffer) : TeeAudio
     private fun framesToDurationUs(frameCount: Int): Long =
         frameCount.toLong() * C.MICROS_PER_SECOND / sampleRateHz
 
-    private fun samplesAheadOfPlayback(): Long? {
+    private fun adjustedSamplesBehind(): Long? {
         val capturedPosition = capturedThroughPositionUs
         val audiblePosition = playbackPositionUs
         if (capturedPosition == POSITION_UNSET || audiblePosition == POSITION_UNSET) return null
-        return ((capturedPosition - audiblePosition).coerceAtLeast(0) * sampleRateHz) / C.MICROS_PER_SECOND
+        val baseSamplesAhead =
+            ((capturedPosition - audiblePosition).coerceAtLeast(0) * sampleRateHz) / C.MICROS_PER_SECOND
+        val offsetSamples = visualizerSyncOffsetMs.toLong() * sampleRateHz / MILLIS_PER_SECOND
+        return (baseSamplesAhead + offsetSamples).coerceAtLeast(0)
     }
 
     private fun readSample(buffer: ByteBuffer, offset: Int, encoding: Int): Float = when (encoding) {
@@ -129,5 +137,6 @@ class PcmAnalysisBufferSink(private val samples: PcmSampleRingBuffer) : TeeAudio
     private companion object {
         const val POSITION_UNSET = Long.MIN_VALUE
         const val SAMPLE_COUNT_UNSET = -1L
+        const val MILLIS_PER_SECOND = 1_000L
     }
 }

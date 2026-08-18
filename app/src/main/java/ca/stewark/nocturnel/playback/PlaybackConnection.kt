@@ -1,3 +1,5 @@
+@file:androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
+
 package ca.stewark.nocturnel.playback
 
 import android.content.ComponentName
@@ -203,6 +205,7 @@ class PlaybackConnection(context: Context) {
     fun toggleShuffle() { controller?.let { it.shuffleModeEnabled = !it.shuffleModeEnabled; refresh(it) } }
     fun cycleRepeat() { controller?.let { it.repeatMode = when (it.repeatMode) { Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL; Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE; else -> Player.REPEAT_MODE_OFF }; refresh(it) } }
     fun setVisualizerActive(active: Boolean) { app.audioAnalysis.setConsumerActive(active) }
+    fun setVisualizerSyncOffsetMs(offsetMs: Int) { app.audioAnalysis.setVisualizerSyncOffsetMs(offsetMs) }
     fun release() { pendingQueue = null; pendingQueueActions.clear(); pendingRemoval = null; setVisualizerActive(false); scope.cancel(); MediaController.releaseFuture(future); controller = null }
 
     private fun itemFor(track: TrackEntity) = MediaItem.Builder().setUri(track.documentUri).setMediaId(track.relativePath)

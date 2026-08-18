@@ -1,3 +1,5 @@
+@file:androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
+
 package ca.stewark.nocturnel.visualizer
 
 import kotlinx.coroutines.CoroutineDispatcher
@@ -35,6 +37,10 @@ class AudioAnalysisRepository(
     fun setPlaybackActive(active: Boolean) {
         playbackActive = active
         updateWorker()
+    }
+
+    fun setVisualizerSyncOffsetMs(offsetMs: Int) {
+        bufferSink.setVisualizerSyncOffsetMs(offsetMs)
     }
 
     @Synchronized

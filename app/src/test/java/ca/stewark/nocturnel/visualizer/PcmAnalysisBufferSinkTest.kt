@@ -71,6 +71,53 @@ class PcmAnalysisBufferSinkTest {
             output,
             .0001f,
         )
+
+        sink.setVisualizerSyncOffsetMs(2)
+        assertEquals(6L, sink.playbackAlignedSampleCount())
+        assertTrue(sink.copyPlaybackAligned(output))
+        assertArrayEquals(
+            floatArrayOf(3_000f / 32_768f, 4_000f / 32_768f, 5_000f / 32_768f, 6_000f / 32_768f),
+            output,
+            .0001f,
+        )
+
+        sink.setVisualizerSyncOffsetMs(-2)
+        assertEquals(10L, sink.playbackAlignedSampleCount())
+        assertTrue(sink.copyPlaybackAligned(output))
+        assertArrayEquals(
+            floatArrayOf(7_000f / 32_768f, 8_000f / 32_768f, 9_000f / 32_768f, 10_000f / 32_768f),
+            output,
+            .0001f,
+        )
+
+        sink.setVisualizerSyncOffsetMs(-500)
+        assertEquals(10L, sink.playbackAlignedSampleCount())
+        assertTrue(sink.copyPlaybackAligned(output))
+        sink.setVisualizerSyncOffsetMs(1_000)
+        assertFalse(sink.copyPlaybackAligned(output))
+    }
+
+    @Test fun convertsOffsetMillisecondsUsingCurrentSampleRate() {
+        val ring = PcmSampleRingBuffer(32)
+        val sink = PcmAnalysisBufferSink(ring)
+        val input = ByteBuffer.allocateDirect(24).order(ByteOrder.nativeOrder())
+        (1..12).forEach { input.putShort((it * 1_000).toShort()) }
+        input.flip()
+        sink.flush(2_000, 1, C.ENCODING_PCM_16BIT)
+        sink.setCaptureEnabled(true)
+        sink.beginInputBuffer(1_000_000, 0)
+        sink.handleBuffer(input)
+        sink.updatePlaybackPosition(1_005_000)
+        sink.setVisualizerSyncOffsetMs(1)
+
+        assertEquals(8L, sink.playbackAlignedSampleCount())
+        val output = FloatArray(4)
+        assertTrue(sink.copyPlaybackAligned(output))
+        assertArrayEquals(
+            floatArrayOf(5_000f / 32_768f, 6_000f / 32_768f, 7_000f / 32_768f, 8_000f / 32_768f),
+            output,
+            .0001f,
+        )
     }
 
     @Test fun disabledAndUnsupportedFormatsWriteNothing() {

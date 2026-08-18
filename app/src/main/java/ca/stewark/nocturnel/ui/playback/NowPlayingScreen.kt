@@ -27,6 +27,7 @@ import ca.stewark.nocturnel.ui.library.formatDuration
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerDeck
 import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
+import ca.stewark.nocturnel.visualizer.VisualizerSyncOffset
 
 @Composable
 fun NowPlayingScreen(
@@ -42,6 +43,10 @@ fun NowPlayingScreen(
     onOpenQueue: () -> Unit = {},
     analysisFrame: AudioAnalysisFrame = AudioAnalysisFrame.Idle,
     onVisualizerActiveChanged: (Boolean) -> Unit = {},
+    visualizerSyncOffsetMs: Int = VisualizerSyncOffset.DEFAULT_MS,
+    onDecreaseVisualizerSyncOffset: () -> Unit = {},
+    onIncreaseVisualizerSyncOffset: () -> Unit = {},
+    onResetVisualizerSyncOffset: () -> Unit = {},
     currentTrackFavorite: Boolean = false,
     currentTrackPlayCount: Long = 0,
     onToggleCurrentFavorite: () -> Unit = {},
@@ -54,6 +59,10 @@ fun NowPlayingScreen(
                     effectsEnabled = effectsEnabled,
                     onVisualizerActiveChanged = onVisualizerActiveChanged,
                     modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                    syncOffsetMs = visualizerSyncOffsetMs,
+                    onDecreaseSyncOffset = onDecreaseVisualizerSyncOffset,
+                    onIncreaseSyncOffset = onIncreaseVisualizerSyncOffset,
+                    onResetSyncOffset = onResetVisualizerSyncOffset,
                 ) {
                     if (albumArtwork != null) CrtArtwork(albumArtwork, effectsEnabled, Modifier.fillMaxSize())
                     else Text("▓▓", style = MaterialTheme.typography.displayLarge)

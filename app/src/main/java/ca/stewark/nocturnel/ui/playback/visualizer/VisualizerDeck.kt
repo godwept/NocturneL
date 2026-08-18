@@ -3,7 +3,9 @@ package ca.stewark.nocturnel.ui.playback.visualizer
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -23,7 +25,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
+import ca.stewark.nocturnel.ui.components.BracketButton
+import ca.stewark.nocturnel.ui.components.BracketIconButton
 import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
+import ca.stewark.nocturnel.visualizer.VisualizerSyncOffset
 import kotlinx.coroutines.delay
 
 @Composable
@@ -32,6 +37,10 @@ internal fun VisualizerDeck(
     effectsEnabled: Boolean,
     onVisualizerActiveChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    syncOffsetMs: Int = VisualizerSyncOffset.DEFAULT_MS,
+    onDecreaseSyncOffset: () -> Unit = {},
+    onIncreaseSyncOffset: () -> Unit = {},
+    onResetSyncOffset: () -> Unit = {},
     albumArt: @Composable () -> Unit,
 ) {
     var mode by remember { mutableStateOf(VisualizerDisplayMode.ART) }
@@ -78,5 +87,51 @@ internal fun VisualizerDeck(
                     .alpha(labelAlpha.value),
             )
         }
+        if (visualizerActive) {
+            VisualizerSyncControls(
+                syncOffsetMs = syncOffsetMs,
+                onDecrease = onDecreaseSyncOffset,
+                onIncrease = onIncreaseSyncOffset,
+                onReset = onResetSyncOffset,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        }
+    }
+}
+
+@Composable
+internal fun VisualizerSyncControls(
+    syncOffsetMs: Int,
+    onDecrease: () -> Unit,
+    onIncrease: () -> Unit,
+    onReset: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val offsetMs = VisualizerSyncOffset.clamp(syncOffsetMs)
+    Row(
+        modifier = modifier.testTag("visualizer-sync-controls"),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        BracketIconButton(
+            glyph = "-",
+            contentDescription = "Decrease visualizer sync offset",
+            onClick = onDecrease,
+            modifier = Modifier.testTag("visualizer-sync-decrease"),
+            enabled = offsetMs > VisualizerSyncOffset.MIN_MS,
+        )
+        BracketButton(
+            label = "VIS SYNC ${VisualizerSyncOffset.label(offsetMs)}",
+            onClick = onReset,
+            modifier = Modifier.testTag("visualizer-sync-reset"),
+            contentDescription = "Reset visualizer sync offset, currently ${VisualizerSyncOffset.label(offsetMs)}",
+        )
+        BracketIconButton(
+            glyph = "+",
+            contentDescription = "Increase visualizer sync offset",
+            onClick = onIncrease,
+            modifier = Modifier.testTag("visualizer-sync-increase"),
+            enabled = offsetMs < VisualizerSyncOffset.MAX_MS,
+        )
     }
 }

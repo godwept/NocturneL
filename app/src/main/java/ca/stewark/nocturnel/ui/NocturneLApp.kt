@@ -69,6 +69,9 @@ fun NocturneLApp(
     val playbackState by playback.state.collectAsState()
     val analysisFrame by playback.analysisState.collectAsState()
     DisposableEffect(playback) { onDispose(playback::release) }
+    LaunchedEffect(settings.visualizerSyncOffsetMs) {
+        playback.setVisualizerSyncOffsetMs(settings.visualizerSyncOffsetMs)
+    }
 
     var destinationName by rememberSaveable { mutableStateOf(NocturneLDestination.LIBRARY.name) }
     val destination = NocturneLDestination.entries.firstOrNull { it.name == destinationName } ?: NocturneLDestination.LIBRARY
@@ -243,6 +246,10 @@ fun NocturneLApp(
                         onOpenQueue = { queueEditorOpen = true },
                         analysisFrame = analysisFrame,
                         onVisualizerActiveChanged = playback::setVisualizerActive,
+                        visualizerSyncOffsetMs = settings.visualizerSyncOffsetMs,
+                        onDecreaseVisualizerSyncOffset = settingsViewModel::decreaseVisualizerSyncOffset,
+                        onIncreaseVisualizerSyncOffset = settingsViewModel::increaseVisualizerSyncOffset,
+                        onResetVisualizerSyncOffset = settingsViewModel::resetVisualizerSyncOffset,
                         currentTrackFavorite = playbackState.currentPath in listening.favoriteTrackPaths,
                         currentTrackPlayCount = playbackState.currentPath?.let { listening.trackPlayCounts[it] } ?: 0,
                         onToggleCurrentFavorite = { playbackState.currentPath?.let(listeningViewModel::toggleTrack) },

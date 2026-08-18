@@ -5,8 +5,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -36,6 +38,7 @@ import ca.stewark.nocturnel.ui.playback.UpcomingQueueRow
 import ca.stewark.nocturnel.ui.playback.queueEditorState
 import ca.stewark.nocturnel.ui.playback.visualizer.TerminalVisualizerScene
 import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerDisplayMode
+import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerSyncControls
 import ca.stewark.nocturnel.ui.playlist.PlaylistDetailScreen
 import ca.stewark.nocturnel.ui.playlist.playlistDetailState
 import ca.stewark.nocturnel.ui.settings.SettingsScreen
@@ -247,6 +250,27 @@ fun QueueEditorPreview() = TerminalPreview {
         ),
         {}, {}, { _, _, _ -> }, {}, {}, {}, {},
     )
+}
+
+@PreviewTest
+@Preview(name = "Visualizer sync controls", widthDp = 412, heightDp = 412)
+@Composable
+fun VisualizerSyncControlsPreview() = TerminalPreview {
+    Box(Modifier.size(392.dp)) {
+        TerminalVisualizerScene(
+            mode = VisualizerDisplayMode.RADAR,
+            frame = radarFrame,
+            effectsEnabled = true,
+            modifier = Modifier.fillMaxSize(),
+        )
+        VisualizerSyncControls(
+            syncOffsetMs = 150,
+            onDecrease = {},
+            onIncrease = {},
+            onReset = {},
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
 }
 
 @PreviewTest

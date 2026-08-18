@@ -10,6 +10,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -45,6 +46,37 @@ class AudioAnalysisRepositoryTest {
         repository.setConsumerActive(true)
         runCurrent()
         assertEquals(AnalysisStatus.UNAVAILABLE, repository.state.value.status)
+        repository.close()
+    }
+
+    @Test fun offsetChangePublishesNextFrameWithoutRestartingLifecycle() = runTest {
+        val repository = AudioAnalysisRepository(StandardTestDispatcher(testScheduler), 33)
+        repository.bufferSink.flush(48_000, 1, C.ENCODING_PCM_16BIT)
+        repository.setPlaybackActive(true)
+        repository.setConsumerActive(true)
+        runCurrent()
+        val sampleCount = AudioAnalyzer.FFT_SIZE + 1_200
+        val pcm = ByteBuffer.allocateDirect(sampleCount * 2).order(ByteOrder.nativeOrder())
+        repeat(sampleCount) { pcm.putShort((if (it < 1_200) 4_000 else 16_000).toShort()) }
+        pcm.flip()
+        repository.bufferSink.beginInputBuffer(0, 0)
+        repository.bufferSink.handleBuffer(pcm)
+        repository.bufferSink.updatePlaybackPosition(sampleCount.toLong() * C.MICROS_PER_SECOND / 48_000)
+        advanceTimeBy(34)
+        runCurrent()
+        val firstFrameId = repository.state.value.frameId
+        assertEquals(AnalysisStatus.ACTIVE, repository.state.value.status)
+
+        repository.setVisualizerSyncOffsetMs(25)
+        advanceTimeBy(34)
+        runCurrent()
+
+        assertEquals(AnalysisStatus.ACTIVE, repository.state.value.status)
+        assertTrue(repository.state.value.frameId > firstFrameId)
+        repository.setVisualizerSyncOffsetMs(-500)
+        advanceTimeBy(34)
+        runCurrent()
+        assertEquals(AnalysisStatus.ACTIVE, repository.state.value.status)
         repository.close()
     }
 }
