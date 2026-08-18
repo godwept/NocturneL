@@ -25,6 +25,11 @@ android {
     }
     kotlin { jvmToolchain(17) }
     experimentalProperties["android.experimental.enableScreenshotTest"] = true
+    sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {

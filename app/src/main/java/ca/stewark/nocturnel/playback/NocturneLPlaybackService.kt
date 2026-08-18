@@ -1,6 +1,7 @@
 package ca.stewark.nocturnel.playback
 
 import android.os.Bundle
+import android.os.SystemClock
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -12,6 +13,7 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import ca.stewark.nocturnel.NocturneLApplication
 import ca.stewark.nocturnel.data.entity.TrackEntity
+import ca.stewark.nocturnel.data.ListeningRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -31,6 +33,8 @@ class NocturneLPlaybackService : MediaSessionService() {
     private lateinit var stateRepository: PlaybackStateRepository
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var positionSaveJob: Job? = null
+    private var progressTracker = PlaybackProgressTracker()
+    private val inFlightQualifications = mutableSetOf<String>()
 
     override fun onCreate() {
         super.onCreate()
@@ -44,7 +48,23 @@ class NocturneLPlaybackService : MediaSessionService() {
             setHandleAudioBecomingNoisy(true)
             repeatMode = Player.REPEAT_MODE_OFF
             addListener(object : Player.Listener {
+                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                    if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO || reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT) {
+                        recordQualification(progressTracker.complete(SystemClock.elapsedRealtime()))
+                    }
+                    updateListeningProgress()
+                }
+
                 override fun onEvents(player: Player, events: Player.Events) {
+                    if (events.contains(Player.EVENT_POSITION_DISCONTINUITY)) {
+                        progressTracker.discontinuity(SystemClock.elapsedRealtime())
+                    }
+                    if (events.containsAny(Player.EVENT_MEDIA_ITEM_TRANSITION, Player.EVENT_IS_PLAYING_CHANGED)) {
+                        updateListeningProgress()
+                    }
+                    if (events.contains(Player.EVENT_PLAYBACK_STATE_CHANGED) && player.playbackState == Player.STATE_ENDED) {
+                        recordQualification(progressTracker.complete(SystemClock.elapsedRealtime()))
+                    }
                     if (
                         events.containsAny(
                             Player.EVENT_MEDIA_ITEM_TRANSITION,
@@ -72,9 +92,14 @@ class NocturneLPlaybackService : MediaSessionService() {
                     positionSaveJob?.cancel()
                     positionSaveJob = if (isPlaying) {
                         serviceScope.launch {
+                            var ticks = 0
                             while (isActive) {
-                                delay(POSITION_SAVE_INTERVAL_MS)
-                                withContext(Dispatchers.Main) { savePlaybackState() }
+                                delay(PROGRESS_TICK_INTERVAL_MS)
+                                withContext(Dispatchers.Main) {
+                                    updateListeningProgress()
+                                    ticks++
+                                    if (ticks % POSITION_SAVE_TICKS == 0) savePlaybackState()
+                                }
                             }
                         }
                     } else {
@@ -114,14 +139,21 @@ class NocturneLPlaybackService : MediaSessionService() {
                 stateRepository.clear()
                 return@launch
             }
-            val items = restorePlan.paths.mapNotNull(tracksByPath::get).map(::itemFor)
+            progressTracker = PlaybackProgressTracker(
+                restorePlan.occurrences.map {
+                    PlaybackOccurrenceProgress(it.relativePath, it.occurrenceId, it.accumulatedListeningMs, it.qualified)
+                },
+            )
+            val items = restorePlan.occurrences.mapNotNull { occurrence ->
+                tracksByPath[occurrence.relativePath]?.let { itemFor(it, occurrence.occurrenceId) }
+            }
             withContext(Dispatchers.Main) {
                 if (player.mediaItemCount > 0) return@withContext
                 player.setMediaItems(items, restorePlan.currentIndex, restorePlan.positionMs)
                 player.shuffleModeEnabled = snapshot.shuffle
                 player.repeatMode = snapshot.repeat.toPlayerRepeatMode()
                 player.prepare()
-                player.playWhenReady = snapshot.wasPlaying
+                player.playWhenReady = PlaybackRestorePolicy.shouldAutoPlay(snapshot, app.playbackSessionId)
             }
         }
     }
@@ -131,19 +163,69 @@ class NocturneLPlaybackService : MediaSessionService() {
             if (::stateRepository.isInitialized) stateRepository.clear()
             return
         }
+        val progressById = progressTracker.snapshot().associateBy { it.occurrenceId }
+        val occurrences = List(player.mediaItemCount) { index ->
+            val item = player.getMediaItemAt(index)
+            val occurrenceId = item.mediaMetadata.extras?.getString(QUEUE_OCCURRENCE_ID)
+                ?: "legacy:$index:${item.mediaId}"
+            progressById[occurrenceId]?.let {
+                PlaybackOccurrenceSnapshot(it.relativePath, it.occurrenceId, it.accumulatedListeningMs, it.qualified)
+            } ?: PlaybackOccurrenceSnapshot(item.mediaId, occurrenceId)
+        }
+        val app = application as NocturneLApplication
         stateRepository.save(
             PlaybackSnapshot(
-                paths = List(player.mediaItemCount) { player.getMediaItemAt(it).mediaId },
+                paths = occurrences.map { it.relativePath },
                 currentIndex = player.currentMediaItemIndex,
                 positionMs = player.currentPosition.coerceAtLeast(0),
                 shuffle = player.shuffleModeEnabled,
                 repeat = player.repeatMode.toRepeatMode(),
                 wasPlaying = player.playWhenReady,
+                occurrences = occurrences,
+                completed = player.playbackState == Player.STATE_ENDED,
+                playbackSessionId = app.playbackSessionId,
             ),
         )
     }
 
-    private fun itemFor(track: TrackEntity): MediaItem =
+    private fun updateListeningProgress() {
+        val item = player.currentMediaItem ?: return
+        val occurrenceId = item.mediaMetadata.extras?.getString(QUEUE_OCCURRENCE_ID) ?: return
+        val duration = player.duration.takeIf { it > 0 }
+            ?: item.mediaMetadata.extras?.getLong(QUEUE_DURATION_MS)?.takeIf { it > 0 }
+            ?: 0
+        recordQualification(
+            progressTracker.update(
+                occurrenceId = occurrenceId,
+                relativePath = item.mediaId,
+                durationMs = duration,
+                isPlaying = player.isPlaying,
+                nowElapsedMs = SystemClock.elapsedRealtime(),
+            ),
+        )
+    }
+
+    private fun recordQualification(qualification: PlaybackQualification?) {
+        qualification ?: return
+        if (!inFlightQualifications.add(qualification.qualificationId)) return
+        serviceScope.launch {
+            val result = runCatching {
+                ListeningRepository((application as NocturneLApplication).database.listeningDao())
+                    .recordQualifiedPlay(qualification.qualificationId, qualification.relativePath)
+            }
+            withContext(Dispatchers.Main) {
+                inFlightQualifications -= qualification.qualificationId
+                if (result.isSuccess) {
+                    progressTracker.markQualified(qualification.qualificationId)
+                    savePlaybackState()
+                } else {
+                    progressTracker.recordFailed(qualification.qualificationId)
+                }
+            }
+        }
+    }
+
+    private fun itemFor(track: TrackEntity, occurrenceId: String = UUID.randomUUID().toString()): MediaItem =
         MediaItem.Builder()
             .setUri(track.documentUri)
             .setMediaId(track.relativePath)
@@ -154,7 +236,7 @@ class NocturneLPlaybackService : MediaSessionService() {
                     .setAlbumTitle(track.album)
                     .setExtras(Bundle().apply {
                         putString(QUEUE_ALBUM_ID, track.albumId)
-                        putString(QUEUE_OCCURRENCE_ID, UUID.randomUUID().toString())
+                        putString(QUEUE_OCCURRENCE_ID, occurrenceId)
                         putLong(QUEUE_DURATION_MS, track.durationMs)
                     })
                     .build(),
@@ -174,6 +256,7 @@ class NocturneLPlaybackService : MediaSessionService() {
     }
 
     private companion object {
-        const val POSITION_SAVE_INTERVAL_MS = 5_000L
+        const val PROGRESS_TICK_INTERVAL_MS = 1_000L
+        const val POSITION_SAVE_TICKS = 5
     }
 }

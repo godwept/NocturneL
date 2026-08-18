@@ -37,6 +37,12 @@ import ca.stewark.nocturnel.ui.playlist.AlbumPlaylistUiState
 import ca.stewark.nocturnel.ui.playlist.PlaylistViewModel
 import ca.stewark.nocturnel.ui.settings.SettingsScreen
 import ca.stewark.nocturnel.ui.settings.SettingsViewModel
+import ca.stewark.nocturnel.NocturneLApplication
+import ca.stewark.nocturnel.ui.listening.FavoritesScreen
+import ca.stewark.nocturnel.ui.listening.LibraryLandingScreen
+import ca.stewark.nocturnel.ui.listening.ListeningHistoryScreen
+import ca.stewark.nocturnel.ui.listening.ListeningViewModel
+import ca.stewark.nocturnel.ui.listening.resumeState
 
 @Composable
 fun NocturneLApp(
@@ -49,13 +55,16 @@ fun NocturneLApp(
     val settings by settingsViewModel.state.collectAsState()
     val playlists by playlistViewModel.playlists.collectAsState()
     val albumPlaylistState by playlistViewModel.albumPlaylistState.collectAsState()
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri -> uri?.let(viewModel::selectFolder) }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri -> uri?.let(viewModel::requestFolder) }
     var artworkAlbum by remember { mutableStateOf<AlbumEntity?>(null) }
     val artworkLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         artworkAlbum?.let { viewModel.setManualArtwork(it.id, uri) }
         artworkAlbum = null
     }
     val context = LocalContext.current
+    val application = context.applicationContext as NocturneLApplication
+    val listeningViewModel: ListeningViewModel = viewModel(factory = remember(application) { ListeningViewModel.Factory(application) })
+    val listening by listeningViewModel.state.collectAsState()
     val playback = remember(context) { PlaybackConnection(context) }
     val playbackState by playback.state.collectAsState()
     val analysisFrame by playback.analysisState.collectAsState()
@@ -68,6 +77,7 @@ fun NocturneLApp(
     var playlistPickerExpanded by rememberSaveable(selectedAlbumId) { mutableStateOf(false) }
     var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
     var queueEditorOpen by rememberSaveable { mutableStateOf(false) }
+    var librarySubview by rememberSaveable { mutableStateOf("LANDING") }
     val selectedAlbum = albums.firstOrNull { it.id == selectedAlbumId }
     val selectedArtist: ArtistRow? = groupArtists(albums).firstOrNull { it.name == selectedArtistName }
     LaunchedEffect(selectedAlbumId) {
@@ -77,12 +87,13 @@ fun NocturneLApp(
     LaunchedEffect(albumPlaylistState) {
         if (albumPlaylistState is AlbumPlaylistUiState.Success) playlistPickerExpanded = false
     }
-    BackHandler(enabled = queueEditorOpen || playlistPickerExpanded || selectedAlbumId != null || selectedArtistName != null) {
+    BackHandler(enabled = queueEditorOpen || playlistPickerExpanded || selectedAlbumId != null || selectedArtistName != null || librarySubview != "LANDING") {
         when {
             queueEditorOpen -> { playback.expireQueueUndo(); queueEditorOpen = false }
             playlistPickerExpanded -> playlistPickerExpanded = false
             selectedAlbumId != null -> selectedAlbumId = null
-            else -> selectedArtistName = null
+            selectedArtistName != null -> selectedArtistName = null
+            else -> librarySubview = "LANDING"
         }
     }
 
@@ -99,9 +110,10 @@ fun NocturneLApp(
             destinationName = it.name
             selectedAlbumId = null
             selectedArtistName = null
+            librarySubview = "LANDING"
         },
         effectsEnabled = settings.effectiveEffectsEnabled,
-        status = if (queueEditorOpen) viewModel.scanState.message else playbackState.queueNotice ?: viewModel.scanState.message,
+        status = if (queueEditorOpen) viewModel.scanState.message else playbackState.queueNotice ?: listening.message ?: viewModel.scanState.message,
     ) {
         when {
             selectedAlbum != null -> {
@@ -137,15 +149,52 @@ fun NocturneLApp(
                     onCreatePlaylistAndAdd = {
                         playlistViewModel.createAndAddAlbum(it, albumTracks)
                     },
+                    albumFavorite = selectedAlbum.id in listening.favoriteAlbumIds,
+                    albumPlayCount = listening.albumPlayCounts[selectedAlbum.id] ?: 0,
+                    favoriteTrackPaths = listening.favoriteTrackPaths,
+                    trackPlayCounts = listening.trackPlayCounts,
+                    onToggleAlbumFavorite = { listeningViewModel.toggleAlbum(it.id) },
+                    onToggleTrackFavorite = { listeningViewModel.toggleTrack(it.relativePath) },
                 )
             }
             selectedArtist != null -> ArtistDetailScreen(
                 selectedArtist,
                 onBack = { selectedArtistName = null },
                 onAlbumSelected = { selectedAlbumId = it.id },
+                favoriteAlbumIds = listening.favoriteAlbumIds,
+                albumPlayCounts = listening.albumPlayCounts,
+                onToggleFavorite = { listeningViewModel.toggleAlbum(it.id) },
             )
             else -> when (destination) {
-                NocturneLDestination.LIBRARY -> LibraryScreen(albums, libraryGridState) { selectedAlbumId = it.id }
+                NocturneLDestination.LIBRARY -> when (librarySubview) {
+                    "FAVORITES" -> FavoritesScreen(
+                        listening,
+                        onBack = { librarySubview = "LANDING" },
+                        onAlbumSelected = { selectedAlbumId = it.id },
+                        onTrackSelected = playback::play,
+                        onFavoriteAlbum = listeningViewModel::toggleAlbum,
+                        onFavoriteTrack = listeningViewModel::toggleTrack,
+                    )
+                    "HISTORY" -> ListeningHistoryScreen(
+                        listening,
+                        onBack = { librarySubview = "LANDING" },
+                        onTrackSelected = playback::play,
+                        onFavoriteTrack = listeningViewModel::toggleTrack,
+                    )
+                    else -> LibraryLandingScreen(
+                        albums = albums,
+                        listening = listening,
+                        resume = resumeState(playbackState, viewModel.source?.accessLost != true),
+                        state = libraryGridState,
+                        onResume = playback::toggle,
+                        onAlbumSelected = { selectedAlbumId = it.id },
+                        onTrackSelected = playback::play,
+                        onFavoriteAlbum = listeningViewModel::toggleAlbum,
+                        onFavoriteTrack = listeningViewModel::toggleTrack,
+                        onViewFavorites = { librarySubview = "FAVORITES" },
+                        onViewHistory = { librarySubview = "HISTORY" },
+                    )
+                }
                 NocturneLDestination.SEARCH -> SearchScreen(
                     tracks,
                     albums,
@@ -154,9 +203,21 @@ fun NocturneLApp(
                     onArtistSelected = { selectedArtistName = it.name },
                     onPlayNext = { playback.playNext(listOf(it)) },
                     onAddToQueue = { playback.addToQueue(listOf(it)) },
+                    favoriteAlbumIds = listening.favoriteAlbumIds,
+                    favoriteTrackPaths = listening.favoriteTrackPaths,
+                    albumPlayCounts = listening.albumPlayCounts,
+                    trackPlayCounts = listening.trackPlayCounts,
+                    onToggleAlbumFavorite = { listeningViewModel.toggleAlbum(it.id) },
+                    onToggleTrackFavorite = { listeningViewModel.toggleTrack(it.relativePath) },
                 )
                 NocturneLDestination.ARTISTS -> ArtistsScreen(albums) { selectedArtistName = it.name }
-                NocturneLDestination.PLAYLISTS -> PlaylistsScreen(viewModel = playlistViewModel, playback = playback)
+                NocturneLDestination.PLAYLISTS -> PlaylistsScreen(
+                    viewModel = playlistViewModel,
+                    playback = playback,
+                    favoriteTrackPaths = listening.favoriteTrackPaths,
+                    trackPlayCounts = listening.trackPlayCounts,
+                    onToggleTrackFavorite = { listeningViewModel.toggleTrack(it.relativePath) },
+                )
                 NocturneLDestination.NOW_PLAYING -> if (queueEditorOpen) {
                     QueueEditorScreen(
                         state = playbackState.toQueueEditorState(),
@@ -182,6 +243,9 @@ fun NocturneLApp(
                         onOpenQueue = { queueEditorOpen = true },
                         analysisFrame = analysisFrame,
                         onVisualizerActiveChanged = playback::setVisualizerActive,
+                        currentTrackFavorite = playbackState.currentPath in listening.favoriteTrackPaths,
+                        currentTrackPlayCount = playbackState.currentPath?.let { listening.trackPlayCounts[it] } ?: 0,
+                        onToggleCurrentFavorite = { playbackState.currentPath?.let(listeningViewModel::toggleTrack) },
                     )
                 }
                 NocturneLDestination.SETTINGS -> SettingsScreen(
@@ -190,6 +254,11 @@ fun NocturneLApp(
                     state = settings,
                     onEffectsChanged = settingsViewModel::setEffectsEnabled,
                     scanRunning = viewModel.scanState.running,
+                    onClearListeningData = listeningViewModel::clearHistoryAndCounts,
+                    listeningMessage = listening.message,
+                    pendingSourceName = viewModel.pendingSourceChange?.displayName,
+                    onConfirmSourceChange = viewModel::confirmSourceChange,
+                    onCancelSourceChange = viewModel::cancelSourceChange,
                 )
             }
         }

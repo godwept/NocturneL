@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.data.entity.PlaylistEntity
 import ca.stewark.nocturnel.data.entity.TrackEntity
 import ca.stewark.nocturnel.data.model.PlaylistEntryRow
+import ca.stewark.nocturnel.data.model.ListeningHistoryRow
 import ca.stewark.nocturnel.playback.PlaybackQueueItem
 import ca.stewark.nocturnel.playback.PlaybackUiState
 import ca.stewark.nocturnel.playback.QueueEntry
@@ -19,6 +21,11 @@ import ca.stewark.nocturnel.ui.library.AlbumGridScreen
 import ca.stewark.nocturnel.ui.library.ArtistsScreen
 import ca.stewark.nocturnel.ui.library.LibrarySetupScreen
 import ca.stewark.nocturnel.ui.library.SearchScreen
+import ca.stewark.nocturnel.ui.listening.FavoritesScreen
+import ca.stewark.nocturnel.ui.listening.LibraryLandingScreen
+import ca.stewark.nocturnel.ui.listening.ListeningHistoryScreen
+import ca.stewark.nocturnel.ui.listening.ListeningUiState
+import ca.stewark.nocturnel.ui.listening.ResumeUiState
 import ca.stewark.nocturnel.ui.playback.NowPlayingScreen
 import ca.stewark.nocturnel.ui.playback.QueueEditorScreen
 import ca.stewark.nocturnel.ui.playback.queueEditorState
@@ -48,6 +55,24 @@ private val previewTracks = previewAlbums.flatMapIndexed { index, album ->
         TrackEntity("${album.id}/02.flac", "content://${album.id}/2", album.id, "Afterimage ${index + 1}", album.artist, album.title, 241_000, 2, 1, "PLAYABLE", 1),
     )
 }
+private val previewHistory = previewTracks.take(4).mapIndexed { index, track ->
+    ListeningHistoryRow(
+        id = index.toLong(), qualificationId = "preview-$index", relativePath = track.relativePath,
+        playedAtEpochMillis = 1_786_000_000_000L - index * 60_000L,
+        title = track.title, artist = track.artist, album = track.album, albumId = track.albumId,
+        durationMs = track.durationMs, status = track.status, documentUri = track.documentUri,
+    )
+}
+private val previewListening = ListeningUiState(
+    favoriteTrackPaths = previewTracks.take(3).mapTo(mutableSetOf()) { it.relativePath },
+    favoriteAlbumIds = previewAlbums.take(3).mapTo(mutableSetOf()) { it.id },
+    favoriteTracks = previewTracks.take(3),
+    favoriteAlbums = previewAlbums.take(3),
+    trackPlayCounts = previewTracks.associate { it.relativePath to (it.trackNumber ?: 0).toLong() * 4 },
+    albumPlayCounts = previewAlbums.associate { it.id to 12L },
+    history = previewHistory,
+    recentTracks = previewHistory,
+)
 
 private val radarFrame = AudioAnalysisFrame(
     waveform = List(128) { 0f },
@@ -79,15 +104,36 @@ private fun TerminalPreview(content: @Composable () -> Unit) = NocturneLTheme {
 @PreviewTest
 @Preview(name = "Album grid", widthDp = 412, heightDp = 915)
 @Composable
-fun AlbumGridPreview() = TerminalPreview { AlbumGridScreen(previewAlbums) {} }
+fun AlbumGridPreview() = TerminalPreview { AlbumGridScreen(previewAlbums, onAlbumSelected = {}) }
 
 @PreviewTest
 @Preview(name = "Root effects off", widthDp = 412, heightDp = 915)
 @Composable
 fun RootPreview() = TerminalPreview {
     TerminalScaffold(NocturneLDestination.LIBRARY, {}, effectsEnabled = false, status = "LIBRARY READY") {
-        LibraryScreen(previewAlbums) {}
+        LibraryLandingScreen(
+            previewAlbums, previewListening,
+            ResumeUiState("Carrier 1", "Signal One", 72_000, 183_000, true),
+            rememberLazyGridState(), {}, {}, {}, {}, {}, {}, {},
+        )
     }
+}
+
+@PreviewTest
+@Preview(name = "Favorites", widthDp = 412, heightDp = 915)
+@Composable
+fun FavoritesPreview() = TerminalPreview { FavoritesScreen(previewListening, {}, {}, {}, {}, {}) }
+
+@PreviewTest
+@Preview(name = "History", widthDp = 412, heightDp = 915)
+@Composable
+fun HistoryPreview() = TerminalPreview { ListeningHistoryScreen(previewListening, {}, {}, {}, formatTimestamp = { "AUG 18 · 21:00" }) }
+
+@PreviewTest
+@Preview(name = "Settings source confirmation", widthDp = 412, heightDp = 915)
+@Composable
+fun SettingsSourceConfirmationPreview() = TerminalPreview {
+    SettingsScreen({}, {}, TerminalSettingsState(), {}, pendingSourceName = "ARCHIVE")
 }
 
 @PreviewTest

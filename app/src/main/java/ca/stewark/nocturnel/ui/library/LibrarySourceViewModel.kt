@@ -12,6 +12,7 @@ import ca.stewark.nocturnel.data.CatalogRepository
 import ca.stewark.nocturnel.data.LibraryAccessLostException
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.data.entity.TrackEntity
+import ca.stewark.nocturnel.playback.SharedPreferencesPlaybackStateRepository
 import ca.stewark.nocturnel.library.model.LibrarySource
 import ca.stewark.nocturnel.library.model.ScanReport
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,10 +24,12 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 data class RescanUiState(val running: Boolean = false, val progress: Int = 0, val report: ScanReport? = null, val message: String? = null)
+data class PendingSourceChange(val uri: Uri, val displayName: String)
 
 class LibrarySourceViewModel(application: Application) : AndroidViewModel(application) {
     private val app = application as NocturneLApplication
-    private val catalog = CatalogRepository(app.database.libraryDao(), app.scanner)
+    private val catalog = CatalogRepository(app.database, app.scanner)
+    private val playbackStateRepository = SharedPreferencesPlaybackStateRepository(application)
     val albums: StateFlow<List<AlbumEntity>> = app.database.libraryDao().albums().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val playableTracks = app.database.libraryDao().playableTracks().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     var source: LibrarySource? by mutableStateOf(null)
@@ -34,6 +37,8 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
     var scanState: RescanUiState by mutableStateOf(RescanUiState())
         private set
     private var scanJob: Job? = null
+    var pendingSourceChange: PendingSourceChange? by mutableStateOf(null)
+        private set
 
     init {
         viewModelScope.launch {
@@ -49,11 +54,29 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
     fun selectFolder(uri: Uri) = viewModelScope.launch {
         runCatching {
             app.treeAccess.persist(uri)
-            catalog.saveSource(uri.toString(), app.treeAccess.displayName(uri))
+            val changed = catalog.saveSource(uri.toString(), app.treeAccess.displayName(uri))
+            if (changed) playbackStateRepository.clear()
             source = catalog.source()
             scanState = RescanUiState(message = "Folder selected. Choose RESCAN to index it.")
         }.onFailure { scanState = RescanUiState(message = "Could not retain access to that folder.") }
     }
+
+    fun requestFolder(uri: Uri) {
+        val displayName = runCatching { app.treeAccess.displayName(uri) }.getOrDefault("SELECTED FOLDER")
+        if (source != null && source?.treeUri != uri.toString()) {
+            pendingSourceChange = PendingSourceChange(uri, displayName)
+        } else {
+            selectFolder(uri)
+        }
+    }
+
+    fun confirmSourceChange() {
+        val pending = pendingSourceChange ?: return
+        pendingSourceChange = null
+        selectFolder(pending.uri)
+    }
+
+    fun cancelSourceChange() { pendingSourceChange = null }
 
     fun rescan() {
         if (scanState.running) return

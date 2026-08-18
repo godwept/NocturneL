@@ -102,6 +102,21 @@ class NocturneLDatabaseTest {
         assertEquals(listOf(playlistId), dao.playlists().first().map { it.id })
     }
 
+    @Test
+    fun changingLibrarySourceClearsListeningDataButSameSourcePreservesIt() = runTest {
+        val source = LibrarySourceEntity(treeUri = "content://music", displayName = "Music", lastScanEpochMillis = null, accessLost = false)
+        database.replaceLibrarySource(source, sourceChanged = false)
+        database.listeningDao().toggleFavoriteTrack("one.flac", 1)
+        database.listeningDao().recordQualifiedPlay("one", "one.flac", 2)
+
+        database.replaceLibrarySource(source, sourceChanged = false)
+        assertEquals(listOf("one.flac"), database.listeningDao().favoriteTrackPaths().first())
+
+        database.replaceLibrarySource(source.copy(treeUri = "content://other"), sourceChanged = true)
+        assertTrue(database.listeningDao().favoriteTrackPaths().first().isEmpty())
+        assertTrue(database.listeningDao().history().first().isEmpty())
+    }
+
     private fun album(manualArtworkUri: String?, title: String = "Album") = AlbumEntity(
         id = "album-id",
         relativeFolder = "Artist/Album",

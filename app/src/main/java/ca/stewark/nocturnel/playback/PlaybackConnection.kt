@@ -26,6 +26,7 @@ import java.util.UUID
 class PlaybackConnection(context: Context) {
     private val appContext = context.applicationContext
     private val app = appContext as NocturneLApplication
+    private val playbackStateRepository: PlaybackStateRepository = SharedPreferencesPlaybackStateRepository(appContext)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var controller: MediaController? = null
     private var pendingQueue: Pair<List<TrackEntity>, Int>? = null
@@ -311,6 +312,10 @@ class PlaybackConnection(context: Context) {
                 absoluteIndex = index,
             )
         }
+        val activeOccurrenceId = current?.let(::occurrenceId)
+        val savedProgress = playbackStateRepository.load()?.occurrences
+            ?.firstOrNull { it.occurrenceId == activeOccurrenceId }
+            ?.accumulatedListeningMs ?: 0
         _state.value = PlaybackUiState(
             title = current?.mediaMetadata?.title?.toString(),
             artist = current?.mediaMetadata?.artist?.toString(),
@@ -328,6 +333,8 @@ class PlaybackConnection(context: Context) {
             error = _state.value.error,
             queueNotice = _state.value.queueNotice,
             canUndoQueueRemoval = pendingRemoval != null,
+            completed = player.playbackState == Player.STATE_ENDED,
+            meaningfulProgressMs = savedProgress,
         )
     }
 
@@ -377,4 +384,6 @@ data class PlaybackUiState(
     val error: String? = null,
     val queueNotice: String? = null,
     val canUndoQueueRemoval: Boolean = false,
+    val completed: Boolean = false,
+    val meaningfulProgressMs: Long = 0,
 )

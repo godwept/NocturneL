@@ -22,6 +22,7 @@ import ca.stewark.nocturnel.ui.components.AsciiFrame
 import ca.stewark.nocturnel.ui.components.TerminalNotice
 import ca.stewark.nocturnel.ui.components.TerminalTextField
 import ca.stewark.nocturnel.ui.components.QueueTrackActions
+import ca.stewark.nocturnel.ui.components.FavoriteToggle
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 
 @Composable
@@ -34,6 +35,12 @@ fun SearchScreen(
     initialQuery: String = "",
     onPlayNext: (TrackEntity) -> Unit = {},
     onAddToQueue: (TrackEntity) -> Unit = {},
+    favoriteAlbumIds: Set<String> = emptySet(),
+    favoriteTrackPaths: Set<String> = emptySet(),
+    albumPlayCounts: Map<String, Long> = emptyMap(),
+    trackPlayCounts: Map<String, Long> = emptyMap(),
+    onToggleAlbumFavorite: (AlbumEntity) -> Unit = {},
+    onToggleTrackFavorite: (TrackEntity) -> Unit = {},
 ) {
     var query by remember { mutableStateOf(initialQuery) }
     val results = projectSearch(query, tracks, albums)
@@ -46,14 +53,23 @@ fun SearchScreen(
                 item { TerminalNotice("No local matches.") }
             }
             if (results.albums.isNotEmpty()) item { GroupHeading("ALBUMS") }
-            items(results.albums, key = { "album:${it.id}" }) { album -> ResultRow("${album.artist} :: ${album.title}") { onAlbumSelected(album) } }
+            items(results.albums, key = { "album:${it.id}" }) { album ->
+                androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth()) {
+                    ResultRow("${album.artist} :: ${album.title} · ${albumPlayCounts[album.id] ?: 0} PLAY(S)", Modifier.weight(1f)) { onAlbumSelected(album) }
+                    FavoriteToggle(album.title, album.id in favoriteAlbumIds, { onToggleAlbumFavorite(album) })
+                }
+            }
             if (results.artists.isNotEmpty()) item { GroupHeading("ARTISTS") }
             items(results.artists, key = { "artist:${it.name}" }) { artist -> ResultRow("${artist.name} :: ${artist.albums.size} ALBUM(S)") { onArtistSelected(artist) } }
             if (results.tracks.isNotEmpty()) item { GroupHeading("TRACKS") }
             items(results.tracks, key = { "track:${it.relativePath}" }) { track ->
                 androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth()) {
-                    ResultRow("${track.artist} :: ${track.title}", Modifier.weight(1f)) { onPlay(track) }
-                    QueueTrackActions(track.title, { onPlayNext(track) }, { onAddToQueue(track) })
+                    ResultRow("${track.artist} :: ${track.title} · ${trackPlayCounts[track.relativePath] ?: 0} PLAY(S)", Modifier.weight(1f)) { onPlay(track) }
+                    QueueTrackActions(
+                        track.title, { onPlayNext(track) }, { onAddToQueue(track) },
+                        favorite = track.relativePath in favoriteTrackPaths,
+                        onToggleFavorite = { onToggleTrackFavorite(track) },
+                    )
                 }
             }
         }

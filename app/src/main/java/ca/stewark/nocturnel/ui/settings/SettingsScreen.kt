@@ -5,6 +5,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import ca.stewark.nocturnel.ui.components.AsciiFrame
 import ca.stewark.nocturnel.ui.components.BracketButton
@@ -20,7 +24,13 @@ fun SettingsScreen(
     state: TerminalSettingsState,
     onEffectsChanged: (Boolean) -> Unit,
     scanRunning: Boolean = false,
+    onClearListeningData: () -> Unit = {},
+    listeningMessage: String? = null,
+    pendingSourceName: String? = null,
+    onConfirmSourceChange: () -> Unit = {},
+    onCancelSourceChange: () -> Unit = {},
 ) {
+    var confirmingClear by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().padding(TerminalDimensions.md)) {
         AsciiFrame("SETTINGS") {
             Text("LOCAL LIBRARY")
@@ -31,6 +41,19 @@ fun SettingsScreen(
                 enabled = !scanRunning,
             )
             TerminalToggle("CRT EFFECTS", state.savedEffectsEnabled, onEffectsChanged)
+            if (!confirmingClear) {
+                BracketButton("CLEAR HISTORY + COUNTS", { confirmingClear = true })
+            } else {
+                TerminalNotice("FAVORITES AND RESUME WILL BE PRESERVED", severity = NoticeSeverity.WARNING)
+                BracketButton("CONFIRM CLEAR", { confirmingClear = false; onClearListeningData() })
+                BracketButton("CANCEL", { confirmingClear = false })
+            }
+            if (pendingSourceName != null) {
+                TerminalNotice("CHANGE TO $pendingSourceName? FAVORITES, HISTORY, COUNTS, AND RESUME WILL BE CLEARED.", severity = NoticeSeverity.WARNING)
+                BracketButton("CONFIRM FOLDER CHANGE", onConfirmSourceChange)
+                BracketButton("CANCEL FOLDER CHANGE", onCancelSourceChange)
+            }
+            listeningMessage?.let { TerminalNotice(it) }
             if (state.reducedMotion && state.savedEffectsEnabled) {
                 TerminalNotice("Effects are paused by Android reduced-motion settings.", severity = NoticeSeverity.WARNING)
             }

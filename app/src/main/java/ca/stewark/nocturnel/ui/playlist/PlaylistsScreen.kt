@@ -32,7 +32,13 @@ import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 import kotlinx.coroutines.launch
 
 @Composable
-fun PlaylistsScreen(viewModel: PlaylistViewModel = viewModel(), playback: PlaybackConnection? = null) {
+fun PlaylistsScreen(
+    viewModel: PlaylistViewModel = viewModel(),
+    playback: PlaybackConnection? = null,
+    favoriteTrackPaths: Set<String> = emptySet(),
+    trackPlayCounts: Map<String, Long> = emptyMap(),
+    onToggleTrackFavorite: (ca.stewark.nocturnel.data.entity.TrackEntity) -> Unit = {},
+) {
     val playlists by viewModel.playlists.collectAsState()
     val detail by viewModel.detail.collectAsState()
     var newName by remember { mutableStateOf("") }
@@ -66,6 +72,9 @@ fun PlaylistsScreen(viewModel: PlaylistViewModel = viewModel(), playback: Playba
             { tracks, skipped -> player.addToQueue(tracks, skipped) },
             { player.playNext(listOf(it)) },
             { player.addToQueue(listOf(it)) },
+            favoriteTrackPaths,
+            trackPlayCounts,
+            onToggleTrackFavorite,
         )
         return
     }

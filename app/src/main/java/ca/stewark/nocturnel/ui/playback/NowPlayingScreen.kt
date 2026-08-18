@@ -18,6 +18,7 @@ import ca.stewark.nocturnel.ui.artwork.CrtArtwork
 import ca.stewark.nocturnel.ui.components.AsciiFrame
 import ca.stewark.nocturnel.ui.components.BracketIconButton
 import ca.stewark.nocturnel.ui.components.BracketButton
+import ca.stewark.nocturnel.ui.components.FavoriteToggle
 import ca.stewark.nocturnel.ui.components.NoticeSeverity
 import ca.stewark.nocturnel.ui.components.TerminalMarquee
 import ca.stewark.nocturnel.ui.components.TerminalNotice
@@ -41,6 +42,9 @@ fun NowPlayingScreen(
     onOpenQueue: () -> Unit = {},
     analysisFrame: AudioAnalysisFrame = AudioAnalysisFrame.Idle,
     onVisualizerActiveChanged: (Boolean) -> Unit = {},
+    currentTrackFavorite: Boolean = false,
+    currentTrackPlayCount: Long = 0,
+    onToggleCurrentFavorite: () -> Unit = {},
 ) {
     LazyColumn(Modifier.fillMaxSize().padding(TerminalDimensions.md)) {
         item {
@@ -57,6 +61,12 @@ fun NowPlayingScreen(
                 TerminalMarquee(state.title ?: "NO TRACK SELECTED", effectsEnabled, Modifier.padding(top = TerminalDimensions.sm))
                 TerminalMarquee(state.artist.orEmpty(), effectsEnabled)
                 TerminalMarquee(state.album.orEmpty(), effectsEnabled)
+                if (state.currentPath != null) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("$currentTrackPlayCount PLAY(S)", color = MaterialTheme.colorScheme.secondary)
+                        FavoriteToggle(state.title ?: "current track", currentTrackFavorite, onToggleCurrentFavorite)
+                    }
+                }
                 state.error?.let { TerminalNotice(it, severity = NoticeSeverity.WARNING) }
                 TerminalSeekBar(
                     if (state.durationMs > 0) state.positionMs.toFloat() / state.durationMs else 0f,

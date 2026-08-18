@@ -21,6 +21,7 @@ import ca.stewark.nocturnel.ui.artwork.RetroArtwork
 import ca.stewark.nocturnel.ui.components.AsciiFrame
 import ca.stewark.nocturnel.ui.components.BracketButton
 import ca.stewark.nocturnel.ui.components.QueueTrackActions
+import ca.stewark.nocturnel.ui.components.FavoriteToggle
 import ca.stewark.nocturnel.ui.playlist.AlbumPlaylistUiState
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 
@@ -44,6 +45,12 @@ fun AlbumDetailScreen(
     onAddAlbumToQueue: (List<TrackEntity>) -> Unit = {},
     onPlayTrackNext: (TrackEntity) -> Unit = {},
     onAddTrackToQueue: (TrackEntity) -> Unit = {},
+    albumFavorite: Boolean = false,
+    albumPlayCount: Long = 0,
+    favoriteTrackPaths: Set<String> = emptySet(),
+    trackPlayCounts: Map<String, Long> = emptyMap(),
+    onToggleAlbumFavorite: (AlbumEntity) -> Unit = {},
+    onToggleTrackFavorite: (TrackEntity) -> Unit = {},
 ) {
     val playableTracks = tracks.filter { it.status == "PLAYABLE" }
     Column(Modifier.fillMaxSize().padding(TerminalDimensions.sm)) {
@@ -62,6 +69,10 @@ fun AlbumDetailScreen(
                     RetroArtwork(album, Modifier.fillMaxWidth().aspectRatio(1f))
                     Text(album.artist, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = TerminalDimensions.xs))
                     album.year?.let { Text(it, color = MaterialTheme.colorScheme.secondary) }
+                    Row {
+                        Text("$albumPlayCount PLAY(S)", color = MaterialTheme.colorScheme.secondary, modifier = Modifier.weight(1f))
+                        FavoriteToggle(album.title, albumFavorite, { onToggleAlbumFavorite(album) })
+                    }
                     Row {
                         BracketButton("SET COVER", onChooseArtwork)
                         if (album.manualArtworkUri != null) BracketButton("CLEAR", onClearArtwork)
@@ -97,7 +108,9 @@ fun AlbumDetailScreen(
                 ) {
                     Text(track.trackNumber?.toString()?.padStart(2, '0') ?: "--", color = MaterialTheme.colorScheme.secondary)
                     Text(track.title, Modifier.weight(1f).padding(horizontal = TerminalDimensions.xs))
+                    Text("${trackPlayCounts[track.relativePath] ?: 0}×", color = MaterialTheme.colorScheme.secondary)
                     Text(formatDuration(track.durationMs), color = MaterialTheme.colorScheme.secondary)
+                    FavoriteToggle(track.title, track.relativePath in favoriteTrackPaths, { onToggleTrackFavorite(track) })
                     if (track.status == "PLAYABLE") {
                         QueueTrackActions(track.title, { onPlayTrackNext(track) }, { onAddTrackToQueue(track) })
                     }

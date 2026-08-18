@@ -36,6 +36,9 @@ fun PlaylistDetailScreen(
     onAddToQueue: (List<TrackEntity>, Int) -> Unit = { _, _ -> },
     onPlayTrackNext: (TrackEntity) -> Unit = {},
     onAddTrackToQueue: (TrackEntity) -> Unit = {},
+    favoriteTrackPaths: Set<String> = emptySet(),
+    trackPlayCounts: Map<String, Long> = emptyMap(),
+    onToggleTrackFavorite: (TrackEntity) -> Unit = {},
 ) {
     var adding by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
@@ -77,7 +80,12 @@ fun PlaylistDetailScreen(
                         Text(row.title)
                         Text("${row.artist} · ${formatDuration(row.durationMs)}")
                         row.track?.let { track ->
-                            QueueTrackActions(track.title, { onPlayTrackNext(track) }, { onAddTrackToQueue(track) })
+                            QueueTrackActions(
+                                track.title, { onPlayTrackNext(track) }, { onAddTrackToQueue(track) },
+                                playCount = trackPlayCounts[track.relativePath] ?: 0,
+                                favorite = track.relativePath in favoriteTrackPaths,
+                                onToggleFavorite = { onToggleTrackFavorite(track) },
+                            )
                         }
                     }
                     BracketIconButton("X", "Remove ${row.title}", { onRemove(row.position) })
