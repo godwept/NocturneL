@@ -18,6 +18,8 @@ import ca.stewark.nocturnel.ui.components.AsciiFrame
 import ca.stewark.nocturnel.ui.components.BracketButton
 import ca.stewark.nocturnel.ui.components.BracketIconButton
 import ca.stewark.nocturnel.ui.components.TerminalTextField
+import ca.stewark.nocturnel.ui.components.QueueTrackActions
+import ca.stewark.nocturnel.data.entity.TrackEntity
 import ca.stewark.nocturnel.ui.library.formatDuration
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 
@@ -30,10 +32,16 @@ fun PlaylistDetailScreen(
     onAdd: (String) -> Unit,
     onRemove: (Int) -> Unit,
     onMove: (Int, Int) -> Unit,
+    onPlayNext: (List<TrackEntity>, Int) -> Unit = { _, _ -> },
+    onAddToQueue: (List<TrackEntity>, Int) -> Unit = { _, _ -> },
+    onPlayTrackNext: (TrackEntity) -> Unit = {},
+    onAddTrackToQueue: (TrackEntity) -> Unit = {},
 ) {
     var adding by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     var name by remember(state.playlist.id, state.playlist.name) { mutableStateOf(state.playlist.name) }
+    val playableTracks = state.entries.mapNotNull { it.track }
+    val skippedTracks = state.entries.size - playableTracks.size
     Column(Modifier.fillMaxSize().padding(TerminalDimensions.sm)) {
         AsciiFrame(state.playlist.name) {
             TerminalTextField(name, { name = it }, "PLAYLIST NAME")
@@ -42,6 +50,10 @@ fun PlaylistDetailScreen(
                 BracketButton("PLAY", onPlay, enabled = state.entries.any { it.available })
                 BracketButton("RENAME", { onRename(name) }, enabled = name.isNotBlank() && name != state.playlist.name)
                 BracketButton(if (adding) "CLOSE ADD" else "ADD TRACK", { adding = !adding })
+            }
+            Row {
+                BracketButton("PLAY NEXT", { onPlayNext(playableTracks, skippedTracks) }, enabled = playableTracks.isNotEmpty())
+                BracketButton("ADD QUEUE", { onAddToQueue(playableTracks, skippedTracks) }, enabled = playableTracks.isNotEmpty())
             }
         }
         LazyColumn {
@@ -64,6 +76,9 @@ fun PlaylistDetailScreen(
                     Column(Modifier.weight(1f).padding(vertical = TerminalDimensions.xs)) {
                         Text(row.title)
                         Text("${row.artist} · ${formatDuration(row.durationMs)}")
+                        row.track?.let { track ->
+                            QueueTrackActions(track.title, { onPlayTrackNext(track) }, { onAddTrackToQueue(track) })
+                        }
                     }
                     BracketIconButton("X", "Remove ${row.title}", { onRemove(row.position) })
                 }

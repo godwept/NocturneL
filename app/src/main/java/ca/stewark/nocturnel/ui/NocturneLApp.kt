@@ -30,6 +30,8 @@ import ca.stewark.nocturnel.ui.library.SearchScreen
 import ca.stewark.nocturnel.ui.library.groupArtists
 import ca.stewark.nocturnel.ui.navigation.NocturneLDestination
 import ca.stewark.nocturnel.ui.playback.NowPlayingScreen
+import ca.stewark.nocturnel.ui.playback.QueueEditorScreen
+import ca.stewark.nocturnel.ui.playback.toQueueEditorState
 import ca.stewark.nocturnel.ui.playlist.PlaylistsScreen
 import ca.stewark.nocturnel.ui.playlist.AlbumPlaylistUiState
 import ca.stewark.nocturnel.ui.playlist.PlaylistViewModel
@@ -65,6 +67,7 @@ fun NocturneLApp(
     val libraryGridState = rememberLazyGridState()
     var playlistPickerExpanded by rememberSaveable(selectedAlbumId) { mutableStateOf(false) }
     var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
+    var queueEditorOpen by rememberSaveable { mutableStateOf(false) }
     val selectedAlbum = albums.firstOrNull { it.id == selectedAlbumId }
     val selectedArtist: ArtistRow? = groupArtists(albums).firstOrNull { it.name == selectedArtistName }
     LaunchedEffect(selectedAlbumId) {
@@ -74,8 +77,9 @@ fun NocturneLApp(
     LaunchedEffect(albumPlaylistState) {
         if (albumPlaylistState is AlbumPlaylistUiState.Success) playlistPickerExpanded = false
     }
-    BackHandler(enabled = playlistPickerExpanded || selectedAlbumId != null || selectedArtistName != null) {
+    BackHandler(enabled = queueEditorOpen || playlistPickerExpanded || selectedAlbumId != null || selectedArtistName != null) {
         when {
+            queueEditorOpen -> { playback.expireQueueUndo(); queueEditorOpen = false }
             playlistPickerExpanded -> playlistPickerExpanded = false
             selectedAlbumId != null -> selectedAlbumId = null
             else -> selectedArtistName = null
@@ -90,12 +94,14 @@ fun NocturneLApp(
     TerminalScaffold(
         selected = destination,
         onSelected = {
+            if (queueEditorOpen) playback.expireQueueUndo()
+            queueEditorOpen = false
             destinationName = it.name
             selectedAlbumId = null
             selectedArtistName = null
         },
         effectsEnabled = settings.effectiveEffectsEnabled,
-        status = viewModel.scanState.message,
+        status = if (queueEditorOpen) viewModel.scanState.message else playbackState.queueNotice ?: viewModel.scanState.message,
     ) {
         when {
             selectedAlbum != null -> {
@@ -109,6 +115,10 @@ fun NocturneLApp(
                     },
                     onPlay = playback::play,
                     onPlayAlbum = playback::playQueue,
+                    onPlayAlbumNext = playback::playNext,
+                    onAddAlbumToQueue = playback::addToQueue,
+                    onPlayTrackNext = { playback.playNext(listOf(it)) },
+                    onAddTrackToQueue = { playback.addToQueue(listOf(it)) },
                     onChooseArtwork = {
                         artworkAlbum = selectedAlbum
                         artworkLauncher.launch(arrayOf("image/*"))
@@ -142,22 +152,38 @@ fun NocturneLApp(
                     playback::play,
                     onAlbumSelected = { selectedAlbumId = it.id },
                     onArtistSelected = { selectedArtistName = it.name },
+                    onPlayNext = { playback.playNext(listOf(it)) },
+                    onAddToQueue = { playback.addToQueue(listOf(it)) },
                 )
                 NocturneLDestination.ARTISTS -> ArtistsScreen(albums) { selectedArtistName = it.name }
                 NocturneLDestination.PLAYLISTS -> PlaylistsScreen(viewModel = playlistViewModel, playback = playback)
-                NocturneLDestination.NOW_PLAYING -> NowPlayingScreen(
-                    state = playbackState,
-                    albumArtwork = albums.firstOrNull { it.id == playbackState.albumId },
-                    effectsEnabled = settings.effectiveEffectsEnabled,
-                    onPrevious = playback::previous,
-                    onToggle = playback::toggle,
-                    onNext = playback::next,
-                    onShuffle = playback::toggleShuffle,
-                    onRepeat = playback::cycleRepeat,
-                    onSeek = playback::seekTo,
-                    analysisFrame = analysisFrame,
-                    onVisualizerActiveChanged = playback::setVisualizerActive,
-                )
+                NocturneLDestination.NOW_PLAYING -> if (queueEditorOpen) {
+                    QueueEditorScreen(
+                        state = playbackState.toQueueEditorState(),
+                        onBack = { queueEditorOpen = false },
+                        onJump = playback::jumpToQueueOccurrence,
+                        onMove = playback::moveQueueOccurrence,
+                        onRemove = playback::removeQueueOccurrence,
+                        onUndo = playback::undoQueueRemoval,
+                        onClear = playback::clearUpcomingQueue,
+                        onExpireUndo = playback::expireQueueUndo,
+                    )
+                } else {
+                    NowPlayingScreen(
+                        state = playbackState,
+                        albumArtwork = albums.firstOrNull { it.id == playbackState.albumId },
+                        effectsEnabled = settings.effectiveEffectsEnabled,
+                        onPrevious = playback::previous,
+                        onToggle = playback::toggle,
+                        onNext = playback::next,
+                        onShuffle = playback::toggleShuffle,
+                        onRepeat = playback::cycleRepeat,
+                        onSeek = playback::seekTo,
+                        onOpenQueue = { queueEditorOpen = true },
+                        analysisFrame = analysisFrame,
+                        onVisualizerActiveChanged = playback::setVisualizerActive,
+                    )
+                }
                 NocturneLDestination.SETTINGS -> SettingsScreen(
                     onChooseFolder = { launcher.launch(null) },
                     onRescan = viewModel::rescan,

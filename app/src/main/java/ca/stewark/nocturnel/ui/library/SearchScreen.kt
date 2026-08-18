@@ -21,6 +21,7 @@ import ca.stewark.nocturnel.data.entity.TrackEntity
 import ca.stewark.nocturnel.ui.components.AsciiFrame
 import ca.stewark.nocturnel.ui.components.TerminalNotice
 import ca.stewark.nocturnel.ui.components.TerminalTextField
+import ca.stewark.nocturnel.ui.components.QueueTrackActions
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 
 @Composable
@@ -31,6 +32,8 @@ fun SearchScreen(
     onAlbumSelected: (AlbumEntity) -> Unit,
     onArtistSelected: (ArtistRow) -> Unit,
     initialQuery: String = "",
+    onPlayNext: (TrackEntity) -> Unit = {},
+    onAddToQueue: (TrackEntity) -> Unit = {},
 ) {
     var query by remember { mutableStateOf(initialQuery) }
     val results = projectSearch(query, tracks, albums)
@@ -47,7 +50,12 @@ fun SearchScreen(
             if (results.artists.isNotEmpty()) item { GroupHeading("ARTISTS") }
             items(results.artists, key = { "artist:${it.name}" }) { artist -> ResultRow("${artist.name} :: ${artist.albums.size} ALBUM(S)") { onArtistSelected(artist) } }
             if (results.tracks.isNotEmpty()) item { GroupHeading("TRACKS") }
-            items(results.tracks, key = { "track:${it.relativePath}" }) { track -> ResultRow("${track.artist} :: ${track.title}") { onPlay(track) } }
+            items(results.tracks, key = { "track:${it.relativePath}" }) { track ->
+                androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth()) {
+                    ResultRow("${track.artist} :: ${track.title}", Modifier.weight(1f)) { onPlay(track) }
+                    QueueTrackActions(track.title, { onPlayNext(track) }, { onAddToQueue(track) })
+                }
+            }
         }
     }
 }
@@ -55,9 +63,9 @@ fun SearchScreen(
 @Composable private fun GroupHeading(text: String) =
     Text("+--[ $text ]", color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = TerminalDimensions.md))
 
-@Composable private fun ResultRow(text: String, onClick: () -> Unit) =
+@Composable private fun ResultRow(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) =
     Text(
         text,
-        Modifier.fillMaxWidth().defaultMinSize(minHeight = TerminalDimensions.minimumTouchTarget)
+        modifier.fillMaxWidth().defaultMinSize(minHeight = TerminalDimensions.minimumTouchTarget)
             .clickable(onClick = onClick).padding(vertical = TerminalDimensions.sm),
     )

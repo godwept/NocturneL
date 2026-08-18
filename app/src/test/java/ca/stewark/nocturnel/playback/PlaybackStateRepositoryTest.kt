@@ -57,4 +57,38 @@ class PlaybackStateRepositoryTest {
             PlaybackRestorePlanner.plan(snapshot, setOf("next.mp3")),
         )
     }
+
+    @Test
+    fun restorePreservesTheSelectedDuplicateOccurrence() {
+        val snapshot = PlaybackSnapshot(
+            paths = listOf("same.flac", "other.flac", "same.flac"),
+            currentIndex = 2,
+            positionMs = 9_000,
+            shuffle = false,
+            repeat = RepeatMode.OFF,
+            wasPlaying = false,
+        )
+
+        assertEquals(
+            PlaybackRestorePlan(snapshot.paths, currentIndex = 2, positionMs = 9_000),
+            PlaybackRestorePlanner.plan(snapshot, setOf("same.flac", "other.flac")),
+        )
+    }
+
+    @Test
+    fun restoreRemapsDuplicateOccurrenceAfterMissingEntriesAreRemoved() {
+        val snapshot = PlaybackSnapshot(
+            paths = listOf("missing.flac", "same.flac", "same.flac"),
+            currentIndex = 2,
+            positionMs = 3_000,
+            shuffle = false,
+            repeat = RepeatMode.OFF,
+            wasPlaying = false,
+        )
+
+        assertEquals(
+            PlaybackRestorePlan(listOf("same.flac", "same.flac"), currentIndex = 1, positionMs = 3_000),
+            PlaybackRestorePlanner.plan(snapshot, setOf("same.flac")),
+        )
+    }
 }

@@ -20,6 +20,7 @@ import ca.stewark.nocturnel.data.entity.TrackEntity
 import ca.stewark.nocturnel.ui.artwork.RetroArtwork
 import ca.stewark.nocturnel.ui.components.AsciiFrame
 import ca.stewark.nocturnel.ui.components.BracketButton
+import ca.stewark.nocturnel.ui.components.QueueTrackActions
 import ca.stewark.nocturnel.ui.playlist.AlbumPlaylistUiState
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 
@@ -39,6 +40,10 @@ fun AlbumDetailScreen(
     onTogglePlaylistPicker: () -> Unit = {},
     onAddAlbumToPlaylist: (PlaylistEntity) -> Unit = {},
     onCreatePlaylistAndAdd: (String) -> Unit = {},
+    onPlayAlbumNext: (List<TrackEntity>) -> Unit = {},
+    onAddAlbumToQueue: (List<TrackEntity>) -> Unit = {},
+    onPlayTrackNext: (TrackEntity) -> Unit = {},
+    onAddTrackToQueue: (TrackEntity) -> Unit = {},
 ) {
     val playableTracks = tracks.filter { it.status == "PLAYABLE" }
     Column(Modifier.fillMaxSize().padding(TerminalDimensions.sm)) {
@@ -46,6 +51,10 @@ fun AlbumDetailScreen(
             BracketButton("BACK", onBack)
             BracketButton("PLAY", { onPlayAlbum(tracks) }, enabled = tracks.isNotEmpty())
             BracketButton("SHUFFLE", { onShuffleAlbum(tracks) }, enabled = tracks.isNotEmpty())
+        }
+        Row {
+            BracketButton("PLAY NEXT", { onPlayAlbumNext(tracks) }, enabled = playableTracks.isNotEmpty())
+            BracketButton("ADD QUEUE", { onAddAlbumToQueue(tracks) }, enabled = playableTracks.isNotEmpty())
         }
         LazyColumn {
             item {
@@ -89,6 +98,9 @@ fun AlbumDetailScreen(
                     Text(track.trackNumber?.toString()?.padStart(2, '0') ?: "--", color = MaterialTheme.colorScheme.secondary)
                     Text(track.title, Modifier.weight(1f).padding(horizontal = TerminalDimensions.xs))
                     Text(formatDuration(track.durationMs), color = MaterialTheme.colorScheme.secondary)
+                    if (track.status == "PLAYABLE") {
+                        QueueTrackActions(track.title, { onPlayTrackNext(track) }, { onAddTrackToQueue(track) })
+                    }
                 }
             }
         }

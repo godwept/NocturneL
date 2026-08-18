@@ -24,12 +24,11 @@ data class PlaybackRestorePlan(
 
 object PlaybackRestorePlanner {
     fun plan(snapshot: PlaybackSnapshot, playablePaths: Set<String>): PlaybackRestorePlan? {
-        val availablePaths = snapshot.paths.filter(playablePaths::contains)
-        if (availablePaths.isEmpty()) return null
-        val currentPath = snapshot.paths.getOrNull(snapshot.currentIndex)
-        val restoredIndex = currentPath?.let(availablePaths::indexOf)?.takeIf { it >= 0 } ?: 0
-        val restoredPosition = if (availablePaths[restoredIndex] == currentPath) snapshot.positionMs else 0
-        return PlaybackRestorePlan(availablePaths, restoredIndex, restoredPosition)
+        val available = snapshot.paths.withIndex().filter { it.value in playablePaths }
+        if (available.isEmpty()) return null
+        val restoredIndex = available.indexOfFirst { it.index == snapshot.currentIndex }.takeIf { it >= 0 } ?: 0
+        val restoredPosition = if (available[restoredIndex].index == snapshot.currentIndex) snapshot.positionMs else 0
+        return PlaybackRestorePlan(available.map { it.value }, restoredIndex, restoredPosition)
     }
 }
 

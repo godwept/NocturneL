@@ -13,12 +13,15 @@ import ca.stewark.nocturnel.data.entity.TrackEntity
 import ca.stewark.nocturnel.data.model.PlaylistEntryRow
 import ca.stewark.nocturnel.playback.PlaybackQueueItem
 import ca.stewark.nocturnel.playback.PlaybackUiState
+import ca.stewark.nocturnel.playback.QueueEntry
 import ca.stewark.nocturnel.ui.library.AlbumDetailScreen
 import ca.stewark.nocturnel.ui.library.AlbumGridScreen
 import ca.stewark.nocturnel.ui.library.ArtistsScreen
 import ca.stewark.nocturnel.ui.library.LibrarySetupScreen
 import ca.stewark.nocturnel.ui.library.SearchScreen
 import ca.stewark.nocturnel.ui.playback.NowPlayingScreen
+import ca.stewark.nocturnel.ui.playback.QueueEditorScreen
+import ca.stewark.nocturnel.ui.playback.queueEditorState
 import ca.stewark.nocturnel.ui.playback.visualizer.TerminalVisualizerScene
 import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerDisplayMode
 import ca.stewark.nocturnel.ui.playlist.PlaylistDetailScreen
@@ -167,11 +170,31 @@ fun NowPlayingPreview() = TerminalPreview {
             durationMs = 183_000,
             playing = true,
             shuffle = true,
-            upNext = listOf(PlaybackQueueItem("next", "Afterimage", "Signal One")),
+            currentOccurrenceId = "current",
+            currentPath = "red/01.flac",
+            upNext = listOf(PlaybackQueueItem("next", "next.flac", "Afterimage", "Signal One")),
         ),
         previewAlbums.first(),
         true,
         {}, {}, {}, {}, {}, {},
+    )
+}
+
+@PreviewTest
+@Preview(name = "Queue editor", widthDp = 412, heightDp = 915)
+@Composable
+fun QueueEditorPreview() = TerminalPreview {
+    QueueEditorScreen(
+        state = queueEditorState(
+            current = QueueEntry("current", "red/01.flac", "Carrier 1", "Signal One", "Red Horizon", 183_000),
+            upcoming = listOf(
+                QueueEntry("next-1", "red/02.flac", "Afterimage 1", "Signal One", "Red Horizon", 241_000),
+                QueueEntry("next-2", "red/02.flac", "Afterimage 1", "Signal One", "Red Horizon", 241_000),
+            ),
+            canUndo = true,
+            notice = "REMOVED CARRIER 2",
+        ),
+        {}, {}, { _, _, _ -> }, {}, {}, {}, {},
     )
 }
 

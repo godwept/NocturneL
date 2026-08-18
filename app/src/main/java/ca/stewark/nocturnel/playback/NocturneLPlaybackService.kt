@@ -22,6 +22,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ca.stewark.nocturnel.visualizer.VisualizerRenderersFactory
+import java.util.UUID
 
 @UnstableApi
 class NocturneLPlaybackService : MediaSessionService() {
@@ -51,6 +52,7 @@ class NocturneLPlaybackService : MediaSessionService() {
                             Player.EVENT_PLAY_WHEN_READY_CHANGED,
                             Player.EVENT_SHUFFLE_MODE_ENABLED_CHANGED,
                             Player.EVENT_REPEAT_MODE_CHANGED,
+                            Player.EVENT_TIMELINE_CHANGED,
                         )
                     ) {
                         savePlaybackState()
@@ -150,7 +152,11 @@ class NocturneLPlaybackService : MediaSessionService() {
                     .setTitle(track.title)
                     .setArtist(track.artist)
                     .setAlbumTitle(track.album)
-                    .setExtras(Bundle().apply { putString("album_id", track.albumId) })
+                    .setExtras(Bundle().apply {
+                        putString(QUEUE_ALBUM_ID, track.albumId)
+                        putString(QUEUE_OCCURRENCE_ID, UUID.randomUUID().toString())
+                        putLong(QUEUE_DURATION_MS, track.durationMs)
+                    })
                     .build(),
             )
             .build()

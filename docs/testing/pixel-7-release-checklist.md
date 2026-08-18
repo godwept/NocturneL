@@ -23,3 +23,12 @@
 - [ ] Play a treble-rich track and confirm upper bands respond while silence and near-silence still settle to baseline.
 - [ ] After a quiet passage, seek and change tracks; confirm the learned spectrum gain does not carry into the new signal.
 - [ ] Run a visualizer for 30 minutes and check for dropped audio, animation stutter, excessive heat, or unreasonable battery drain.
+- [ ] Use Play Next and Add Queue from a track, album, and playlist with one unavailable entry; verify order and skipped feedback.
+- [ ] Issue Play Next for two albums in succession and confirm the newest block plays first while each album remains ordered.
+- [ ] Queue the same track twice and confirm both occurrences remain independently editable.
+- [ ] From Queue, jump, remove and Undo, drag-reorder, and use accessibility Move Up/Down actions.
+- [ ] Enable shuffle, edit the queue, and confirm shuffle turns off and the displayed order becomes authoritative.
+- [ ] Enable Repeat All, clear upcoming tracks, and confirm Repeat All turns off while the current track continues.
+- [ ] Begin a drag as playback changes tracks and confirm the stale drag is cancelled without corrupting the queue.
+- [ ] Reorder a queue containing duplicate tracks, restart the app/service, and confirm order plus the selected duplicate occurrence restore.
+- [ ] After queue edits, confirm notification, lock-screen, and headset controls remain responsive.

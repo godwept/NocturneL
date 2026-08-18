@@ -62,6 +62,10 @@ fun PlaylistsScreen(viewModel: PlaylistViewModel = viewModel(), playback: Playba
             { viewModel.add(state.playlist.id, it) },
             { viewModel.remove(state.playlist.id, it) },
             { from, to -> viewModel.move(state.playlist.id, from, to) },
+            { tracks, skipped -> player.playNext(tracks, skipped) },
+            { tracks, skipped -> player.addToQueue(tracks, skipped) },
+            { player.playNext(listOf(it)) },
+            { player.addToQueue(listOf(it)) },
         )
         return
     }

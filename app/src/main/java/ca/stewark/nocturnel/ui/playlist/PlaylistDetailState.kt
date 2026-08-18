@@ -13,6 +13,7 @@ data class PlaylistTrackRow(
     val available: Boolean,
     val canMoveUp: Boolean,
     val canMoveDown: Boolean,
+    val track: TrackEntity?,
 )
 
 data class PlaylistDetailState(
@@ -27,6 +28,7 @@ fun playlistDetailState(
     allTracks: List<TrackEntity>,
 ): PlaylistDetailState {
     val existing = rows.map { it.relativePath }.toSet()
+    val tracksByPath = allTracks.associateBy { it.relativePath }
     return PlaylistDetailState(
         playlist,
         rows.mapIndexed { index, row ->
@@ -39,6 +41,7 @@ fun playlistDetailState(
                 row.trackStatus == "PLAYABLE",
                 index > 0,
                 index < rows.lastIndex,
+                tracksByPath[row.relativePath]?.takeIf { it.status == "PLAYABLE" },
             )
         },
         allTracks.filter { it.status == "PLAYABLE" && it.relativePath !in existing },

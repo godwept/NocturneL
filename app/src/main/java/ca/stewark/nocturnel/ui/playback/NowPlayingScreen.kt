@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +17,7 @@ import ca.stewark.nocturnel.playback.PlaybackUiState
 import ca.stewark.nocturnel.ui.artwork.CrtArtwork
 import ca.stewark.nocturnel.ui.components.AsciiFrame
 import ca.stewark.nocturnel.ui.components.BracketIconButton
+import ca.stewark.nocturnel.ui.components.BracketButton
 import ca.stewark.nocturnel.ui.components.NoticeSeverity
 import ca.stewark.nocturnel.ui.components.TerminalMarquee
 import ca.stewark.nocturnel.ui.components.TerminalNotice
@@ -38,6 +38,7 @@ fun NowPlayingScreen(
     onShuffle: () -> Unit,
     onRepeat: () -> Unit,
     onSeek: (Long) -> Unit,
+    onOpenQueue: () -> Unit = {},
     analysisFrame: AudioAnalysisFrame = AudioAnalysisFrame.Idle,
     onVisualizerActiveChanged: (Boolean) -> Unit = {},
 ) {
@@ -76,13 +77,16 @@ fun NowPlayingScreen(
                 }
             }
         }
-        if (state.upNext.isNotEmpty()) {
-            item { Text("+--[ UP NEXT ]", color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = TerminalDimensions.md)) }
-            items(state.upNext, key = { it.relativePath }) { item ->
-                Column(Modifier.padding(vertical = TerminalDimensions.xs)) {
-                    Text(item.title)
-                    Text(item.artist, color = MaterialTheme.colorScheme.secondary)
-                }
+        item {
+            Row(
+                Modifier.fillMaxWidth().padding(top = TerminalDimensions.md),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    if (state.upNext.isEmpty()) "QUEUE EMPTY" else "${state.upNext.size} TRACK(S) UPCOMING",
+                    color = MaterialTheme.colorScheme.secondary,
+                )
+                BracketButton("QUEUE", onOpenQueue)
             }
         }
     }

@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import ca.stewark.nocturnel.data.entity.PlaylistEntity
 import ca.stewark.nocturnel.ui.sampleAlbum
@@ -14,6 +15,7 @@ import ca.stewark.nocturnel.ui.theme.NocturneLTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Assert.assertEquals
 
 class AlbumDetailScreenTest {
     @get:Rule val compose = createComposeRule()
@@ -52,5 +54,24 @@ class AlbumDetailScreenTest {
         compose.onNodeWithText("ADD ALBUM TO PLAYLIST").assertIsDisplayed()
         compose.onNodeWithText(":: ADDED 2 TRACK(S) TO NIGHT RUN").assertIsDisplayed()
         assertTrue(toggled)
+    }
+
+    @Test fun albumAndTrackQueueActionsUsePlayableTracks() {
+        var albumNext = 0
+        var trackQueued = ""
+        compose.setContent {
+            NocturneLTheme {
+                AlbumDetailScreen(
+                    sampleAlbum, sampleTracks, {}, {}, {}, {}, {},
+                    onPlayAlbumNext = { albumNext = it.size },
+                    onAddTrackToQueue = { trackQueued = it.relativePath },
+                )
+            }
+        }
+
+        compose.onNodeWithText("[ PLAY NEXT ]").performClick()
+        compose.onNodeWithContentDescription("Add Carrier to queue").performClick()
+        assertEquals(2, albumNext)
+        assertEquals(sampleTracks.first().relativePath, trackQueued)
     }
 }
