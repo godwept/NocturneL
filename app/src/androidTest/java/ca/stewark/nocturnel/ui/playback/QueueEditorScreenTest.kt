@@ -1,13 +1,24 @@
 package ca.stewark.nocturnel.ui.playback
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import ca.stewark.nocturnel.playback.QueueEntry
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -50,6 +61,145 @@ class QueueEditorScreenTest {
         assertEquals(1, undo)
         assertEquals(1, clear)
     }
+
+    @Test fun dragDownAcrossMultipleRowsCommitsOnceOnRelease() {
+        val moves = mutableListOf<Move>()
+        setQueue(listOf("first", "second", "third", "fourth")) { id, target, current ->
+            moves += Move(id, target, current)
+        }
+
+        compose.onNodeWithTag("queue-drag-second").performTouchInput {
+            down(center)
+            moveBy(Offset(0f, center.y * 6f))
+            up()
+        }
+
+        assertEquals(listOf(Move("second", 3, "current")), moves)
+    }
+
+    @Test fun dragUpAcrossMultipleRowsCommitsOnceOnRelease() {
+        val moves = mutableListOf<Move>()
+        setQueue(listOf("first", "second", "third", "fourth")) { id, target, current ->
+            moves += Move(id, target, current)
+        }
+
+        compose.onNodeWithTag("queue-drag-fourth").performTouchInput {
+            down(center)
+            moveBy(Offset(0f, -center.y * 8f))
+            up()
+        }
+
+        assertEquals(listOf(Move("fourth", 0, "current")), moves)
+    }
+
+    @Test fun noOpCancelledAndSingleItemDragsDoNotMove() {
+        val moves = mutableListOf<Move>()
+        setQueue(listOf("only")) { id, target, current -> moves += Move(id, target, current) }
+
+        compose.onNodeWithTag("queue-drag-only").performTouchInput {
+            down(center)
+            moveBy(Offset(0f, 2f))
+            up()
+        }
+        compose.onNodeWithTag("queue-drag-only").performTouchInput {
+            down(center)
+            moveBy(Offset(0f, center.y * 2f))
+            cancel()
+        }
+
+        assertTrue(moves.isEmpty())
+    }
+
+    @Test fun staleCurrentTrackCancelsActiveDrag() {
+        val moves = mutableListOf<Move>()
+        var editorState by mutableStateOf(state("current", listOf("first", "second", "third")))
+        compose.setContent {
+            NocturneLTheme {
+                QueueEditorScreen(editorState, {}, {}, { id, target, current -> moves += Move(id, target, current) }, {}, {}, {}, {})
+            }
+        }
+
+        compose.onNodeWithTag("queue-drag-second").performTouchInput {
+            down(center)
+            moveBy(Offset(0f, center.y * 4f))
+        }
+        compose.runOnIdle { editorState = state("replacement", listOf("first", "second", "third")) }
+        compose.onNodeWithTag("queue-drag-second").performTouchInput { up() }
+
+        assertTrue(moves.isEmpty())
+    }
+
+    @Test fun accessibilityMovesAndRowActionsRemainIndependent() {
+        val moves = mutableListOf<Move>()
+        var jumped = ""
+        var removed = ""
+        val editorState = state("current", listOf("first", "second", "third"))
+        compose.setContent {
+            NocturneLTheme {
+                QueueEditorScreen(
+                    editorState,
+                    {},
+                    { jumped = it },
+                    { id, target, current -> moves += Move(id, target, current) },
+                    { removed = it },
+                    {}, {}, {},
+                )
+            }
+        }
+
+        val actions = compose.onNodeWithTag("queue-drag-second")
+            .fetchSemanticsNode().config[SemanticsActions.CustomActions]
+        compose.runOnIdle {
+            actions.first { it.label == "Move second up" }.action()
+            actions.first { it.label == "Move second down" }.action()
+        }
+        compose.onNodeWithContentDescription("Jump to second").performClick()
+        compose.onNodeWithContentDescription("Remove second").performClick()
+
+        assertEquals(
+            listOf(Move("second", 0, "current"), Move("second", 2, "current")),
+            moves,
+        )
+        assertEquals("second", jumped)
+        assertEquals("second", removed)
+    }
+
+    @Test fun liftedRowExposesItsPreviewPosition() {
+        compose.setContent {
+            NocturneLTheme {
+                UpcomingQueueRow(
+                    row = queueEditorState(null, listOf(entry("dragged"), entry("next")), false, null).upcoming.first(),
+                    currentOccurrenceId = "current",
+                    isDragging = true,
+                    dragTranslationY = 20f,
+                    itemCount = 2,
+                    onJump = {},
+                    onMove = { _, _, _ -> },
+                    onRemove = {},
+                    onDragStart = {},
+                    onDrag = {},
+                    onDragEnd = {},
+                    onDragCancel = {},
+                )
+            }
+        }
+
+        compose.onNodeWithTag("queue-row-dragged").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Dragging, position 1 of 2"),
+        )
+    }
+
+    private fun setQueue(ids: List<String>, onMove: (String, Int, String?) -> Unit) {
+        val editorState = state("current", ids)
+        compose.setContent {
+            NocturneLTheme { QueueEditorScreen(editorState, {}, {}, onMove, {}, {}, {}, {}) }
+        }
+    }
+
+    private fun state(currentId: String, upcomingIds: List<String>) =
+        queueEditorState(entry(currentId), upcomingIds.map(::entry), false, null)
+
+    private data class Move(val occurrenceId: String, val targetIndex: Int, val currentOccurrenceId: String?)
 
     private fun entry(id: String) = QueueEntry(id, "same.flac", id, "Artist", "Album", 1_000)
 }

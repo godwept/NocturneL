@@ -4,9 +4,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.data.entity.PlaylistEntity
@@ -28,6 +30,9 @@ import ca.stewark.nocturnel.ui.listening.ListeningUiState
 import ca.stewark.nocturnel.ui.listening.ResumeUiState
 import ca.stewark.nocturnel.ui.playback.NowPlayingScreen
 import ca.stewark.nocturnel.ui.playback.QueueEditorScreen
+import ca.stewark.nocturnel.ui.playback.QueueEditorRow
+import ca.stewark.nocturnel.ui.playback.QueueEditorTrack
+import ca.stewark.nocturnel.ui.playback.UpcomingQueueRow
 import ca.stewark.nocturnel.ui.playback.queueEditorState
 import ca.stewark.nocturnel.ui.playback.visualizer.TerminalVisualizerScene
 import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerDisplayMode
@@ -241,6 +246,32 @@ fun QueueEditorPreview() = TerminalPreview {
             notice = "REMOVED CARRIER 2",
         ),
         {}, {}, { _, _, _ -> }, {}, {}, {}, {},
+    )
+}
+
+@PreviewTest
+@Preview(name = "Queue dragged row", widthDp = 412, heightDp = 120)
+@Composable
+fun QueueDraggedRowPreview() = TerminalPreview {
+    UpcomingQueueRow(
+        row = QueueEditorRow(
+            track = QueueEditorTrack("next-2", "Afterimage 1", "Signal One", "Red Horizon", 241_000),
+            upcomingIndex = 1,
+            canMoveUp = true,
+            canMoveDown = true,
+        ),
+        currentOccurrenceId = "current",
+        isDragging = true,
+        dragTranslationY = 0f,
+        itemCount = 4,
+        onJump = {},
+        onMove = { _, _, _ -> },
+        onRemove = {},
+        onDragStart = {},
+        onDrag = {},
+        onDragEnd = {},
+        onDragCancel = {},
+        modifier = Modifier.padding(16.dp),
     )
 }
 
