@@ -34,7 +34,7 @@ class VisualizerDeckTest {
         compose.onNodeWithTag("visualizer-deck").performClick()
         compose.onNodeWithTag("visualizer-bands").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-deck").performClick()
-        compose.onNodeWithTag("visualizer-scope").assertIsDisplayed()
+        compose.onNodeWithTag("visualizer-tunnel").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-deck").performClick()
         compose.onNodeWithTag("visualizer-art").assertIsDisplayed()
         assertEquals(false, activity.last())
@@ -79,6 +79,7 @@ class VisualizerDeckTest {
 
         compose.onNodeWithTag("visualizer-deck").performClick()
         compose.onNodeWithTag("visualizer-sync-controls").assertIsDisplayed()
+        compose.onNodeWithTag("visualizer-tunnel").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-deck").performClick()
         compose.onNodeWithTag("visualizer-sync-controls").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-deck").performClick()

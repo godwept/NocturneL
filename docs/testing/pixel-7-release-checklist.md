@@ -12,8 +12,8 @@
 - [ ] Disconnect headphones/Bluetooth and confirm audio focus behavior is acceptable.
 - [ ] In airplane mode, rescan, browse, and play local files.
 - [ ] Test known intended gapless album transitions; report device/codec behavior without enabling silence trimming.
-- [ ] On Now Playing, confirm taps cycle album art → radar → bands → scope → album art, and leaving/re-entering resets to album art.
-- [ ] With bass- and percussion-heavy tracks, confirm kick/snare transients align visibly in radar, bands, and scope.
+- [ ] On Now Playing, confirm taps cycle album art → radar → bands → tunnel → album art, and leaving/re-entering resets to album art.
+- [ ] With bass- and percussion-heavy tracks, confirm kick/snare transients align visibly in radar, bands, and tunnel.
 - [ ] Confirm pause, resume, seek, previous, next, and a known gapless transition reset or resume the visualizer cleanly.
 - [ ] Switch visualization modes rapidly and confirm there are no audible glitches.
 - [ ] Confirm silence settles to an idle trace and an unavailable signal shows `SIGNAL UNAVAILABLE` without affecting playback.
@@ -23,13 +23,18 @@
 - [ ] Play a treble-rich track and confirm upper bands respond while silence and near-silence still settle to baseline.
 - [ ] After a quiet passage, seek and change tracks; confirm the learned spectrum gain does not carry into the new signal.
 - [ ] Run a visualizer for 30 minutes and check for dropped audio, animation stutter, excessive heat, or unreasonable battery drain.
-- [ ] In radar, bands, and scope, confirm visualizer sync minus/plus changes the shared value by exactly 25 ms per tap without changing modes.
+- [ ] In radar, bands, and tunnel, confirm visualizer sync minus/plus changes the shared value by exactly 25 ms per tap without changing modes.
 - [ ] Tap the visualizer sync value and confirm it resets to `0 ms`.
 - [ ] Confirm minus disables at `-500 ms` and plus disables at `+1000 ms`.
 - [ ] Calibrate an obvious percussion track first over the phone or wired output, then over Bluetooth earbuds; confirm positive values delay all three visualizers consistently.
 - [ ] Set a non-zero visualizer sync value, fully close and reopen the app, and confirm the same value is restored.
 - [ ] At a large positive offset, verify pause, seek, track transition, and fresh visualizer activation settle cleanly while PCM accumulates.
 - [ ] Adjust and reset visualizer sync repeatedly during playback and confirm there is no audible seek, interruption, or glitch.
+- [ ] Watch the tunnel through quiet, balanced, bass-heavy, treble-rich, and percussion-heavy passages; confirm motion stays restrained while each signal character remains visible.
+- [ ] Confirm a strong percussion transient produces one visible bright tunnel echo without flashing the full display.
+- [ ] Pause during tunnel mode and enter digital silence; confirm the scene settles into faint, evenly spaced centered frames.
+- [ ] Seek, change tracks, toggle CRT effects, and leave/re-enter tunnel mode; confirm old persistence trails clear immediately.
+- [ ] Compare tunnel rendering with CRT effects on and off, then run it for 30 minutes and confirm readability, motion comfort, smoothness, and acceptable heat/battery use.
 - [ ] Use Play Next and Add Queue from a track, album, and playlist with one unavailable entry; verify order and skipped feedback.
 - [ ] Issue Play Next for two albums in succession and confirm the newest block plays first while each album remains ordered.
 - [ ] Queue the same track twice and confirm both occurrences remain independently editable.

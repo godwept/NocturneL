@@ -8,9 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,21 +42,12 @@ internal fun TerminalVisualizerScene(
     val tag = when (mode) {
         VisualizerDisplayMode.RADAR -> "visualizer-radar"
         VisualizerDisplayMode.BANDS -> "visualizer-bands"
-        VisualizerDisplayMode.SCOPE -> "visualizer-scope"
+        VisualizerDisplayMode.TUNNEL -> "visualizer-tunnel"
         VisualizerDisplayMode.ART -> "visualizer-art"
     }
-    val scopeHistory = remember { mutableStateListOf<List<Float>>() }
-    var lastScopeFrameId by remember { mutableLongStateOf(-1L) }
+    var tunnelHistory by remember(mode, effectsEnabled) { mutableStateOf(TunnelHistory.Empty) }
     LaunchedEffect(mode, frame.frameId, frame.status, effectsEnabled) {
-        if (mode != VisualizerDisplayMode.SCOPE || frame.status != AnalysisStatus.ACTIVE || !effectsEnabled) {
-            scopeHistory.clear()
-            lastScopeFrameId = -1L
-        } else {
-            if (lastScopeFrameId >= frame.frameId) scopeHistory.clear()
-            if (scopeHistory.size == 3) scopeHistory.removeAt(0)
-            scopeHistory.add(frame.waveform)
-            lastScopeFrameId = frame.frameId
-        }
+        tunnelHistory = updateTunnelHistory(tunnelHistory, mode, frame, effectsEnabled)
     }
     Box(
         modifier
@@ -109,26 +99,41 @@ internal fun TerminalVisualizerScene(
                             drawLine(PhosphorBright.copy(alpha = .75f), Offset(bar.left, bar.peakY), Offset(bar.right, bar.peakY), 1f)
                         }
                     }
-                    VisualizerDisplayMode.SCOPE -> {
-                        fun drawTrace(points: List<VisualizerPoint>, color: androidx.compose.ui.graphics.Color, stroke: Float) {
-                            if (points.isEmpty()) return
+                    VisualizerDisplayMode.TUNNEL -> {
+                        fun pathFor(layer: TunnelLayer): Path? {
+                            if (layer.points.isEmpty()) return null
                             val path = Path()
-                            path.moveTo(points.first().x, points.first().y)
-                            points.drop(1).forEach { path.lineTo(it.x, it.y) }
-                            drawPath(path, color, style = Stroke(stroke))
+                            path.moveTo(layer.points.first().x, layer.points.first().y)
+                            layer.points.drop(1).forEach { path.lineTo(it.x, it.y) }
+                            path.close()
+                            return path
                         }
                         if (effectsEnabled) {
-                            scopeHistory.forEachIndexed { index, waveform ->
-                                drawTrace(scopeGeometry(waveform, size.width, size.height), PhosphorMuted.copy(alpha = .12f + index * .08f), 2f)
+                            tunnelHistory.priorFrames.forEachIndexed { index, priorFrame ->
+                                val alpha = .08f + index * .04f
+                                tunnelGeometry(priorFrame, size.width, size.height).layers.forEach { layer ->
+                                    pathFor(layer)?.let { path ->
+                                        drawPath(path, PhosphorMuted.copy(alpha = alpha), style = Stroke(2f))
+                                    }
+                                }
                             }
                         }
-                        val points = scopeGeometry(frame, size.width, size.height)
-                        if (points.isNotEmpty()) {
-                            val path = Path()
-                            path.moveTo(points.first().x, points.first().y)
-                            points.drop(1).forEach { path.lineTo(it.x, it.y) }
-                            if (effectsEnabled) drawPath(path, PhosphorDim.copy(alpha = .35f), style = Stroke(5f))
-                            drawPath(path, PhosphorBright, style = Stroke(1.5f))
+                        val geometry = tunnelGeometry(frame, size.width, size.height)
+                        geometry.layers.forEachIndexed { index, layer ->
+                            val fraction = if (geometry.layers.size <= 1) 1f else index.toFloat() / (geometry.layers.size - 1)
+                            val stroke = 1f + fraction * .75f
+                            pathFor(layer)?.let { path ->
+                                if (effectsEnabled) {
+                                    drawPath(path, PhosphorDim.copy(alpha = .18f), style = Stroke(4f))
+                                }
+                                drawPath(path, Phosphor.copy(alpha = .35f + fraction * .55f), style = Stroke(stroke))
+                            }
+                        }
+                        geometry.echoLayer?.let { echo ->
+                            pathFor(echo)?.let { path ->
+                                val alpha = frame.transient.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0f
+                                drawPath(path, PhosphorBright.copy(alpha = alpha), style = Stroke(2f))
+                            }
                         }
                     }
                     VisualizerDisplayMode.ART -> Unit

@@ -98,9 +98,12 @@ private val spectrumFrame = radarFrame.copy(
     transient = .35f,
     frameId = 42,
 )
-private val scopeFrame = radarFrame.copy(
+private val tunnelFrame = radarFrame.copy(
     waveform = List(128) { index -> (sin(2.0 * PI * index / 24.0) * .8).toFloat() },
-    transient = .2f,
+    lowEnergy = .55f,
+    midEnergy = .62f,
+    highEnergy = .38f,
+    transient = 0f,
     frameId = 43,
 )
 
@@ -311,16 +314,30 @@ fun VisualizerBandsPreview() = TerminalPreview {
     TerminalVisualizerScene(VisualizerDisplayMode.BANDS, spectrumFrame, true, Modifier.fillMaxSize())
 }
 
-@Preview(name = "Visualizer scope", widthDp = 320, heightDp = 320)
+@PreviewTest
+@Preview(name = "Visualizer tunnel", widthDp = 320, heightDp = 320)
 @Composable
-fun VisualizerScopePreview() = TerminalPreview {
-    TerminalVisualizerScene(VisualizerDisplayMode.SCOPE, scopeFrame, true, Modifier.fillMaxSize())
+fun VisualizerTunnelPreview() = TerminalPreview {
+    TerminalVisualizerScene(VisualizerDisplayMode.TUNNEL, tunnelFrame, true, Modifier.fillMaxSize())
 }
 
-@Preview(name = "Visualizer scope effects off", widthDp = 320, heightDp = 320)
+@PreviewTest
+@Preview(name = "Visualizer tunnel effects off", widthDp = 320, heightDp = 320)
 @Composable
-fun VisualizerScopeEffectsOffPreview() = TerminalPreview {
-    TerminalVisualizerScene(VisualizerDisplayMode.SCOPE, scopeFrame, false, Modifier.fillMaxSize())
+fun VisualizerTunnelEffectsOffPreview() = TerminalPreview {
+    TerminalVisualizerScene(VisualizerDisplayMode.TUNNEL, tunnelFrame, false, Modifier.fillMaxSize())
+}
+
+@PreviewTest
+@Preview(name = "Visualizer tunnel transient", widthDp = 320, heightDp = 320)
+@Composable
+fun VisualizerTunnelTransientPreview() = TerminalPreview {
+    TerminalVisualizerScene(
+        VisualizerDisplayMode.TUNNEL,
+        tunnelFrame.copy(transient = 1f, frameId = 44),
+        true,
+        Modifier.fillMaxSize(),
+    )
 }
 
 @Preview(name = "Visualizer radar idle", widthDp = 320, heightDp = 320)
