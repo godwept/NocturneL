@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import ca.stewark.nocturnel.data.entity.TrackEntity
 import ca.stewark.nocturnel.ui.components.FavoriteToggle
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
@@ -32,10 +33,12 @@ internal fun ListeningTrackRow(
             .padding(vertical = TerminalDimensions.xs),
     ) {
         Column(Modifier.weight(1f)) {
-            Text(title)
+            Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(
                 listOfNotNull(artist.takeIf { it.isNotBlank() }, "$playCount PLAY(S)", supportingText).joinToString(" · "),
                 color = MaterialTheme.colorScheme.secondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
         FavoriteToggle(title, favorite, onToggleFavorite)

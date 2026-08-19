@@ -7,16 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import ca.stewark.nocturnel.ui.components.Scanlines
@@ -42,12 +36,7 @@ internal fun TerminalVisualizerScene(
     val tag = when (mode) {
         VisualizerDisplayMode.RADAR -> "visualizer-radar"
         VisualizerDisplayMode.BANDS -> "visualizer-bands"
-        VisualizerDisplayMode.RING -> "visualizer-ring"
         VisualizerDisplayMode.ART -> "visualizer-art"
-    }
-    var ringState by remember(mode, effectsEnabled) { mutableStateOf(RingState.Empty) }
-    LaunchedEffect(mode, frame.frameId, frame.status, effectsEnabled) {
-        ringState = updateRingState(ringState, mode, frame, effectsEnabled)
     }
     Box(
         modifier
@@ -97,46 +86,6 @@ internal fun TerminalVisualizerScene(
                                 )
                             }
                             drawLine(PhosphorBright.copy(alpha = .75f), Offset(bar.left, bar.peakY), Offset(bar.right, bar.peakY), 1f)
-                        }
-                    }
-                    VisualizerDisplayMode.RING -> {
-                        fun pathFor(points: List<VisualizerPoint>): Path? {
-                            if (points.isEmpty()) return null
-                            val path = Path()
-                            path.moveTo(points.first().x, points.first().y)
-                            points.drop(1).forEach { path.lineTo(it.x, it.y) }
-                            path.close()
-                            return path
-                        }
-                        val geometry = ringGeometry(
-                            frame = frame,
-                            width = size.width,
-                            height = size.height,
-                            magnitudes = ringState.magnitudes.takeIf { it.isNotEmpty() },
-                            echoState = ringState.echo,
-                            effectsEnabled = effectsEnabled,
-                        )
-                        pathFor(geometry.basePoints)?.let { path ->
-                            drawPath(path, PhosphorMuted.copy(alpha = .42f), style = Stroke(1f))
-                        }
-                        geometry.spikes.sortedBy { it.depth }.forEach { spike ->
-                            val start = Offset(spike.base.x, spike.base.y)
-                            val end = Offset(spike.tip.x, spike.tip.y)
-                            val stroke = .8f + spike.depth * 1.2f
-                            if (effectsEnabled) {
-                                drawLine(PhosphorDim.copy(alpha = .18f), start, end, stroke + 3f)
-                            }
-                            val color = when {
-                                spike.depth < 1f / 3f -> PhosphorMuted.copy(alpha = .72f)
-                                spike.depth < 2f / 3f -> Phosphor.copy(alpha = .88f)
-                                else -> PhosphorBright
-                            }
-                            drawLine(color, start, end, stroke)
-                        }
-                        geometry.echo?.let { echo ->
-                            pathFor(echo.points)?.let { path ->
-                                drawPath(path, PhosphorBright.copy(alpha = echo.alpha), style = Stroke(2f))
-                            }
                         }
                     }
                     VisualizerDisplayMode.ART -> Unit

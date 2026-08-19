@@ -1,6 +1,7 @@
 package ca.stewark.nocturnel.playback
 
 import java.io.File
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -17,15 +18,20 @@ class QueueEditingWiringTest {
         assertTrue("playWhenReady = false" in connection)
     }
 
-    @Test fun appWiresDedicatedQueueEditorAndAllQueueEntryPoints() {
+    @Test fun appWiresQueueEditorAndAppendOnlyQueueEntryPoints() {
         val app = File("src/main/java/ca/stewark/nocturnel/ui/NocturneLApp.kt").readText()
         val playlists = File("src/main/java/ca/stewark/nocturnel/ui/playlist/PlaylistsScreen.kt").readText()
+        val connection = File("src/main/java/ca/stewark/nocturnel/playback/PlaybackConnection.kt").readText()
+        val policy = File("src/main/java/ca/stewark/nocturnel/playback/QueueEditingPolicy.kt").readText()
         assertTrue("QueueEditorScreen" in app)
         assertTrue("playback::moveQueueOccurrence" in app)
         assertTrue("playback::expireQueueUndo" in app)
-        assertTrue("onPlayAlbumNext = playback::playNext" in app)
-        assertTrue("onPlayNext = { playback.playNext" in app)
-        assertTrue("player.playNext" in playlists)
+        assertFalse("fun playNext" in connection)
+        assertFalse("QueueAddMode.NEXT" in connection)
+        assertFalse("InsertNext" in policy)
+        assertTrue("fun addToQueue" in connection)
+        assertTrue("QueueEditCommand.Append" in connection)
+        assertTrue("playback.addToQueue" in app)
         assertTrue("player.addToQueue" in playlists)
     }
 }

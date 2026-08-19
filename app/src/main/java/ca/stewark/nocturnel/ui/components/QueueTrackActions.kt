@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 @Composable
 fun QueueTrackActions(
     title: String,
-    onPlayNext: () -> Unit,
     onAddToQueue: () -> Unit,
     modifier: Modifier = Modifier,
     playCount: Long? = null,
@@ -19,7 +18,6 @@ fun QueueTrackActions(
     Row(modifier) {
         playCount?.let { Text("$it×", color = MaterialTheme.colorScheme.secondary) }
         favorite?.let { FavoriteToggle(title, it, onToggleFavorite) }
-        BracketIconButton("NXT", "Play $title next", onPlayNext)
         BracketIconButton("+Q", "Add $title to queue", onAddToQueue)
     }
 }

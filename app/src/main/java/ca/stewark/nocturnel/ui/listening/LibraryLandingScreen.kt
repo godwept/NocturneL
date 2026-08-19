@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.data.entity.TrackEntity
 import ca.stewark.nocturnel.ui.components.AsciiFrame
@@ -45,9 +46,14 @@ fun LibraryLandingScreen(
     ) {
         resume?.let { item(span = { GridItemSpan(maxLineSpan) }) {
             AsciiFrame("RESUME", Modifier.padding(bottom = TerminalDimensions.sm)) {
-                Text(it.title)
-                Text(it.artist, color = MaterialTheme.colorScheme.secondary)
-                Text("${formatDuration(it.positionMs)} / ${formatDuration(it.durationMs)}", color = MaterialTheme.colorScheme.secondary)
+                Text(it.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(it.artist, color = MaterialTheme.colorScheme.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    "${formatDuration(it.positionMs)} / ${formatDuration(it.durationMs)}",
+                    color = MaterialTheme.colorScheme.secondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 BracketButton("RESUME", onResume, enabled = it.enabled)
                 if (!it.enabled) TerminalNotice("ACCESS TO MUSIC FOLDER LOST")
             }

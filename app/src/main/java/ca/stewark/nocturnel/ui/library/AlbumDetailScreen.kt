@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.data.entity.PlaylistEntity
 import ca.stewark.nocturnel.data.entity.TrackEntity
@@ -41,9 +42,7 @@ fun AlbumDetailScreen(
     onTogglePlaylistPicker: () -> Unit = {},
     onAddAlbumToPlaylist: (PlaylistEntity) -> Unit = {},
     onCreatePlaylistAndAdd: (String) -> Unit = {},
-    onPlayAlbumNext: (List<TrackEntity>) -> Unit = {},
     onAddAlbumToQueue: (List<TrackEntity>) -> Unit = {},
-    onPlayTrackNext: (TrackEntity) -> Unit = {},
     onAddTrackToQueue: (TrackEntity) -> Unit = {},
     albumFavorite: Boolean = false,
     albumPlayCount: Long = 0,
@@ -58,9 +57,6 @@ fun AlbumDetailScreen(
             BracketButton("BACK", onBack)
             BracketButton("PLAY", { onPlayAlbum(tracks) }, enabled = tracks.isNotEmpty())
             BracketButton("SHUFFLE", { onShuffleAlbum(tracks) }, enabled = tracks.isNotEmpty())
-        }
-        Row {
-            BracketButton("PLAY NEXT", { onPlayAlbumNext(tracks) }, enabled = playableTracks.isNotEmpty())
             BracketButton("ADD QUEUE", { onAddAlbumToQueue(tracks) }, enabled = playableTracks.isNotEmpty())
         }
         LazyColumn {
@@ -107,12 +103,17 @@ fun AlbumDetailScreen(
                         .padding(horizontal = TerminalDimensions.xs, vertical = TerminalDimensions.sm),
                 ) {
                     Text(track.trackNumber?.toString()?.padStart(2, '0') ?: "--", color = MaterialTheme.colorScheme.secondary)
-                    Text(track.title, Modifier.weight(1f).padding(horizontal = TerminalDimensions.xs))
+                    Text(
+                        track.title,
+                        Modifier.weight(1f).padding(horizontal = TerminalDimensions.xs),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                     Text("${trackPlayCounts[track.relativePath] ?: 0}×", color = MaterialTheme.colorScheme.secondary)
                     Text(formatDuration(track.durationMs), color = MaterialTheme.colorScheme.secondary)
                     FavoriteToggle(track.title, track.relativePath in favoriteTrackPaths, { onToggleTrackFavorite(track) })
                     if (track.status == "PLAYABLE") {
-                        QueueTrackActions(track.title, { onPlayTrackNext(track) }, { onAddTrackToQueue(track) })
+                        QueueTrackActions(track.title, { onAddTrackToQueue(track) })
                     }
                 }
             }

@@ -3,7 +3,6 @@ package ca.stewark.nocturnel.ui.playback
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -53,12 +52,12 @@ fun NowPlayingScreen(
 ) {
     LazyColumn(Modifier.fillMaxSize().padding(TerminalDimensions.md)) {
         item {
-            AsciiFrame("NOW PLAYING") {
+            AsciiFrame {
                 VisualizerDeck(
                     frame = analysisFrame,
                     effectsEnabled = effectsEnabled,
                     onVisualizerActiveChanged = onVisualizerActiveChanged,
-                    modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                    modifier = Modifier.fillMaxWidth(),
                     syncOffsetMs = visualizerSyncOffsetMs,
                     onDecreaseSyncOffset = onDecreaseVisualizerSyncOffset,
                     onIncreaseSyncOffset = onIncreaseVisualizerSyncOffset,

@@ -1,5 +1,10 @@
 package ca.stewark.nocturnel.ui.library
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -7,6 +12,9 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.dp
 import ca.stewark.nocturnel.data.entity.PlaylistEntity
 import ca.stewark.nocturnel.ui.sampleAlbum
 import ca.stewark.nocturnel.ui.sampleTracks
@@ -57,21 +65,50 @@ class AlbumDetailScreenTest {
     }
 
     @Test fun albumAndTrackQueueActionsUsePlayableTracks() {
-        var albumNext = 0
+        var albumQueued = 0
         var trackQueued = ""
         compose.setContent {
             NocturneLTheme {
                 AlbumDetailScreen(
                     sampleAlbum, sampleTracks, {}, {}, {}, {}, {},
-                    onPlayAlbumNext = { albumNext = it.size },
+                    onAddAlbumToQueue = { albumQueued = it.size },
                     onAddTrackToQueue = { trackQueued = it.relativePath },
                 )
             }
         }
 
-        compose.onNodeWithText("[ PLAY NEXT ]").performClick()
+        compose.onNodeWithText("[ PLAY NEXT ]").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Play Carrier next").assertDoesNotExist()
+        compose.onNodeWithText("[ ADD QUEUE ]").performClick()
         compose.onNodeWithContentDescription("Add Carrier to queue").performClick()
-        assertEquals(2, albumNext)
+        assertEquals(2, albumQueued)
         assertEquals(sampleTracks.first().relativePath, trackQueued)
+
+        val actionTops = listOf("[ BACK ]", "[ PLAY ]", "[ SHUFFLE ]", "[ ADD QUEUE ]")
+            .map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
+        assertTrue(actionTops.max() - actionTops.min() <= 1f)
+    }
+
+    @Test fun longTrackTitleIsOneEllipsizedSemanticLine() {
+        val longTitle = "Carrier Across The Endless Terminal Horizon Repeating Forever"
+        compose.setContent {
+            NocturneLTheme {
+                Box(Modifier.width(320.dp)) {
+                    AlbumDetailScreen(sampleAlbum, listOf(sampleTracks.first().copy(title = longTitle)), {}, {}, {}, {}, {})
+                }
+            }
+        }
+
+        val titleNode = compose.onNodeWithText(longTitle)
+        titleNode.assertIsDisplayed()
+        val layout = titleNode.textLayoutResult()
+        assertEquals(1, layout.lineCount)
+        assertTrue(layout.hasVisualOverflow)
+    }
+
+    private fun SemanticsNodeInteraction.textLayoutResult(): TextLayoutResult {
+        val results = mutableListOf<TextLayoutResult>()
+        performSemanticsAction(SemanticsActions.GetTextLayoutResult) { action -> action(results) }
+        return results.single()
     }
 }

@@ -1,6 +1,6 @@
 package ca.stewark.nocturnel.ui.playback.visualizer
 
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
 import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -26,15 +27,13 @@ class VisualizerDeckTest {
         val activity = mutableListOf<Boolean>()
         compose.setContent {
             NocturneLTheme {
-                VisualizerDeck(AudioAnalysisFrame.Idle, true, activity::add, Modifier.size(200.dp)) { Text("ARTWORK") }
+                VisualizerDeck(AudioAnalysisFrame.Idle, true, activity::add, Modifier.width(200.dp)) { Text("ARTWORK") }
             }
         }
         compose.onNodeWithTag("visualizer-art").assertIsDisplayed().performClick()
         compose.onNodeWithTag("visualizer-radar").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-deck").performClick()
         compose.onNodeWithTag("visualizer-bands").assertIsDisplayed()
-        compose.onNodeWithTag("visualizer-deck").performClick()
-        compose.onNodeWithTag("visualizer-ring").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-deck").performClick()
         compose.onNodeWithTag("visualizer-art").assertIsDisplayed()
         assertEquals(false, activity.last())
@@ -51,7 +50,7 @@ class VisualizerDeckTest {
                     frame = AudioAnalysisFrame.Idle,
                     effectsEnabled = true,
                     onVisualizerActiveChanged = {},
-                    modifier = Modifier.size(240.dp),
+                    modifier = Modifier.width(240.dp),
                     syncOffsetMs = offsetMs,
                     onDecreaseSyncOffset = { decreases++ },
                     onIncreaseSyncOffset = { increases++ },
@@ -79,10 +78,32 @@ class VisualizerDeckTest {
 
         compose.onNodeWithTag("visualizer-deck").performClick()
         compose.onNodeWithTag("visualizer-sync-controls").assertIsDisplayed()
-        compose.onNodeWithTag("visualizer-ring").assertIsDisplayed()
-        compose.onNodeWithTag("visualizer-deck").performClick()
-        compose.onNodeWithTag("visualizer-sync-controls").assertIsDisplayed()
+        compose.onNodeWithTag("visualizer-bands").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-deck").performClick()
         compose.onNodeWithTag("visualizer-sync-controls").assertDoesNotExist()
+    }
+
+    @Test fun syncControlsSitAboveAnUnchangedSquareVisualizer() {
+        compose.setContent {
+            NocturneLTheme {
+                VisualizerDeck(
+                    frame = AudioAnalysisFrame.Idle,
+                    effectsEnabled = true,
+                    onVisualizerActiveChanged = {},
+                    modifier = Modifier.width(240.dp),
+                ) { Text("ARTWORK") }
+            }
+        }
+
+        val artBounds = compose.onNodeWithTag("visualizer-art").fetchSemanticsNode().boundsInRoot
+        assertEquals(artBounds.width, artBounds.height, 0.5f)
+
+        compose.onNodeWithTag("visualizer-art").performClick()
+
+        val visualizerBounds = compose.onNodeWithTag("visualizer-deck").fetchSemanticsNode().boundsInRoot
+        val syncBounds = compose.onNodeWithTag("visualizer-sync-controls").fetchSemanticsNode().boundsInRoot
+        assertEquals(artBounds.width, visualizerBounds.width, 0.5f)
+        assertEquals(artBounds.height, visualizerBounds.height, 0.5f)
+        assertTrue(syncBounds.bottom <= visualizerBounds.top)
     }
 }

@@ -7,17 +7,16 @@ class VisualizerDisplayModeTest {
     @Test fun cyclesInApprovedOrder() {
         assertEquals(VisualizerDisplayMode.RADAR, VisualizerDisplayMode.ART.next())
         assertEquals(VisualizerDisplayMode.BANDS, VisualizerDisplayMode.RADAR.next())
-        assertEquals(VisualizerDisplayMode.RING, VisualizerDisplayMode.BANDS.next())
-        assertEquals(VisualizerDisplayMode.ART, VisualizerDisplayMode.RING.next())
+        assertEquals(VisualizerDisplayMode.ART, VisualizerDisplayMode.BANDS.next())
     }
 
     @Test fun exposesApprovedLabels() {
         assertEquals(
-            listOf("ART 1/4", "RADAR 2/4", "BANDS 3/4", "RING 4/4"),
+            listOf("ART 1/3", "RADAR 2/3", "BANDS 3/3"),
             VisualizerDisplayMode.entries.map { it.label },
         )
         assertEquals(
-            listOf("Album art", "Circular radar", "Spectrum bars", "Terminal spectrum ring"),
+            listOf("Album art", "Circular radar", "Spectrum bars"),
             VisualizerDisplayMode.entries.map { it.accessibilityName },
         )
     }

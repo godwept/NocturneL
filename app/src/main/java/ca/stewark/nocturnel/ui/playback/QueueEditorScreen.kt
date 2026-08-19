@@ -24,6 +24,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -174,8 +175,13 @@ fun QueueEditorScreen(
         AsciiFrame("CURRENT", Modifier.padding(top = TerminalDimensions.xs)) {
             val current = state.current
             if (current == null) Text("NO TRACK SELECTED") else {
-                Text(current.title)
-                Text("${current.artist} · ${current.album}", color = MaterialTheme.colorScheme.secondary)
+                Text(current.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    "${current.artist} · ${current.album}",
+                    color = MaterialTheme.colorScheme.secondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
         state.notice?.let { TerminalNotice(it, Modifier.padding(vertical = TerminalDimensions.xs)) }
@@ -275,8 +281,13 @@ internal fun UpcomingQueueRow(
                 },
         )
         Column(Modifier.weight(1f).padding(horizontal = TerminalDimensions.xs)) {
-            Text(row.track.title)
-            Text("${row.track.artist} · ${formatDuration(row.track.durationMs)}", color = MaterialTheme.colorScheme.secondary)
+            Text(row.track.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                "${row.track.artist} · ${formatDuration(row.track.durationMs)}",
+                color = MaterialTheme.colorScheme.secondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
         BracketIconButton(">", "Jump to ${row.track.title}", { onJump(row.track.occurrenceId) })
         BracketIconButton("X", "Remove ${row.track.title}", { onRemove(row.track.occurrenceId) })

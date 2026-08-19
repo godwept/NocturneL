@@ -21,7 +21,6 @@ data class QueueSnapshot(
 )
 
 sealed interface QueueEditCommand {
-    data class InsertNext(val entries: List<QueueEntry>) : QueueEditCommand
     data class Append(val entries: List<QueueEntry>) : QueueEditCommand
     data class Move(val occurrenceId: String, val targetUpcomingIndex: Int) : QueueEditCommand
     data class Remove(val occurrenceId: String) : QueueEditCommand
@@ -40,20 +39,16 @@ data class QueueEditResult(
 
 object QueueEditingPolicy {
     fun apply(snapshot: QueueSnapshot, command: QueueEditCommand): QueueEditResult = when (command) {
-        is QueueEditCommand.InsertNext -> insert(snapshot, command.entries, afterUpcoming = false)
-        is QueueEditCommand.Append -> insert(snapshot, command.entries, afterUpcoming = true)
+        is QueueEditCommand.Append -> append(snapshot, command.entries)
         is QueueEditCommand.Move -> move(snapshot, command.occurrenceId, command.targetUpcomingIndex)
         is QueueEditCommand.Remove -> remove(snapshot, command.occurrenceId)
         QueueEditCommand.ClearUpcoming -> clear(snapshot)
         is QueueEditCommand.RestoreRemoved -> restore(snapshot, command.token)
     }
 
-    private fun insert(snapshot: QueueSnapshot, additions: List<QueueEntry>, afterUpcoming: Boolean): QueueEditResult {
+    private fun append(snapshot: QueueSnapshot, additions: List<QueueEntry>): QueueEditResult {
         if (additions.isEmpty()) return unchanged(snapshot)
-        val split = (snapshot.currentIndex + 1).coerceIn(0, snapshot.entries.size)
-        val entries = if (afterUpcoming) snapshot.entries + additions
-        else snapshot.entries.take(split) + additions + snapshot.entries.drop(split)
-        return changed(snapshot, entries)
+        return changed(snapshot, snapshot.entries + additions)
     }
 
     private fun move(snapshot: QueueSnapshot, occurrenceId: String, targetUpcomingIndex: Int): QueueEditResult {

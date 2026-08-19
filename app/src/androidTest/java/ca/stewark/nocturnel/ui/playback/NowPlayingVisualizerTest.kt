@@ -35,6 +35,7 @@ class NowPlayingVisualizerTest {
                 )
             }
         }
+        compose.onNodeWithText("[ NOW PLAYING ]").assertDoesNotExist()
         compose.onNodeWithTag("visualizer-art").assertIsDisplayed().performClick()
         compose.onNodeWithTag("visualizer-radar").assertIsDisplayed()
         compose.runOnIdle { state = state.copy(title = "Second", currentPath = "second") }

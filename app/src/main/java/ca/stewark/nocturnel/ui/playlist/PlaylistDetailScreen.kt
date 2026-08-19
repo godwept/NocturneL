@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import ca.stewark.nocturnel.ui.components.AsciiFrame
 import ca.stewark.nocturnel.ui.components.BracketButton
 import ca.stewark.nocturnel.ui.components.BracketIconButton
@@ -32,9 +34,7 @@ fun PlaylistDetailScreen(
     onAdd: (String) -> Unit,
     onRemove: (Int) -> Unit,
     onMove: (Int, Int) -> Unit,
-    onPlayNext: (List<TrackEntity>, Int) -> Unit = { _, _ -> },
     onAddToQueue: (List<TrackEntity>, Int) -> Unit = { _, _ -> },
-    onPlayTrackNext: (TrackEntity) -> Unit = {},
     onAddTrackToQueue: (TrackEntity) -> Unit = {},
     favoriteTrackPaths: Set<String> = emptySet(),
     trackPlayCounts: Map<String, Long> = emptyMap(),
@@ -46,17 +46,20 @@ fun PlaylistDetailScreen(
     val playableTracks = state.entries.mapNotNull { it.track }
     val skippedTracks = state.entries.size - playableTracks.size
     Column(Modifier.fillMaxSize().padding(TerminalDimensions.sm)) {
+        Row { BracketButton("BACK", onBack) }
         AsciiFrame(state.playlist.name) {
             TerminalTextField(name, { name = it }, "PLAYLIST NAME")
             Row {
-                BracketButton("BACK", onBack)
-                BracketButton("PLAY", onPlay, enabled = state.entries.any { it.available })
-                BracketButton("RENAME", { onRename(name) }, enabled = name.isNotBlank() && name != state.playlist.name)
-                BracketButton(if (adding) "CLOSE ADD" else "ADD TRACK", { adding = !adding })
-            }
-            Row {
-                BracketButton("PLAY NEXT", { onPlayNext(playableTracks, skippedTracks) }, enabled = playableTracks.isNotEmpty())
-                BracketButton("ADD QUEUE", { onAddToQueue(playableTracks, skippedTracks) }, enabled = playableTracks.isNotEmpty())
+                val actionStyle = MaterialTheme.typography.labelMedium
+                BracketButton("PLAY", onPlay, enabled = state.entries.any { it.available }, textStyle = actionStyle)
+                BracketButton("RENAME", { onRename(name) }, enabled = name.isNotBlank() && name != state.playlist.name, textStyle = actionStyle)
+                BracketButton(if (adding) "CLOSE ADD" else "ADD TRACK", { adding = !adding }, textStyle = actionStyle)
+                BracketButton(
+                    "ADD QUEUE",
+                    { onAddToQueue(playableTracks, skippedTracks) },
+                    enabled = playableTracks.isNotEmpty(),
+                    textStyle = actionStyle,
+                )
             }
         }
         LazyColumn {
@@ -68,7 +71,12 @@ fun PlaylistDetailScreen(
                 ) { track ->
                     Row(Modifier.fillMaxWidth()) {
                         BracketIconButton("+", "Add ${track.title}", { onAdd(track.relativePath) })
-                        Text("${track.artist} :: ${track.title}", Modifier.weight(1f).padding(top = TerminalDimensions.sm))
+                        Text(
+                            "${track.artist} :: ${track.title}",
+                            Modifier.weight(1f).padding(top = TerminalDimensions.sm),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 }
             }
@@ -77,11 +85,15 @@ fun PlaylistDetailScreen(
                     BracketIconButton("↑", "Move ${row.title} up", { onMove(row.position, row.position - 1) }, enabled = row.canMoveUp)
                     BracketIconButton("↓", "Move ${row.title} down", { onMove(row.position, row.position + 1) }, enabled = row.canMoveDown)
                     Column(Modifier.weight(1f).padding(vertical = TerminalDimensions.xs)) {
-                        Text(row.title)
-                        Text("${row.artist} · ${formatDuration(row.durationMs)}")
+                        Text(row.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            "${row.artist} · ${formatDuration(row.durationMs)}",
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                         row.track?.let { track ->
                             QueueTrackActions(
-                                track.title, { onPlayTrackNext(track) }, { onAddTrackToQueue(track) },
+                                track.title, { onAddTrackToQueue(track) },
                                 playCount = trackPlayCounts[track.relativePath] ?: 0,
                                 favorite = track.relativePath in favoriteTrackPaths,
                                 onToggleFavorite = { onToggleTrackFavorite(track) },

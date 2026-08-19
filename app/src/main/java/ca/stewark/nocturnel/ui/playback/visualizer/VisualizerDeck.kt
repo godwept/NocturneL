@@ -5,8 +5,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -62,39 +65,43 @@ internal fun VisualizerDeck(
         labelVisible = false
     }
 
-    Box(
-        modifier
-            .testTag(if (mode == VisualizerDisplayMode.ART) "visualizer-art" else "visualizer-deck")
-            .semantics { stateDescription = mode.accessibilityName }
-            .clickable(onClickLabel = "Show ${mode.next().accessibilityName}") {
-                mode = mode.next()
-                tapCount++
-            },
-    ) {
-        if (mode == VisualizerDisplayMode.ART) {
-            Box(Modifier.fillMaxSize()) { albumArt() }
-        } else {
-            TerminalVisualizerScene(mode, frame, effectsEnabled, Modifier.fillMaxSize())
-        }
-        if (labelVisible) {
-            Text(
-                mode.label,
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(TerminalDimensions.xs)
-                    .alpha(labelAlpha.value),
-            )
-        }
+    Column(modifier) {
         if (visualizerActive) {
             VisualizerSyncControls(
                 syncOffsetMs = syncOffsetMs,
                 onDecrease = onDecreaseSyncOffset,
                 onIncrease = onIncreaseSyncOffset,
                 onReset = onResetSyncOffset,
-                modifier = Modifier.align(Alignment.BottomCenter),
+                modifier = Modifier.align(Alignment.CenterHorizontally),
             )
+        }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .testTag(if (mode == VisualizerDisplayMode.ART) "visualizer-art" else "visualizer-deck")
+                .semantics { stateDescription = mode.accessibilityName }
+                .clickable(onClickLabel = "Show ${mode.next().accessibilityName}") {
+                    mode = mode.next()
+                    tapCount++
+                },
+        ) {
+            if (mode == VisualizerDisplayMode.ART) {
+                Box(Modifier.fillMaxSize()) { albumArt() }
+            } else {
+                TerminalVisualizerScene(mode, frame, effectsEnabled, Modifier.fillMaxSize())
+            }
+            if (labelVisible) {
+                Text(
+                    mode.label,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(TerminalDimensions.xs)
+                        .alpha(labelAlpha.value),
+                )
+            }
         }
     }
 }

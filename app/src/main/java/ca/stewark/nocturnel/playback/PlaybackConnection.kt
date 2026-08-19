@@ -106,17 +106,15 @@ class PlaybackConnection(context: Context) {
         }
     }
 
-    fun playNext(tracks: List<TrackEntity>, skippedCount: Int = 0) = enqueue(tracks, skippedCount, QueueAddMode.NEXT)
+    fun addToQueue(tracks: List<TrackEntity>, skippedCount: Int = 0) = enqueue(tracks, skippedCount)
 
-    fun addToQueue(tracks: List<TrackEntity>, skippedCount: Int = 0) = enqueue(tracks, skippedCount, QueueAddMode.APPEND)
-
-    private fun enqueue(tracks: List<TrackEntity>, skippedCount: Int, mode: QueueAddMode) {
+    private fun enqueue(tracks: List<TrackEntity>, skippedCount: Int) {
         scope.launch {
             if (!canAccessLibrary()) {
                 setQueueNotice("ACCESS TO THE SELECTED MUSIC FOLDER WAS LOST")
                 return@launch
             }
-            val action = PendingQueueAction(mode, tracks, skippedCount)
+            val action = PendingQueueAction(tracks, skippedCount)
             if (controller == null) pendingQueueActions.add(action) else applyPendingAction(action)
         }
     }
@@ -131,11 +129,7 @@ class PlaybackConnection(context: Context) {
         }
         val mediaItems = addition.tracks.map(::itemFor)
         val entries = mediaItems.map(::entryFor)
-        val command = when (action.mode) {
-            QueueAddMode.NEXT -> QueueEditCommand.InsertNext(entries)
-            QueueAddMode.APPEND -> QueueEditCommand.Append(entries)
-        }
-        val result = QueueEditingPolicy.apply(snapshot(player), command)
+        val result = QueueEditingPolicy.apply(snapshot(player), QueueEditCommand.Append(entries))
         applyResult(player, result, mediaItems.associateBy(::occurrenceId), addition.message)
     }
 
@@ -354,8 +348,7 @@ class PlaybackConnection(context: Context) {
     }
 }
 
-private enum class QueueAddMode { NEXT, APPEND }
-private data class PendingQueueAction(val mode: QueueAddMode, val tracks: List<TrackEntity>, val skippedCount: Int)
+private data class PendingQueueAction(val tracks: List<TrackEntity>, val skippedCount: Int)
 private data class PendingRemoval(val token: QueueUndoToken, val mediaItem: MediaItem)
 
 data class PlaybackQueueItem(

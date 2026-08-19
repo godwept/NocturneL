@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.data.entity.TrackEntity
 import ca.stewark.nocturnel.ui.components.AsciiFrame
@@ -33,7 +34,6 @@ fun SearchScreen(
     onAlbumSelected: (AlbumEntity) -> Unit,
     onArtistSelected: (ArtistRow) -> Unit,
     initialQuery: String = "",
-    onPlayNext: (TrackEntity) -> Unit = {},
     onAddToQueue: (TrackEntity) -> Unit = {},
     favoriteAlbumIds: Set<String> = emptySet(),
     favoriteTrackPaths: Set<String> = emptySet(),
@@ -64,9 +64,14 @@ fun SearchScreen(
             if (results.tracks.isNotEmpty()) item { GroupHeading("TRACKS") }
             items(results.tracks, key = { "track:${it.relativePath}" }) { track ->
                 androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth()) {
-                    ResultRow("${track.artist} :: ${track.title} · ${trackPlayCounts[track.relativePath] ?: 0} PLAY(S)", Modifier.weight(1f)) { onPlay(track) }
+                    ResultRow(
+                        "${track.artist} :: ${track.title} · ${trackPlayCounts[track.relativePath] ?: 0} PLAY(S)",
+                        Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    ) { onPlay(track) }
                     QueueTrackActions(
-                        track.title, { onPlayNext(track) }, { onAddToQueue(track) },
+                        track.title, { onAddToQueue(track) },
                         favorite = track.relativePath in favoriteTrackPaths,
                         onToggleFavorite = { onToggleTrackFavorite(track) },
                     )
@@ -79,9 +84,17 @@ fun SearchScreen(
 @Composable private fun GroupHeading(text: String) =
     Text("+--[ $text ]", color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = TerminalDimensions.md))
 
-@Composable private fun ResultRow(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) =
+@Composable private fun ResultRow(
+    text: String,
+    modifier: Modifier = Modifier,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip,
+    onClick: () -> Unit,
+) =
     Text(
         text,
         modifier.fillMaxWidth().defaultMinSize(minHeight = TerminalDimensions.minimumTouchTarget)
             .clickable(onClick = onClick).padding(vertical = TerminalDimensions.sm),
+        maxLines = maxLines,
+        overflow = overflow,
     )

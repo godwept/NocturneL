@@ -130,9 +130,7 @@ fun NocturneLApp(
                     },
                     onPlay = playback::play,
                     onPlayAlbum = playback::playQueue,
-                    onPlayAlbumNext = playback::playNext,
                     onAddAlbumToQueue = playback::addToQueue,
-                    onPlayTrackNext = { playback.playNext(listOf(it)) },
                     onAddTrackToQueue = { playback.addToQueue(listOf(it)) },
                     onChooseArtwork = {
                         artworkAlbum = selectedAlbum
@@ -204,7 +202,6 @@ fun NocturneLApp(
                     playback::play,
                     onAlbumSelected = { selectedAlbumId = it.id },
                     onArtistSelected = { selectedArtistName = it.name },
-                    onPlayNext = { playback.playNext(listOf(it)) },
                     onAddToQueue = { playback.addToQueue(listOf(it)) },
                     favoriteAlbumIds = listening.favoriteAlbumIds,
                     favoriteTrackPaths = listening.favoriteTrackPaths,

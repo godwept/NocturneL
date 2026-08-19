@@ -3,9 +3,13 @@ package ca.stewark.nocturnel.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
@@ -49,8 +53,6 @@ import ca.stewark.nocturnel.ui.navigation.NocturneLDestination
 import com.android.tools.screenshot.PreviewTest
 import ca.stewark.nocturnel.visualizer.AnalysisStatus
 import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
-import kotlin.math.PI
-import kotlin.math.sin
 
 private val previewAlbums = listOf(
     AlbumEntity("red", "red", "Red Horizon", "Signal One", "2026", null, null, null),
@@ -98,14 +100,6 @@ private val spectrumFrame = radarFrame.copy(
     transient = .35f,
     frameId = 42,
 )
-private val ringFrame = radarFrame.copy(
-    waveform = List(128) { index -> (sin(2.0 * PI * index / 24.0) * .8).toFloat() },
-    lowEnergy = .55f,
-    midEnergy = .62f,
-    highEnergy = .38f,
-    transient = 0f,
-    frameId = 43,
-)
 
 @Composable
 private fun TerminalPreview(content: @Composable () -> Unit) = NocturneLTheme {
@@ -124,7 +118,7 @@ fun RootPreview() = TerminalPreview {
     TerminalScaffold(NocturneLDestination.LIBRARY, {}, effectsEnabled = false, status = "LIBRARY READY") {
         LibraryLandingScreen(
             previewAlbums, previewListening,
-            ResumeUiState("Carrier 1", "Signal One", 72_000, 183_000, true),
+            ResumeUiState(previewLongTrackTitle, "Signal One", 72_000, 183_000, true),
             rememberLazyGridState(), {}, {}, {}, {}, {}, {}, {},
         )
     }
@@ -133,12 +127,18 @@ fun RootPreview() = TerminalPreview {
 @PreviewTest
 @Preview(name = "Favorites", widthDp = 412, heightDp = 915)
 @Composable
-fun FavoritesPreview() = TerminalPreview { FavoritesScreen(previewListening, {}, {}, {}, {}, {}) }
+fun FavoritesPreview() = TerminalPreview {
+    val longTrack = previewTracks.first().copy(title = previewLongTrackTitle)
+    FavoritesScreen(previewListening.copy(favoriteTracks = listOf(longTrack) + previewTracks.drop(1).take(2)), {}, {}, {}, {}, {})
+}
 
 @PreviewTest
 @Preview(name = "History", widthDp = 412, heightDp = 915)
 @Composable
-fun HistoryPreview() = TerminalPreview { ListeningHistoryScreen(previewListening, {}, {}, {}, formatTimestamp = { "AUG 18 · 21:00" }) }
+fun HistoryPreview() = TerminalPreview {
+    val longHistory = previewHistory.mapIndexed { index, row -> if (index == 0) row.copy(title = previewLongTrackTitle) else row }
+    ListeningHistoryScreen(previewListening.copy(history = longHistory), {}, {}, {}, formatTimestamp = { "AUG 18 · 21:00" })
+}
 
 @PreviewTest
 @Preview(name = "Settings source confirmation", widthDp = 412, heightDp = 915)
@@ -156,9 +156,10 @@ fun SetupPreview() = TerminalPreview { LibrarySetupScreen {} }
 @Preview(name = "Album detail", widthDp = 412, heightDp = 915)
 @Composable
 fun AlbumDetailPreview() = TerminalPreview {
+    val tracks = previewTracks.take(2).mapIndexed { index, track -> if (index == 0) track.copy(title = previewLongTrackTitle) else track }
     AlbumDetailScreen(
         album = previewAlbums.first(),
-        tracks = previewTracks.take(2),
+        tracks = tracks,
         onBack = {},
         onPlay = {},
         onPlayAlbum = {},
@@ -176,9 +177,10 @@ fun AlbumDetailPreview() = TerminalPreview {
 @Preview(name = "Album detail empty playlist", widthDp = 412, heightDp = 915)
 @Composable
 fun AlbumDetailEmptyPlaylistPreview() = TerminalPreview {
+    val tracks = previewTracks.take(2).mapIndexed { index, track -> if (index == 0) track.copy(title = previewLongTrackTitle) else track }
     AlbumDetailScreen(
         album = previewAlbums.first(),
-        tracks = previewTracks.take(2),
+        tracks = tracks,
         onBack = {},
         onPlay = {},
         onPlayAlbum = {},
@@ -197,18 +199,20 @@ fun ArtistsPreview() = TerminalPreview { ArtistsScreen(previewAlbums) {} }
 @Preview(name = "Search", widthDp = 412, heightDp = 915)
 @Composable
 fun SearchPreview() = TerminalPreview {
-    SearchScreen(previewTracks, previewAlbums, {}, {}, {}, initialQuery = "signal")
+    val tracks = previewTracks.mapIndexed { index, track -> if (index == 0) track.copy(title = previewLongTrackTitle) else track }
+    SearchScreen(tracks, previewAlbums, {}, {}, {}, initialQuery = "signal")
 }
 
 @PreviewTest
 @Preview(name = "Playlist detail", widthDp = 412, heightDp = 915)
 @Composable
 fun PlaylistDetailPreview() = TerminalPreview {
-    val rows = previewTracks.take(2).mapIndexed { index, track ->
+    val tracks = previewTracks.mapIndexed { index, track -> if (index == 0) track.copy(title = previewLongTrackTitle) else track }
+    val rows = tracks.take(2).mapIndexed { index, track ->
         PlaylistEntryRow(index, track.relativePath, track.title, track.artist, track.durationMs, track.status)
     }
     PlaylistDetailScreen(
-        playlistDetailState(PlaylistEntity(1, "Night Run", 1), rows, previewTracks),
+        playlistDetailState(PlaylistEntity(1, "Night Run", 1), rows, tracks),
         {}, {}, {}, {}, {}, { _, _ -> },
     )
 }
@@ -243,9 +247,9 @@ fun NowPlayingPreview() = TerminalPreview {
 fun QueueEditorPreview() = TerminalPreview {
     QueueEditorScreen(
         state = queueEditorState(
-            current = QueueEntry("current", "red/01.flac", "Carrier 1", "Signal One", "Red Horizon", 183_000),
+            current = QueueEntry("current", "red/01.flac", previewLongTrackTitle, "Signal One", "Red Horizon", 183_000),
             upcoming = listOf(
-                QueueEntry("next-1", "red/02.flac", "Afterimage 1", "Signal One", "Red Horizon", 241_000),
+                QueueEntry("next-1", "red/02.flac", previewLongTrackTitle, "Signal One", "Red Horizon", 241_000),
                 QueueEntry("next-2", "red/02.flac", "Afterimage 1", "Signal One", "Red Horizon", 241_000),
             ),
             canUndo = true,
@@ -254,24 +258,24 @@ fun QueueEditorPreview() = TerminalPreview {
         {}, {}, { _, _, _ -> }, {}, {}, {}, {},
     )
 }
+private const val previewLongTrackTitle = "Carrier Across The Endless Terminal Horizon Repeating Forever"
 
 @PreviewTest
-@Preview(name = "Visualizer sync controls", widthDp = 412, heightDp = 412)
+@Preview(name = "Visualizer sync controls", widthDp = 412, heightDp = 460)
 @Composable
 fun VisualizerSyncControlsPreview() = TerminalPreview {
-    Box(Modifier.size(392.dp)) {
-        TerminalVisualizerScene(
-            mode = VisualizerDisplayMode.RADAR,
-            frame = radarFrame,
-            effectsEnabled = true,
-            modifier = Modifier.fillMaxSize(),
-        )
+    Column(Modifier.width(392.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         VisualizerSyncControls(
             syncOffsetMs = 150,
             onDecrease = {},
             onIncrease = {},
             onReset = {},
-            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+        TerminalVisualizerScene(
+            mode = VisualizerDisplayMode.RADAR,
+            frame = radarFrame,
+            effectsEnabled = true,
+            modifier = Modifier.fillMaxWidth().aspectRatio(1f),
         )
     }
 }
@@ -312,50 +316,6 @@ fun VisualizerRadarPreview() = TerminalPreview {
 @Composable
 fun VisualizerBandsPreview() = TerminalPreview {
     TerminalVisualizerScene(VisualizerDisplayMode.BANDS, spectrumFrame, true, Modifier.fillMaxSize())
-}
-
-@PreviewTest
-@Preview(name = "Visualizer ring", widthDp = 320, heightDp = 320)
-@Composable
-fun VisualizerRingPreview() = TerminalPreview {
-    TerminalVisualizerScene(VisualizerDisplayMode.RING, ringFrame, true, Modifier.fillMaxSize())
-}
-
-@PreviewTest
-@Preview(name = "Visualizer ring effects off", widthDp = 320, heightDp = 320)
-@Composable
-fun VisualizerRingEffectsOffPreview() = TerminalPreview {
-    TerminalVisualizerScene(VisualizerDisplayMode.RING, ringFrame, false, Modifier.fillMaxSize())
-}
-
-@PreviewTest
-@Preview(name = "Visualizer ring quiet", widthDp = 320, heightDp = 320)
-@Composable
-fun VisualizerRingQuietPreview() = TerminalPreview {
-    TerminalVisualizerScene(
-        VisualizerDisplayMode.RING,
-        ringFrame.copy(
-            waveform = List(128) { index -> (sin(2.0 * PI * index / 24.0) * .08).toFloat() },
-            lowEnergy = .08f,
-            midEnergy = .08f,
-            highEnergy = .05f,
-            frameId = 44,
-        ),
-        true,
-        Modifier.fillMaxSize(),
-    )
-}
-
-@PreviewTest
-@Preview(name = "Visualizer ring transient", widthDp = 320, heightDp = 320)
-@Composable
-fun VisualizerRingTransientPreview() = TerminalPreview {
-    TerminalVisualizerScene(
-        VisualizerDisplayMode.RING,
-        ringFrame.copy(transient = 1f, frameId = 45),
-        true,
-        Modifier.fillMaxSize(),
-    )
 }
 
 @Preview(name = "Visualizer radar idle", widthDp = 320, heightDp = 320)

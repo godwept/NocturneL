@@ -8,16 +8,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class QueueEditingPolicyTest {
-    @Test fun insertNextPreservesBlockOrderAndPutsNewestRequestFirst() {
-        val initial = snapshot("history", "current", "later", currentIndex = 1, shuffle = true)
-        val first = QueueEditingPolicy.apply(initial, QueueEditCommand.InsertNext(entries("a", "b"))).snapshot
-        val second = QueueEditingPolicy.apply(first, QueueEditCommand.InsertNext(entries("c", "d")))
-
-        assertEquals(listOf("history", "current", "c", "d", "a", "b", "later"), second.snapshot.ids())
-        assertEquals(1, second.snapshot.currentIndex)
-        assertFalse(second.snapshot.shuffle)
-    }
-
     @Test fun appendPreservesDuplicatesAndEmptyQueuesStayUnselected() {
         val duplicateEntries = listOf(entry("one", "same.flac"), entry("two", "same.flac"))
         val appended = QueueEditingPolicy.apply(snapshot("current", "later", currentIndex = 0), QueueEditCommand.Append(duplicateEntries))
@@ -28,9 +18,9 @@ class QueueEditingPolicyTest {
         assertEquals(-1, empty.snapshot.currentIndex)
     }
 
-    @Test fun emptyInsertionIsANoOp() {
+    @Test fun emptyAppendIsANoOp() {
         val before = snapshot("current", currentIndex = 0, shuffle = true)
-        val result = QueueEditingPolicy.apply(before, QueueEditCommand.InsertNext(emptyList()))
+        val result = QueueEditingPolicy.apply(before, QueueEditCommand.Append(emptyList()))
         assertEquals(before, result.snapshot)
         assertFalse(result.changed)
     }

@@ -9,7 +9,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.size
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
-import ca.stewark.nocturnel.visualizer.AnalysisStatus
 import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
 import org.junit.Rule
 import org.junit.Test
@@ -31,27 +30,11 @@ class TerminalVisualizersTest {
     @Test fun unavailableSignalIsReadableWithoutEffects() {
         compose.setContent {
             NocturneLTheme {
-                TerminalVisualizerScene(VisualizerDisplayMode.RING, AudioAnalysisFrame.Unavailable, false, Modifier.size(200.dp))
+                TerminalVisualizerScene(VisualizerDisplayMode.BANDS, AudioAnalysisFrame.Unavailable, false, Modifier.size(200.dp))
             }
         }
         compose.onNodeWithText("SIGNAL UNAVAILABLE").assertIsDisplayed()
         compose.onNodeWithTag("scanlines").assertDoesNotExist()
-        compose.onNodeWithTag("visualizer-ring").assertIsDisplayed().assertHasNoClickAction()
-    }
-
-    @Test fun activeRingUsesStableTagAndEffects() {
-        compose.setContent {
-            NocturneLTheme {
-                TerminalVisualizerScene(
-                    VisualizerDisplayMode.RING,
-                    AudioAnalysisFrame.Idle.copy(status = AnalysisStatus.ACTIVE, frameId = 1),
-                    true,
-                    Modifier.size(200.dp),
-                )
-            }
-        }
-        compose.onNodeWithTag("visualizer-ring").assertIsDisplayed().assertHasNoClickAction()
-        compose.onNodeWithTag("visualizer-tunnel").assertDoesNotExist()
-        compose.onNodeWithTag("scanlines").assertIsDisplayed()
+        compose.onNodeWithTag("visualizer-bands").assertIsDisplayed().assertHasNoClickAction()
     }
 }

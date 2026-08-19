@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import ca.stewark.nocturnel.ui.theme.AlertAmber
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 
@@ -25,6 +26,7 @@ fun BracketButton(
     enabled: Boolean = true,
     selected: Boolean = false,
     contentDescription: String? = null,
+    textStyle: TextStyle = MaterialTheme.typography.labelLarge,
 ) {
     val color = when {
         !enabled -> MaterialTheme.colorScheme.secondary.copy(alpha = .5f)
@@ -45,7 +47,7 @@ fun BracketButton(
             .padding(horizontal = TerminalDimensions.xs),
         contentAlignment = Alignment.Center,
     ) {
-        Text("[ ${label.uppercase()} ]", color = color, style = MaterialTheme.typography.labelLarge)
+        Text("[ ${label.uppercase()} ]", color = color, style = textStyle, maxLines = 1)
     }
 }
 
