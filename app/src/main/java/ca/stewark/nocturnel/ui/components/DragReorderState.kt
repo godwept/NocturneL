@@ -1,20 +1,19 @@
-package ca.stewark.nocturnel.ui.playback
+package ca.stewark.nocturnel.ui.components
 
 import kotlin.math.max
 import kotlin.math.min
 
-internal data class QueueDragSession(
-    val draggedOccurrenceId: String,
+internal data class DragReorderSession(
+    val draggedKey: String,
     val startingOrder: List<String>,
     val previewOrder: List<String>,
     val startIndex: Int,
     val targetIndex: Int,
-    val expectedCurrentOccurrenceId: String?,
     val translationY: Float = 0f,
 )
 
-internal data class QueueDragItemBounds(
-    val occurrenceId: String,
+internal data class DragReorderItemBounds(
+    val key: String,
     val previewIndex: Int,
     val top: Float,
     val bottom: Float,
@@ -22,37 +21,34 @@ internal data class QueueDragItemBounds(
     val midpoint: Float get() = (top + bottom) / 2f
 }
 
-internal data class QueueDragCommit(
-    val occurrenceId: String,
+internal data class DragReorderCommit(
+    val key: String,
     val targetIndex: Int,
-    val expectedCurrentOccurrenceId: String?,
 )
 
-internal fun beginQueueDrag(
-    occurrenceOrder: List<String>,
-    draggedOccurrenceId: String,
-    expectedCurrentOccurrenceId: String?,
-): QueueDragSession? {
-    val startIndex = occurrenceOrder.indexOf(draggedOccurrenceId)
+internal fun beginDragReorder(order: List<String>, draggedKey: String): DragReorderSession? {
+    val startIndex = order.indexOf(draggedKey)
     if (startIndex < 0) return null
-    return QueueDragSession(
-        draggedOccurrenceId = draggedOccurrenceId,
-        startingOrder = occurrenceOrder.toList(),
-        previewOrder = occurrenceOrder.toList(),
+    return DragReorderSession(
+        draggedKey = draggedKey,
+        startingOrder = order.toList(),
+        previewOrder = order.toList(),
         startIndex = startIndex,
         targetIndex = startIndex,
-        expectedCurrentOccurrenceId = expectedCurrentOccurrenceId,
     )
 }
 
-internal fun QueueDragSession.moveTo(targetIndex: Int, translationCorrection: Float = 0f): QueueDragSession {
+internal fun DragReorderSession.moveTo(
+    targetIndex: Int,
+    translationCorrection: Float = 0f,
+): DragReorderSession {
     if (previewOrder.isEmpty()) return this
     val clampedTarget = targetIndex.coerceIn(0, previewOrder.lastIndex)
     val reordered = previewOrder.toMutableList()
-    val currentIndex = reordered.indexOf(draggedOccurrenceId)
+    val currentIndex = reordered.indexOf(draggedKey)
     if (currentIndex < 0) return this
     reordered.removeAt(currentIndex)
-    reordered.add(clampedTarget, draggedOccurrenceId)
+    reordered.add(clampedTarget, draggedKey)
     return copy(
         previewOrder = reordered,
         targetIndex = clampedTarget,
@@ -60,13 +56,13 @@ internal fun QueueDragSession.moveTo(targetIndex: Int, translationCorrection: Fl
     )
 }
 
-internal fun queueDragTargetIndex(
-    draggedOccurrenceId: String,
+internal fun dragReorderTargetIndex(
+    draggedKey: String,
     draggedCenterY: Float,
-    visibleItems: List<QueueDragItemBounds>,
+    visibleItems: List<DragReorderItemBounds>,
     currentTargetIndex: Int,
 ): Int {
-    val neighbors = visibleItems.filter { it.occurrenceId != draggedOccurrenceId }
+    val neighbors = visibleItems.filter { it.key != draggedKey }
     if (neighbors.isEmpty()) return currentTargetIndex
 
     var target = currentTargetIndex
@@ -80,7 +76,7 @@ internal fun queueDragTargetIndex(
     return target
 }
 
-internal fun queueDragEdgeVelocity(
+internal fun dragReorderEdgeVelocity(
     draggedCenterY: Float,
     viewportStart: Float,
     viewportEnd: Float,
@@ -91,26 +87,16 @@ internal fun queueDragEdgeVelocity(
     val topEdgeEnd = viewportStart + edgeSize
     val bottomEdgeStart = viewportEnd - edgeSize
     return when {
-        draggedCenterY < topEdgeEnd -> {
+        draggedCenterY < topEdgeEnd ->
             -(((topEdgeEnd - draggedCenterY) / edgeSize).coerceIn(0f, 1f) * maximumVelocity)
-        }
-        draggedCenterY > bottomEdgeStart -> {
+        draggedCenterY > bottomEdgeStart ->
             ((draggedCenterY - bottomEdgeStart) / edgeSize).coerceIn(0f, 1f) * maximumVelocity
-        }
         else -> 0f
     }
 }
 
-internal fun QueueDragSession.isCompatible(
-    authoritativeOrder: List<String>,
-    currentOccurrenceId: String?,
-): Boolean = startingOrder == authoritativeOrder &&
-    expectedCurrentOccurrenceId == currentOccurrenceId &&
-    draggedOccurrenceId in authoritativeOrder
+internal fun DragReorderSession.isCompatible(authoritativeOrder: List<String>): Boolean =
+    startingOrder == authoritativeOrder && draggedKey in authoritativeOrder
 
-internal fun QueueDragSession.commitOrNull(): QueueDragCommit? =
-    if (targetIndex == startIndex) null else QueueDragCommit(
-        occurrenceId = draggedOccurrenceId,
-        targetIndex = targetIndex,
-        expectedCurrentOccurrenceId = expectedCurrentOccurrenceId,
-    )
+internal fun DragReorderSession.commitOrNull(): DragReorderCommit? =
+    if (targetIndex == startIndex) null else DragReorderCommit(draggedKey, targetIndex)

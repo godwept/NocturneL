@@ -136,6 +136,27 @@ class QueueEditorScreenTest {
         assertTrue(moves.isEmpty())
     }
 
+    @Test fun staleUpcomingOrderCancelsActiveDrag() {
+        val moves = mutableListOf<Move>()
+        var editorState by mutableStateOf(state("current", listOf("first", "second", "third")))
+        compose.setContent {
+            NocturneLTheme {
+                QueueEditorScreen(editorState, {}, {}, { id, target, current ->
+                    moves += Move(id, target, current)
+                }, {}, {}, {}, {})
+            }
+        }
+
+        compose.onNodeWithTag("queue-drag-second").performTouchInput {
+            down(center)
+            moveBy(Offset(0f, center.y * 4f))
+        }
+        compose.runOnIdle { editorState = state("current", listOf("second", "first", "third")) }
+        compose.onNodeWithTag("queue-drag-second").performTouchInput { up() }
+
+        assertTrue(moves.isEmpty())
+    }
+
     @Test fun accessibilityMovesAndRowActionsRemainIndependent() {
         val moves = mutableListOf<Move>()
         var jumped = ""

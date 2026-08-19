@@ -2,14 +2,22 @@ package ca.stewark.nocturnel.ui.playlist
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import ca.stewark.nocturnel.data.model.PlaylistEntryRow
@@ -24,7 +32,8 @@ import org.junit.Test
 class PlaylistDetailScreenTest {
     @get:Rule val compose = createComposeRule()
 
-    @Test fun playlistAndAvailableRowsExposeQueueActions() {
+    @Test fun playlistRowsAreCompactAndAvailableRowsKeepAddActions() {
+        val availableTrack = sampleTracks[1]
         val rows = listOf(
             PlaylistEntryRow(0, sampleTracks[0].relativePath, "Carrier", "Artist", 1_000, "PLAYABLE"),
             PlaylistEntryRow(1, "missing.flac", "Missing", "Artist", 1_000, "MISSING"),
@@ -32,6 +41,7 @@ class PlaylistDetailScreenTest {
         val state = playlistDetailState(samplePlaylist, rows, sampleTracks)
         var queued = 0
         var skipped = 0
+        var added = ""
         compose.setContent {
             NocturneLTheme {
                 PlaylistDetailScreen(
@@ -39,7 +49,7 @@ class PlaylistDetailScreenTest {
                     onBack = {},
                     onPlay = {},
                     onRename = {},
-                    onAdd = {},
+                    onAdd = { added = it },
                     onRemove = {},
                     onMove = { _, _ -> },
                     onAddToQueue = { tracks, skippedCount -> queued = tracks.size; skipped = skippedCount },
@@ -49,11 +59,21 @@ class PlaylistDetailScreenTest {
 
         compose.onNodeWithText("[ PLAY NEXT ]").assertDoesNotExist()
         compose.onNodeWithContentDescription("Play Carrier next").assertDoesNotExist()
+        compose.onNodeWithText("Artist :: Carrier").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Reorder Carrier").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Remove Carrier").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Add Carrier to queue").assertDoesNotExist()
+        compose.onNodeWithText("Artist · 0:01").assertDoesNotExist()
+        compose.onNodeWithText("[ ↑ ]").assertDoesNotExist()
+        compose.onNodeWithText("[ ↓ ]").assertDoesNotExist()
         compose.onNodeWithText("[ ADD QUEUE ]").performClick()
-        compose.onNodeWithContentDescription("Add Carrier to queue").performClick()
-        compose.onNodeWithContentDescription("Add Missing to queue").assertDoesNotExist()
         assertEquals(1, queued)
         assertEquals(1, skipped)
+
+        compose.onNodeWithText("[ ADD TRACK ]").performClick()
+        compose.onNodeWithText("${availableTrack.artist} :: ${availableTrack.title}").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Add ${availableTrack.title}").performClick()
+        assertEquals(availableTrack.relativePath, added)
 
         val backTop = compose.onNodeWithText("[ BACK ]").fetchSemanticsNode().boundsInRoot.top
         val actionTops = listOf("[ PLAY ]", "[ RENAME ]", "[ ADD TRACK ]", "[ ADD QUEUE ]")
@@ -67,12 +87,16 @@ class PlaylistDetailScreenTest {
         val longTitle = "Carrier Across The Endless Terminal Horizon Repeating Forever"
         val longArtist = "The Extremely Long Terminal Ensemble Beyond The Horizon"
         val track = sampleTracks.first().copy(title = longTitle, artist = longArtist)
+        val availableTrack = sampleTracks[1].copy(
+            title = "Available Track Across The Endless Terminal Horizon Repeating Forever",
+            artist = longArtist,
+        )
         val rows = listOf(PlaylistEntryRow(0, track.relativePath, longTitle, longArtist, 1_000, "PLAYABLE"))
         compose.setContent {
             NocturneLTheme {
                 Box(Modifier.width(320.dp)) {
                     PlaylistDetailScreen(
-                        state = playlistDetailState(samplePlaylist, rows, listOf(track)),
+                        state = playlistDetailState(samplePlaylist, rows, listOf(track, availableTrack)),
                         onBack = {}, onPlay = {}, onRename = {}, onAdd = {}, onRemove = {}, onMove = { _, _ -> },
                     )
                 }
@@ -80,16 +104,134 @@ class PlaylistDetailScreenTest {
         }
 
         compose.onNodeWithText("[ ADD TRACK ]").performClick()
-        val availableLayout = compose.onNodeWithText("$longArtist :: $longTitle").textLayoutResult()
-        val titleLayout = compose.onNodeWithText(longTitle).textLayoutResult()
-        val metadataLayout = compose.onNodeWithText("$longArtist · 0:01").textLayoutResult()
+        val availableLayout = compose.onNodeWithText("$longArtist :: ${availableTrack.title}").textLayoutResult()
+        val entryLayout = compose.onNodeWithText("$longArtist :: $longTitle").textLayoutResult()
         assertEquals(1, availableLayout.lineCount)
-        assertEquals(1, titleLayout.lineCount)
-        assertEquals(1, metadataLayout.lineCount)
+        assertEquals(1, entryLayout.lineCount)
         assertTrue(availableLayout.hasVisualOverflow)
-        assertTrue(titleLayout.hasVisualOverflow)
-        assertTrue(metadataLayout.hasVisualOverflow)
+        assertTrue(entryLayout.hasVisualOverflow)
     }
+
+    @Test fun dragAcrossMultipleRowsCommitsOnceInBothDirections() {
+        val downMoves = mutableListOf<Move>()
+        setPlaylist(listOf("first", "second", "third", "fourth")) { from, to -> downMoves += Move(from, to) }
+        compose.onNodeWithTag("playlist-drag-1").performTouchInput {
+            down(center)
+            moveBy(Offset(0f, center.y * 6f))
+            up()
+        }
+        assertEquals(listOf(Move(1, 3)), downMoves)
+
+        val upMoves = mutableListOf<Move>()
+        setPlaylist(listOf("first", "second", "third", "fourth")) { from, to -> upMoves += Move(from, to) }
+        compose.onNodeWithTag("playlist-drag-3").performTouchInput {
+            down(center)
+            moveBy(Offset(0f, -center.y * 8f))
+            up()
+        }
+        assertEquals(listOf(Move(3, 0)), upMoves)
+    }
+
+    @Test fun cancelledNoOpSingleAndStaleDragsDoNotMove() {
+        val moves = mutableListOf<Move>()
+        setPlaylist(listOf("only")) { from, to -> moves += Move(from, to) }
+        compose.onNodeWithTag("playlist-drag-0").performTouchInput {
+            down(center); moveBy(Offset(0f, 2f)); up()
+        }
+        compose.onNodeWithTag("playlist-drag-0").performTouchInput {
+            down(center); moveBy(Offset(0f, center.y * 2f)); cancel()
+        }
+        assertTrue(moves.isEmpty())
+
+        val changingState = mutableStateOf(state(listOf("first", "second", "third")))
+        compose.setContent {
+            NocturneLTheme {
+                PlaylistDetailScreen(
+                    changingState.value, {}, {}, {}, {}, {},
+                    { from, to -> moves += Move(from, to) },
+                )
+            }
+        }
+        compose.onNodeWithTag("playlist-drag-1").performTouchInput {
+            down(center); moveBy(Offset(0f, center.y * 4f))
+        }
+        compose.runOnIdle { changingState.value = state(listOf("second", "first", "third")) }
+        compose.onNodeWithTag("playlist-drag-1").performTouchInput { up() }
+        assertTrue(moves.isEmpty())
+    }
+
+    @Test fun duplicateAndUnavailableRowsKeepIndependentActions() {
+        val rows = listOf(
+            PlaylistEntryRow(0, "same.flac", "First", "Artist", 1_000, "MISSING"),
+            PlaylistEntryRow(1, "same.flac", "Second", "Artist", 1_000, "MISSING"),
+        )
+        val moves = mutableListOf<Move>()
+        var removed = -1
+        compose.setContent {
+            NocturneLTheme {
+                PlaylistDetailScreen(
+                    playlistDetailState(samplePlaylist, rows, emptyList()),
+                    {}, {}, {}, {}, { removed = it }, { from, to -> moves += Move(from, to) },
+                )
+            }
+        }
+
+        compose.onNodeWithText("Artist :: Second").assertIsDisplayed()
+        compose.onNodeWithTag("playlist-drag-1").performTouchInput {
+            down(center); moveBy(Offset(0f, -center.y * 4f)); up()
+        }
+        compose.onNodeWithContentDescription("Remove Second").performClick()
+        assertEquals(listOf(Move(1, 0)), moves)
+        assertEquals(1, removed)
+    }
+
+    @Test fun accessibilityMovesAndLiftedStateRemainAvailable() {
+        val moves = mutableListOf<Move>()
+        setPlaylist(listOf("first", "second", "third")) { from, to -> moves += Move(from, to) }
+        val actions = compose.onNodeWithTag("playlist-drag-1")
+            .fetchSemanticsNode().config[SemanticsActions.CustomActions]
+        compose.runOnIdle {
+            actions.first { it.label == "Move second up" }.action()
+            actions.first { it.label == "Move second down" }.action()
+        }
+        assertEquals(listOf(Move(1, 0), Move(1, 2)), moves)
+
+        compose.setContent {
+            NocturneLTheme {
+                PlaylistTrackEntryRow(
+                    row = state(listOf("dragged", "next")).entries.first(),
+                    previewIndex = 0,
+                    itemCount = 2,
+                    isDragging = true,
+                    dragTranslationY = 20f,
+                    onMove = { _, _ -> },
+                    onRemove = {},
+                    onDragStart = {}, onDrag = {}, onDragEnd = {}, onDragCancel = {},
+                )
+            }
+        }
+        compose.onNodeWithTag("playlist-row-0").assert(
+            SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Dragging, position 1 of 2"),
+        )
+    }
+
+    private fun setPlaylist(titles: List<String>, onMove: (Int, Int) -> Unit) {
+        compose.setContent {
+            NocturneLTheme {
+                PlaylistDetailScreen(state(titles), {}, {}, {}, {}, {}, onMove)
+            }
+        }
+    }
+
+    private fun state(titles: List<String>) = playlistDetailState(
+        samplePlaylist,
+        titles.mapIndexed { index, title ->
+            PlaylistEntryRow(index, "same.flac", title, "Artist", 1_000, "MISSING")
+        },
+        emptyList(),
+    )
+
+    private data class Move(val from: Int, val to: Int)
 
     private fun SemanticsNodeInteraction.textLayoutResult(): TextLayoutResult {
         val results = mutableListOf<TextLayoutResult>()

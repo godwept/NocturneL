@@ -35,9 +35,6 @@ import kotlinx.coroutines.launch
 fun PlaylistsScreen(
     viewModel: PlaylistViewModel = viewModel(),
     playback: PlaybackConnection? = null,
-    favoriteTrackPaths: Set<String> = emptySet(),
-    trackPlayCounts: Map<String, Long> = emptyMap(),
-    onToggleTrackFavorite: (ca.stewark.nocturnel.data.entity.TrackEntity) -> Unit = {},
 ) {
     val playlists by viewModel.playlists.collectAsState()
     val detail by viewModel.detail.collectAsState()
@@ -69,10 +66,6 @@ fun PlaylistsScreen(
             { viewModel.remove(state.playlist.id, it) },
             { from, to -> viewModel.move(state.playlist.id, from, to) },
             { tracks, skipped -> player.addToQueue(tracks, skipped) },
-            { player.addToQueue(listOf(it)) },
-            favoriteTrackPaths,
-            trackPlayCounts,
-            onToggleTrackFavorite,
         )
         return
     }

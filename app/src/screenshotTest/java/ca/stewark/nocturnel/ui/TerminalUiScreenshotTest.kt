@@ -44,6 +44,8 @@ import ca.stewark.nocturnel.ui.playback.visualizer.TerminalVisualizerScene
 import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerDisplayMode
 import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerSyncControls
 import ca.stewark.nocturnel.ui.playlist.PlaylistDetailScreen
+import ca.stewark.nocturnel.ui.playlist.PlaylistTrackEntryRow
+import ca.stewark.nocturnel.ui.playlist.PlaylistTrackRow
 import ca.stewark.nocturnel.ui.playlist.playlistDetailState
 import ca.stewark.nocturnel.ui.settings.SettingsScreen
 import ca.stewark.nocturnel.ui.settings.TerminalSettingsState
@@ -164,7 +166,6 @@ fun AlbumDetailPreview() = TerminalPreview {
         onPlay = {},
         onPlayAlbum = {},
         onChooseArtwork = {},
-        onClearArtwork = {},
         playlists = listOf(
             PlaylistEntity(1, "Night Run", 1),
             PlaylistEntity(2, "Deep Focus", 2),
@@ -185,7 +186,6 @@ fun AlbumDetailEmptyPlaylistPreview() = TerminalPreview {
         onPlay = {},
         onPlayAlbum = {},
         onChooseArtwork = {},
-        onClearArtwork = {},
         playlistPickerExpanded = true,
     )
 }
@@ -214,6 +214,34 @@ fun PlaylistDetailPreview() = TerminalPreview {
     PlaylistDetailScreen(
         playlistDetailState(PlaylistEntity(1, "Night Run", 1), rows, tracks),
         {}, {}, {}, {}, {}, { _, _ -> },
+    )
+}
+
+@PreviewTest
+@Preview(name = "Playlist dragged row", widthDp = 412, heightDp = 120)
+@Composable
+fun PlaylistDraggedRowPreview() = TerminalPreview {
+    PlaylistTrackEntryRow(
+        row = PlaylistTrackRow(
+            position = 1,
+            relativePath = "missing.flac",
+            title = "Unavailable Carrier Across The Endless Terminal Horizon",
+            artist = "UNAVAILABLE",
+            available = false,
+            canMoveUp = true,
+            canMoveDown = true,
+            track = null,
+        ),
+        previewIndex = 1,
+        itemCount = 4,
+        isDragging = true,
+        dragTranslationY = 0f,
+        onMove = { _, _ -> },
+        onRemove = {},
+        onDragStart = {},
+        onDrag = {},
+        onDragEnd = {},
+        onDragCancel = {},
     )
 }
 

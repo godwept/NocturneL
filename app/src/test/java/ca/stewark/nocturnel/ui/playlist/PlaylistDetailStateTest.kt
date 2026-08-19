@@ -4,6 +4,8 @@ import ca.stewark.nocturnel.data.entity.PlaylistEntity
 import ca.stewark.nocturnel.data.entity.TrackEntity
 import ca.stewark.nocturnel.data.model.PlaylistEntryRow
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -22,5 +24,23 @@ class PlaylistDetailStateTest {
         assertFalse(state.entries.first().canMoveUp)
         assertFalse(state.entries.last().canMoveDown)
         assertTrue(state.availableTracks.single().relativePath == "c")
+    }
+
+    @Test fun `mapper keeps unavailable rows identifiable and editable`() {
+        val playlist = PlaylistEntity(1, "Mix", 1)
+        val state = playlistDetailState(
+            playlist,
+            listOf(PlaylistEntryRow(4, "missing.flac", null, null, null, "MISSING")),
+            emptyList(),
+        )
+
+        with(state.entries.single()) {
+            assertEquals(4, position)
+            assertEquals("missing.flac", relativePath)
+            assertEquals("missing.flac", title)
+            assertEquals("UNAVAILABLE", artist)
+            assertFalse(available)
+            assertNull(track)
+        }
     }
 }

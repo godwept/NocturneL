@@ -136,7 +136,6 @@ fun NocturneLApp(
                         artworkAlbum = selectedAlbum
                         artworkLauncher.launch(arrayOf("image/*"))
                     },
-                    onClearArtwork = { viewModel.setManualArtwork(selectedAlbum.id, null) },
                     playlists = playlists,
                     playlistPickerExpanded = playlistPickerExpanded,
                     albumPlaylistState = albumPlaylistState,
@@ -214,9 +213,6 @@ fun NocturneLApp(
                 NocturneLDestination.PLAYLISTS -> PlaylistsScreen(
                     viewModel = playlistViewModel,
                     playback = playback,
-                    favoriteTrackPaths = listening.favoriteTrackPaths,
-                    trackPlayCounts = listening.trackPlayCounts,
-                    onToggleTrackFavorite = { listeningViewModel.toggleTrack(it.relativePath) },
                 )
                 NocturneLDestination.NOW_PLAYING -> if (queueEditorOpen) {
                     QueueEditorScreen(

@@ -7,22 +7,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextOverflow
 import ca.stewark.nocturnel.ui.components.AsciiFrame
 import ca.stewark.nocturnel.ui.components.BracketButton
 import ca.stewark.nocturnel.ui.components.BracketIconButton
+import ca.stewark.nocturnel.ui.components.DragReorderHandle
 import ca.stewark.nocturnel.ui.components.TerminalTextField
-import ca.stewark.nocturnel.ui.components.QueueTrackActions
 import ca.stewark.nocturnel.data.entity.TrackEntity
-import ca.stewark.nocturnel.ui.library.formatDuration
+import ca.stewark.nocturnel.ui.components.dragReorderRow
+import ca.stewark.nocturnel.ui.components.rememberDragReorderLazyListState
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 
 @Composable
@@ -35,16 +37,18 @@ fun PlaylistDetailScreen(
     onRemove: (Int) -> Unit,
     onMove: (Int, Int) -> Unit,
     onAddToQueue: (List<TrackEntity>, Int) -> Unit = { _, _ -> },
-    onAddTrackToQueue: (TrackEntity) -> Unit = {},
-    favoriteTrackPaths: Set<String> = emptySet(),
-    trackPlayCounts: Map<String, Long> = emptyMap(),
-    onToggleTrackFavorite: (TrackEntity) -> Unit = {},
 ) {
     var adding by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
     var name by remember(state.playlist.id, state.playlist.name) { mutableStateOf(state.playlist.name) }
     val playableTracks = state.entries.mapNotNull { it.track }
     val skippedTracks = state.entries.size - playableTracks.size
+    val authoritativeOrder = state.entries.map { it.dragKey }
+    val dragState = rememberDragReorderLazyListState(authoritativeOrder)
+    val rowsByKey = state.entries.associateBy { it.dragKey }
+    val displayedRows = (dragState.previewOrder ?: authoritativeOrder).mapIndexedNotNull { index, key ->
+        rowsByKey[key]?.let { it to index }
+    }
     Column(Modifier.fillMaxSize().padding(TerminalDimensions.sm)) {
         Row { BracketButton("BACK", onBack) }
         AsciiFrame(state.playlist.name) {
@@ -62,7 +66,7 @@ fun PlaylistDetailScreen(
                 )
             }
         }
-        LazyColumn {
+        LazyColumn(state = dragState.listState, userScrollEnabled = !dragState.isDragging) {
             if (adding) {
                 item { TerminalTextField(query, { query = it }, "FILTER AVAILABLE TRACKS", Modifier.padding(vertical = TerminalDimensions.xs)) }
                 items(
@@ -80,29 +84,80 @@ fun PlaylistDetailScreen(
                     }
                 }
             }
-            items(state.entries, key = { "${it.position}:${it.relativePath}" }) { row ->
-                Row(Modifier.fillMaxWidth()) {
-                    BracketIconButton("↑", "Move ${row.title} up", { onMove(row.position, row.position - 1) }, enabled = row.canMoveUp)
-                    BracketIconButton("↓", "Move ${row.title} down", { onMove(row.position, row.position + 1) }, enabled = row.canMoveDown)
-                    Column(Modifier.weight(1f).padding(vertical = TerminalDimensions.xs)) {
-                        Text(row.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(
-                            "${row.artist} · ${formatDuration(row.durationMs)}",
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        row.track?.let { track ->
-                            QueueTrackActions(
-                                track.title, { onAddTrackToQueue(track) },
-                                playCount = trackPlayCounts[track.relativePath] ?: 0,
-                                favorite = track.relativePath in favoriteTrackPaths,
-                                onToggleFavorite = { onToggleTrackFavorite(track) },
-                            )
+            items(displayedRows, key = { it.first.dragKey }) { (row, previewIndex) ->
+                val session = dragState.activeSession
+                val isDragging = session?.draggedKey == row.dragKey
+                PlaylistTrackEntryRow(
+                    row = row,
+                    previewIndex = previewIndex,
+                    itemCount = displayedRows.size,
+                    isDragging = isDragging,
+                    dragTranslationY = if (isDragging) session.translationY else 0f,
+                    onMove = onMove,
+                    onRemove = onRemove,
+                    onDragStart = { dragState.start(authoritativeOrder, row.dragKey) },
+                    onDrag = dragState::dragBy,
+                    onDragEnd = {
+                        dragState.finish(authoritativeOrder)?.let { commit ->
+                            rowsByKey[commit.key]?.let { moved -> onMove(moved.position, commit.targetIndex) }
                         }
-                    }
-                    BracketIconButton("X", "Remove ${row.title}", { onRemove(row.position) })
-                }
+                    },
+                    onDragCancel = dragState::cancel,
+                    modifier = Modifier.animateItem(),
+                )
             }
         }
+    }
+}
+
+private val PlaylistTrackRow.dragKey: String get() = "$position:$relativePath"
+
+@Composable
+internal fun PlaylistTrackEntryRow(
+    row: PlaylistTrackRow,
+    previewIndex: Int,
+    itemCount: Int,
+    isDragging: Boolean,
+    dragTranslationY: Float,
+    onMove: (Int, Int) -> Unit,
+    onRemove: (Int) -> Unit,
+    onDragStart: () -> Unit,
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit,
+    onDragCancel: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .dragReorderRow(
+                isDragging = isDragging,
+                translationY = dragTranslationY,
+                position = previewIndex,
+                itemCount = itemCount,
+                testTag = "playlist-row-${row.position}",
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        DragReorderHandle(
+            title = row.title,
+            dragKey = row.dragKey,
+            testTag = "playlist-drag-${row.position}",
+            canMoveUp = previewIndex > 0,
+            canMoveDown = previewIndex < itemCount - 1,
+            onMoveUp = { onMove(row.position, previewIndex - 1) },
+            onMoveDown = { onMove(row.position, previewIndex + 1) },
+            onDragStart = onDragStart,
+            onDrag = onDrag,
+            onDragEnd = onDragEnd,
+            onDragCancel = onDragCancel,
+        )
+        Text(
+            "${row.artist} :: ${row.title}",
+            Modifier.weight(1f).padding(horizontal = TerminalDimensions.xs),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        BracketIconButton("X", "Remove ${row.title}", { onRemove(row.position) })
     }
 }
