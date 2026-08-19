@@ -42,12 +42,12 @@ internal fun TerminalVisualizerScene(
     val tag = when (mode) {
         VisualizerDisplayMode.RADAR -> "visualizer-radar"
         VisualizerDisplayMode.BANDS -> "visualizer-bands"
-        VisualizerDisplayMode.TUNNEL -> "visualizer-tunnel"
+        VisualizerDisplayMode.RING -> "visualizer-ring"
         VisualizerDisplayMode.ART -> "visualizer-art"
     }
-    var tunnelHistory by remember(mode, effectsEnabled) { mutableStateOf(TunnelHistory.Empty) }
+    var ringState by remember(mode, effectsEnabled) { mutableStateOf(RingState.Empty) }
     LaunchedEffect(mode, frame.frameId, frame.status, effectsEnabled) {
-        tunnelHistory = updateTunnelHistory(tunnelHistory, mode, frame, effectsEnabled)
+        ringState = updateRingState(ringState, mode, frame, effectsEnabled)
     }
     Box(
         modifier
@@ -99,40 +99,43 @@ internal fun TerminalVisualizerScene(
                             drawLine(PhosphorBright.copy(alpha = .75f), Offset(bar.left, bar.peakY), Offset(bar.right, bar.peakY), 1f)
                         }
                     }
-                    VisualizerDisplayMode.TUNNEL -> {
-                        fun pathFor(layer: TunnelLayer): Path? {
-                            if (layer.points.isEmpty()) return null
+                    VisualizerDisplayMode.RING -> {
+                        fun pathFor(points: List<VisualizerPoint>): Path? {
+                            if (points.isEmpty()) return null
                             val path = Path()
-                            path.moveTo(layer.points.first().x, layer.points.first().y)
-                            layer.points.drop(1).forEach { path.lineTo(it.x, it.y) }
+                            path.moveTo(points.first().x, points.first().y)
+                            points.drop(1).forEach { path.lineTo(it.x, it.y) }
                             path.close()
                             return path
                         }
-                        if (effectsEnabled) {
-                            tunnelHistory.priorFrames.forEachIndexed { index, priorFrame ->
-                                val alpha = .08f + index * .04f
-                                tunnelGeometry(priorFrame, size.width, size.height).layers.forEach { layer ->
-                                    pathFor(layer)?.let { path ->
-                                        drawPath(path, PhosphorMuted.copy(alpha = alpha), style = Stroke(2f))
-                                    }
-                                }
-                            }
+                        val geometry = ringGeometry(
+                            frame = frame,
+                            width = size.width,
+                            height = size.height,
+                            magnitudes = ringState.magnitudes.takeIf { it.isNotEmpty() },
+                            echoState = ringState.echo,
+                            effectsEnabled = effectsEnabled,
+                        )
+                        pathFor(geometry.basePoints)?.let { path ->
+                            drawPath(path, PhosphorMuted.copy(alpha = .42f), style = Stroke(1f))
                         }
-                        val geometry = tunnelGeometry(frame, size.width, size.height)
-                        geometry.layers.forEachIndexed { index, layer ->
-                            val fraction = if (geometry.layers.size <= 1) 1f else index.toFloat() / (geometry.layers.size - 1)
-                            val stroke = 1f + fraction * .75f
-                            pathFor(layer)?.let { path ->
-                                if (effectsEnabled) {
-                                    drawPath(path, PhosphorDim.copy(alpha = .18f), style = Stroke(4f))
-                                }
-                                drawPath(path, Phosphor.copy(alpha = .35f + fraction * .55f), style = Stroke(stroke))
+                        geometry.spikes.sortedBy { it.depth }.forEach { spike ->
+                            val start = Offset(spike.base.x, spike.base.y)
+                            val end = Offset(spike.tip.x, spike.tip.y)
+                            val stroke = .8f + spike.depth * 1.2f
+                            if (effectsEnabled) {
+                                drawLine(PhosphorDim.copy(alpha = .18f), start, end, stroke + 3f)
                             }
+                            val color = when {
+                                spike.depth < 1f / 3f -> PhosphorMuted.copy(alpha = .72f)
+                                spike.depth < 2f / 3f -> Phosphor.copy(alpha = .88f)
+                                else -> PhosphorBright
+                            }
+                            drawLine(color, start, end, stroke)
                         }
-                        geometry.echoLayer?.let { echo ->
-                            pathFor(echo)?.let { path ->
-                                val alpha = frame.transient.takeIf { it.isFinite() }?.coerceIn(0f, 1f) ?: 0f
-                                drawPath(path, PhosphorBright.copy(alpha = alpha), style = Stroke(2f))
+                        geometry.echo?.let { echo ->
+                            pathFor(echo.points)?.let { path ->
+                                drawPath(path, PhosphorBright.copy(alpha = echo.alpha), style = Stroke(2f))
                             }
                         }
                     }

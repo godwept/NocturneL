@@ -4,12 +4,12 @@ enum class VisualizerDisplayMode(val label: String, val accessibilityName: Strin
     ART("ART 1/4", "Album art"),
     RADAR("RADAR 2/4", "Circular radar"),
     BANDS("BANDS 3/4", "Spectrum bars"),
-    TUNNEL("TUNNEL 4/4", "Kaleidoscope tunnel");
+    RING("RING 4/4", "Terminal spectrum ring");
 
     fun next(): VisualizerDisplayMode = when (this) {
         ART -> RADAR
         RADAR -> BANDS
-        BANDS -> TUNNEL
-        TUNNEL -> ART
+        BANDS -> RING
+        RING -> ART
     }
 }

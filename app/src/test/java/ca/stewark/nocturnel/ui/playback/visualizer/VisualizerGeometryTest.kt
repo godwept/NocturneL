@@ -2,23 +2,19 @@ package ca.stewark.nocturnel.ui.playback.visualizer
 
 import ca.stewark.nocturnel.visualizer.AnalysisStatus
 import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.sin
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VisualizerGeometryTest {
     private fun frame(
-        waveform: List<Float> = List(128) { 0f },
-        bands: List<Float> = List(32) { 0f },
-        low: Float = 0f,
-        mid: Float = 0f,
-        high: Float = 0f,
-        transient: Float = 0f,
-        id: Long = 0,
+        waveform: List<Float> = List(128) { 0f }, bands: List<Float> = List(32) { 0f },
+        low: Float = 0f, mid: Float = 0f, high: Float = 0f, transient: Float = 0f, id: Long = 0,
     ) = AudioAnalysisFrame(waveform, bands, 0f, low, mid, high, transient, id, AnalysisStatus.ACTIVE)
 
     @Test fun radarUsesAllBandsAndPcmFrameForSweep() {
@@ -28,7 +24,6 @@ class VisualizerGeometryTest {
         assertTrue(raised.spokeEndpoints.first().y < quiet.spokeEndpoints.first().y)
         assertEquals(14f, quiet.sweepDegrees, 0f)
         assertTrue(raised.echoRadius > raised.energyRadii.last())
-        assertTrue(raised.spokeEndpoints.all { it.x in 0f..200f && it.y in 0f..200f })
     }
 
     @Test fun spectrumHasThirtyTwoBoundedColumns() {
@@ -38,129 +33,84 @@ class VisualizerGeometryTest {
         assertTrue(bars.all { it.peakY <= it.top && it.top <= it.bottom })
     }
 
-    @Test fun calmTunnelHasAdaptiveBoundedFourWayLayers() {
-        val geometry = tunnelGeometry(frame(), 320f, 320f)
+    @Test fun calmRingIsTiltedAdaptiveAndUsesProjectedNormals() {
+        val geometry = ringGeometry(frame(), 320f, 320f)
         assertEquals(VisualizerPoint(160f, 160f), geometry.center)
-        assertEquals(7, geometry.layers.size)
-        assertEquals(0f, geometry.depthPhase, 0f)
-        assertEquals(0f, geometry.rotationDegrees, 0f)
-        assertNull(geometry.echoLayer)
-        assertTrue(geometry.layers.all { it.points.size == 32 && it.depth in 0f..1f })
-        assertTrue(geometry.layers.zipWithNext().all { (a, b) -> radius(a.points.first(), geometry.center) < radius(b.points.first(), geometry.center) })
-        assertTrue(geometry.layers.flatMap { it.points }.all { it.x in 0f..320f && it.y in 0f..320f })
-        assertTrue(geometry.layers.last().points.all { radius(it, geometry.center) <= 147.2f + .01f })
-        geometry.layers.forEach { layer ->
-            layer.points.forEachIndexed { index, point ->
-                val rotated = VisualizerPoint(
-                    geometry.center.x - (point.y - geometry.center.y),
-                    geometry.center.y + (point.x - geometry.center.x),
-                )
-                assertPointEquals(rotated, layer.points[(index + 8) % 32])
-            }
+        assertEquals(89.6f, geometry.horizontalRadius, .001f)
+        assertEquals(48f, geometry.verticalRadius, .001f)
+        assertEquals(96, geometry.spikes.size)
+        assertEquals(96, geometry.basePoints.size)
+        assertEquals(0f, geometry.orbitPhase, 0f)
+        assertNull(geometry.echo)
+        assertTrue(geometry.verticalRadius < geometry.horizontalRadius)
+        geometry.spikes.forEach { spike ->
+            val dx = spike.base.x - geometry.center.x
+            val dy = spike.base.y - geometry.center.y
+            val ellipse = dx * dx / (geometry.horizontalRadius * geometry.horizontalRadius) + dy * dy / (geometry.verticalRadius * geometry.verticalRadius)
+            assertEquals(1f, ellipse, .002f)
+            val gradientX = dx / (geometry.horizontalRadius * geometry.horizontalRadius)
+            val gradientY = dy / (geometry.verticalRadius * geometry.verticalRadius)
+            assertTrue(gradientX * (spike.tip.x - spike.base.x) + gradientY * (spike.tip.y - spike.base.y) > 0f)
         }
-        assertEquals(3, tunnelGeometry(frame(), 80f, 80f).layers.size)
-        assertEquals(5, tunnelGeometry(frame(), 160f, 160f).layers.size)
-        assertEquals(7, tunnelGeometry(frame(), 320f, 320f).layers.size)
+        assertEquals(64, ringGeometry(frame(), 120f, 120f).spikes.size)
+        assertEquals(80, ringGeometry(frame(), 220f, 220f).spikes.size)
+        assertEquals(96, ringGeometry(frame(), 320f, 320f).spikes.size)
+        assertBounded(geometry, 320f, 320f)
     }
 
-    @Test fun tunnelMotionIsDeterministicAndBoundedByFrameId() {
-        val initial = tunnelGeometry(frame(id = 0), 240f, 240f)
-        assertEquals(initial, tunnelGeometry(frame(id = 0), 240f, 240f))
-        val advanced = tunnelGeometry(frame(id = 1), 240f, 240f)
-        assertNotEquals(initial.depthPhase, advanced.depthPhase)
-        assertNotEquals(initial.rotationDegrees, advanced.rotationDegrees)
-        assertEquals(initial.layers.size, advanced.layers.size)
+    @Test fun orbitIsDeterministicBoundedAndMovesWaveformEnergy() {
+        val waveform = List(128) { if (it in 8..20) 1f else 0f }
+        val initial = ringGeometry(frame(waveform = waveform, mid = 1f), 320f, 320f)
+        assertEquals(initial, ringGeometry(frame(waveform = waveform, mid = 1f), 320f, 320f))
+        val advanced = ringGeometry(frame(waveform = waveform, mid = 1f, id = 360), 320f, 320f)
+        assertNotEquals(initial.orbitPhase, advanced.orbitPhase)
+        assertNotEquals(initial.spikes.map { it.length }, advanced.spikes.map { it.length })
         assertEquals(initial.center, advanced.center)
-        assertEquals(0f, tunnelGeometry(frame(id = 120), 240f, 240f).depthPhase, .0001f)
-        assertEquals(0f, tunnelGeometry(frame(id = 1_800), 240f, 240f).rotationDegrees, .0001f)
-        val nearDepthWrap = tunnelGeometry(frame(id = 119), 240f, 240f)
-        val nearWrapRadii = nearDepthWrap.layers.map { radius(it.points.first(), nearDepthWrap.center) }
-        assertTrue(nearWrapRadii.zipWithNext().all { (a, b) -> b - a > 1f })
-        val negative = tunnelGeometry(frame(id = -1), 240f, 240f)
-        assertTrue(negative.depthPhase in 0f..<1f)
-        assertTrue(negative.rotationDegrees in 0f..<360f)
-        assertTrue(advanced.layers.flatMap { it.points }.all { it.x in 0f..240f && it.y in 0f..240f })
+        assertEquals(0f, ringGeometry(frame(id = 1_440), 320f, 320f).orbitPhase, .0001f)
+        assertTrue(ringGeometry(frame(id = -1), 320f, 320f).orbitPhase in 0f..<(2f * PI.toFloat()))
+        assertEquals(ringGeometry(frame(waveform = emptyList()), 200f, 200f).spikes, ringGeometry(frame(), 200f, 200f).spikes)
     }
 
-    @Test fun tunnelMapsEachSignalDimensionWithoutBreakingSymmetry() {
-        val calm = tunnelGeometry(frame(), 320f, 320f)
-        val bass = tunnelGeometry(frame(low = 1f), 320f, 320f)
-        val mids = tunnelGeometry(frame(mid = 1f), 320f, 320f)
-        val highs = tunnelGeometry(frame(high = 1f), 320f, 320f)
-        val wave = tunnelGeometry(
-            frame(waveform = List(128) { index -> kotlin.math.sin(2.0 * Math.PI * index / 24.0).toFloat() }),
-            320f,
-            320f,
-        )
-        assertNotEquals(calm.layers.map { it.points.first() }, bass.layers.map { it.points.first() })
-        val calmOuter = calm.layers.last()
-        val midOuter = mids.layers.last()
-        val cornerPull = radius(calmOuter.points[0], calm.center) - radius(midOuter.points[0], mids.center)
-        val midpointPull = radius(calmOuter.points[4], calm.center) - radius(midOuter.points[4], mids.center)
-        assertTrue(cornerPull > midpointPull)
-        assertNotEquals(calmOuter.points[2], highs.layers.last().points[2])
-        assertNotEquals(calmOuter.points, wave.layers.last().points)
-        listOf(highs, wave).forEach { geometry ->
-            geometry.layers.forEach { layer ->
-                repeat(8) { index ->
-                    assertEquals(
-                        radius(layer.points[index], geometry.center),
-                        radius(layer.points[(index + 8) % 32], geometry.center),
-                        .001f,
-                    )
-                }
-            }
-        }
-        val waveLayer = wave.layers.last()
-        assertEquals(
-            radius(waveLayer.points[1], wave.center) - radius(calmOuter.points[1], calm.center),
-            radius(waveLayer.points[7], wave.center) - radius(calmOuter.points[7], calm.center),
-            .001f,
-        )
+    @Test fun ringMapsEnergyDimensionsAndPerspectiveIndependently() {
+        val wave = List(128) { abs(sin(2.0 * PI * it / 24.0)).toFloat() }
+        val calm = ringGeometry(frame(waveform = wave), 320f, 320f)
+        val bass = ringGeometry(frame(waveform = wave, low = 1f), 320f, 320f)
+        val mids = ringGeometry(frame(waveform = wave, mid = 1f), 320f, 320f)
+        val highs = ringGeometry(frame(waveform = wave, high = 1f), 320f, 320f)
+        assertEquals(calm.horizontalRadius * 1.08f, bass.horizontalRadius, .001f)
+        assertEquals(calm.verticalRadius * 1.08f, bass.verticalRadius, .001f)
+        assertEquals(calm.center, bass.center)
+        assertTrue(mids.spikes.zip(calm.spikes).any { (raised, base) -> raised.length > base.length })
+        assertEquals(calm.spikes.map { it.base }, highs.spikes.map { it.base })
+        assertNotEquals(calm.spikes.map { it.length }, highs.spikes.map { it.length })
+        assertTrue(highs.spikes.all { it.length <= 320f * .185f + .001f })
+        assertTrue(highs.spikes.maxBy { it.base.y }.depth > highs.spikes.minBy { it.base.y }.depth)
     }
 
-    @Test fun tunnelSanitizesMissingMalformedAndTinyInputs() {
-        val empty = tunnelGeometry(frame(waveform = emptyList(), bands = emptyList()), 200f, 200f)
-        val zero = tunnelGeometry(frame(waveform = List(128) { 0f }, bands = List(32) { 0f }), 200f, 200f)
-        assertEquals(zero.layers, empty.layers)
-        val malformed = tunnelGeometry(
-            frame(
-                waveform = listOf(Float.NaN, Float.POSITIVE_INFINITY, -4f, 4f),
-                low = Float.NaN,
-                mid = Float.POSITIVE_INFINITY,
-                high = -4f,
-                transient = Float.POSITIVE_INFINITY,
-            ),
-            200f,
-            200f,
-        )
-        assertTrue(malformed.layers.flatMap { it.points }.all { it.x.isFinite() && it.y.isFinite() && it.x in 0f..200f && it.y in 0f..200f })
-        val zeroCanvas = tunnelGeometry(frame(transient = 1f), 0f, 0f)
-        assertTrue(zeroCanvas.layers.isEmpty())
-        assertNull(zeroCanvas.echoLayer)
-        val tiny = tunnelGeometry(frame(), 12f, 8f)
-        assertEquals(3, tiny.layers.size)
-        assertTrue(tiny.layers.flatMap { it.points }.all { it.x.isFinite() && it.y.isFinite() && it.x in 0f..12f && it.y in 0f..8f })
+    @Test fun ringSanitizesMalformedAndSmallInputs() {
+        val malformed = ringGeometry(frame(waveform = listOf(Float.NaN, Float.POSITIVE_INFINITY, -4f, 4f), low = Float.NaN, mid = Float.POSITIVE_INFINITY, high = -4f), 200f, 200f)
+        assertBounded(malformed, 200f, 200f)
+        val zero = ringGeometry(frame(), 0f, 0f)
+        assertTrue(zero.spikes.isEmpty())
+        assertTrue(zero.basePoints.isEmpty())
+        assertNull(zero.echo)
+        assertBounded(ringGeometry(frame(), 12f, 8f), 12f, 8f)
     }
 
-    @Test fun tunnelCreatesOneBoundedTransientEcho() {
-        assertNull(tunnelGeometry(frame(transient = 0f), 320f, 320f).echoLayer)
-        val low = tunnelGeometry(frame(transient = .25f), 320f, 320f)
-        val high = tunnelGeometry(frame(transient = 1f), 320f, 320f)
-        assertNotNull(low.echoLayer)
-        assertNotNull(high.echoLayer)
-        assertEquals(32, high.echoLayer!!.points.size)
-        assertTrue(radius(high.echoLayer.points.first(), high.center) >= radius(low.echoLayer!!.points.first(), low.center))
-        assertTrue(high.echoLayer.points.all { it.x.isFinite() && it.y.isFinite() && it.x in 0f..320f && it.y in 0f..320f })
-        assertTrue(high.echoLayer.points.all { radius(it, high.center) <= 147.2f + .01f })
-        assertFalse(high.layers.isEmpty())
+    @Test fun echoExpandsFadesAndRespectsEffects() {
+        assertNull(ringGeometry(frame(), 320f, 320f).echo)
+        val echoes = (0..3).map { age -> ringGeometry(frame(), 320f, 320f, echoState = RingEchoState(age, 1f), effectsEnabled = true).echo!! }
+        assertEquals(listOf(1.03f, 1.06f, 1.09f, 1.12f), echoes.map { it.scale })
+        assertTrue(echoes.zipWithNext().all { (a, b) -> a.alpha > b.alpha })
+        assertTrue(echoes.all { it.points.size == 96 })
+        assertNull(ringGeometry(frame(), 320f, 320f, echoState = RingEchoState(0, 1f), effectsEnabled = false).echo)
+        echoes.forEach { echo -> assertTrue(echo.points.all { it.x.isFinite() && it.y.isFinite() && it.x in 0f..320f && it.y in 0f..320f }) }
     }
 
-    private fun radius(point: VisualizerPoint, center: VisualizerPoint): Float =
-        kotlin.math.hypot(point.x - center.x, point.y - center.y)
-
-    private fun assertPointEquals(expected: VisualizerPoint, actual: VisualizerPoint) {
-        assertEquals(expected.x, actual.x, .001f)
-        assertEquals(expected.y, actual.y, .001f)
+    private fun assertBounded(geometry: RingGeometry, width: Float, height: Float) {
+        val points = geometry.basePoints + geometry.spikes.flatMap { listOf(it.base, it.tip) } + geometry.echo.orEmptyPoints()
+        assertTrue(points.all { it.x.isFinite() && it.y.isFinite() && it.x in 0f..width && it.y in 0f..height })
     }
+
+    private fun RingEcho?.orEmptyPoints(): List<VisualizerPoint> = this?.points.orEmpty()
 }

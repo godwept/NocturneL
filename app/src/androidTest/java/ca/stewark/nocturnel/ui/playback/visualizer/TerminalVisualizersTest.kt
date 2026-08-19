@@ -2,6 +2,7 @@ package ca.stewark.nocturnel.ui.playback.visualizer
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -30,27 +31,27 @@ class TerminalVisualizersTest {
     @Test fun unavailableSignalIsReadableWithoutEffects() {
         compose.setContent {
             NocturneLTheme {
-                TerminalVisualizerScene(VisualizerDisplayMode.TUNNEL, AudioAnalysisFrame.Unavailable, false, Modifier.size(200.dp))
+                TerminalVisualizerScene(VisualizerDisplayMode.RING, AudioAnalysisFrame.Unavailable, false, Modifier.size(200.dp))
             }
         }
         compose.onNodeWithText("SIGNAL UNAVAILABLE").assertIsDisplayed()
         compose.onNodeWithTag("scanlines").assertDoesNotExist()
-        compose.onNodeWithTag("visualizer-tunnel").assertIsDisplayed()
+        compose.onNodeWithTag("visualizer-ring").assertIsDisplayed().assertHasNoClickAction()
     }
 
-    @Test fun activeTunnelUsesStableTagAndEffects() {
+    @Test fun activeRingUsesStableTagAndEffects() {
         compose.setContent {
             NocturneLTheme {
                 TerminalVisualizerScene(
-                    VisualizerDisplayMode.TUNNEL,
+                    VisualizerDisplayMode.RING,
                     AudioAnalysisFrame.Idle.copy(status = AnalysisStatus.ACTIVE, frameId = 1),
                     true,
                     Modifier.size(200.dp),
                 )
             }
         }
-        compose.onNodeWithTag("visualizer-tunnel").assertIsDisplayed()
-        compose.onNodeWithTag("visualizer-scope").assertDoesNotExist()
+        compose.onNodeWithTag("visualizer-ring").assertIsDisplayed().assertHasNoClickAction()
+        compose.onNodeWithTag("visualizer-tunnel").assertDoesNotExist()
         compose.onNodeWithTag("scanlines").assertIsDisplayed()
     }
 }

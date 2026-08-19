@@ -7,8 +7,6 @@ import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.hypot
 import kotlin.math.min
-import kotlin.math.pow
-import kotlin.math.roundToInt
 import kotlin.math.sin
 
 internal data class VisualizerPoint(val x: Float, val y: Float)
@@ -31,17 +29,27 @@ internal data class SpectrumBarGeometry(
     val segments: Int,
 )
 
-internal data class TunnelLayer(
-    val points: List<VisualizerPoint>,
+internal data class RingSpike(
+    val base: VisualizerPoint,
+    val tip: VisualizerPoint,
     val depth: Float,
+    val length: Float,
 )
 
-internal data class TunnelGeometry(
+internal data class RingEcho(
+    val points: List<VisualizerPoint>,
+    val alpha: Float,
+    val scale: Float,
+)
+
+internal data class RingGeometry(
     val center: VisualizerPoint,
-    val layers: List<TunnelLayer>,
-    val echoLayer: TunnelLayer?,
-    val rotationDegrees: Float,
-    val depthPhase: Float,
+    val horizontalRadius: Float,
+    val verticalRadius: Float,
+    val basePoints: List<VisualizerPoint>,
+    val spikes: List<RingSpike>,
+    val echo: RingEcho?,
+    val orbitPhase: Float,
 )
 
 internal fun radarGeometry(frame: AudioAnalysisFrame, width: Float, height: Float): RadarGeometry {
@@ -56,13 +64,9 @@ internal fun radarGeometry(frame: AudioAnalysisFrame, width: Float, height: Floa
     val spokes = frame.bands.mapIndexed { index, band ->
         val angle = -PI / 2.0 + 2.0 * PI * index / frame.bands.size
         val radius = (.22f + band.coerceIn(0f, 1f) * .20f) * diameter
-        VisualizerPoint(
-            center.x + cos(angle).toFloat() * radius,
-            center.y + sin(angle).toFloat() * radius,
-        )
+        VisualizerPoint(center.x + cos(angle).toFloat() * radius, center.y + sin(angle).toFloat() * radius)
     }
-    val echo = (energyRadii.last() + frame.transient.coerceIn(0f, 1f) * .08f * diameter)
-        .coerceAtMost(diameter * .48f)
+    val echo = (energyRadii.last() + frame.transient.coerceIn(0f, 1f) * .08f * diameter).coerceAtMost(diameter * .48f)
     return RadarGeometry(center, gridRadii, energyRadii, spokes, echo, (frame.frameId * 2f) % 360f)
 }
 
@@ -81,179 +85,142 @@ internal fun spectrumGeometry(frame: AudioAnalysisFrame, width: Float, height: F
     }
 }
 
-internal fun tunnelGeometry(frame: AudioAnalysisFrame, width: Float, height: Float): TunnelGeometry {
+internal fun ringGeometry(
+    frame: AudioAnalysisFrame,
+    width: Float,
+    height: Float,
+    magnitudes: List<Float>? = null,
+    echoState: RingEchoState? = null,
+    effectsEnabled: Boolean = true,
+): RingGeometry {
     val safeWidth = width.takeIf { it.isFinite() && it > 0f } ?: 0f
     val safeHeight = height.takeIf { it.isFinite() && it > 0f } ?: 0f
     val center = VisualizerPoint(safeWidth / 2f, safeHeight / 2f)
-    val diameter = min(safeWidth, safeHeight)
-    val depthPhase = Math.floorMod(frame.frameId, TUNNEL_DEPTH_PERIOD).toFloat() / TUNNEL_DEPTH_PERIOD
-    val rotationDegrees = Math.floorMod(frame.frameId, TUNNEL_ROTATION_PERIOD) * TUNNEL_ROTATION_STEP_DEGREES
-    if (diameter <= 0f) return TunnelGeometry(center, emptyList(), null, rotationDegrees, depthPhase)
+    val minimumDimension = min(safeWidth, safeHeight)
+    val orbitPhase = Math.floorMod(frame.frameId, RING_ORBIT_PERIOD).toFloat() / RING_ORBIT_PERIOD * TWO_PI
+    if (minimumDimension <= 0f) return RingGeometry(center, 0f, 0f, emptyList(), emptyList(), null, orbitPhase)
 
-    val layerCount = when {
-        diameter < TUNNEL_SMALL_THRESHOLD -> 3
-        diameter < TUNNEL_MEDIUM_THRESHOLD -> 5
-        else -> 7
-    }
+    val count = ringSpikeCount(minimumDimension)
     val low = frame.lowEnergy.sanitizedUnit()
     val mid = frame.midEnergy.sanitizedUnit()
     val high = frame.highEnergy.sanitizedUnit()
-    val transient = frame.transient.sanitizedUnit()
-    val waveform = foldedTunnelWaveform(frame.waveform)
-    val maximumRadius = diameter * TUNNEL_MAX_RADIUS_FRACTION
-    val rotationRadians = rotationDegrees * PI.toFloat() / 180f
-    val layers = List(layerCount) { index ->
-        val wrapped = (index + depthPhase) % layerCount
-        val fraction = (wrapped / layerCount).coerceIn(0f, 1f)
-        val spaced = fraction.pow(1f + low * TUNNEL_BASS_SPACING_EXPONENT)
-        val radius = (
-            diameter * (TUNNEL_MIN_RADIUS_FRACTION + TUNNEL_RADIUS_SPAN_FRACTION * spaced) *
-                (1f + low * TUNNEL_BASS_PULSE)
-            ).coerceAtMost(maximumRadius)
-        TunnelLayer(
-            points = tunnelLayerPoints(
-                center = center,
-                radius = radius,
-                maximumRadius = maximumRadius,
-                rotationRadians = rotationRadians,
-                waveform = waveform,
-                mid = mid,
-                high = high,
-                width = safeWidth,
-                height = safeHeight,
-            ),
-            depth = fraction,
+    val pulse = 1f + low * RING_BASS_PULSE
+    val horizontalRadius = safeWidth * RING_HORIZONTAL_RADIUS * pulse
+    val verticalRadius = safeHeight * RING_VERTICAL_RADIUS * pulse
+    val sourceMagnitudes = magnitudes ?: ringMagnitudes(frame, count)
+    val projectedMagnitudes = resampleCircular(sourceMagnitudes, count)
+    val inset = minimumDimension * RING_SAFETY_INSET
+    val basePoints = List(count) { index ->
+        val angle = TWO_PI * index / count
+        boundedPoint(
+            center.x + cos(angle) * horizontalRadius,
+            center.y + sin(angle) * verticalRadius,
+            safeWidth,
+            safeHeight,
+            inset,
         )
-    }.sortedBy { layer -> layer.points.firstOrNull()?.let { hypot(it.x - center.x, it.y - center.y) } ?: 0f }
-
-    val echoLayer = if (transient > 0f && layers.isNotEmpty()) {
-        val scale = 1f + transient * TUNNEL_ECHO_EXPANSION
-        TunnelLayer(
-            points = layers.last().points.map { point ->
-                boundedTunnelPoint(
-                    center = center,
-                    x = center.x + (point.x - center.x) * scale,
-                    y = center.y + (point.y - center.y) * scale,
-                    maximumRadius = maximumRadius,
-                    width = safeWidth,
-                    height = safeHeight,
+    }
+    val spikes = List(count) { index ->
+        val angle = TWO_PI * index / count
+        val base = basePoints[index]
+        val gradientX = cos(angle) / horizontalRadius.coerceAtLeast(.0001f)
+        val gradientY = sin(angle) / verticalRadius.coerceAtLeast(.0001f)
+        val gradientLength = hypot(gradientX, gradientY).coerceAtLeast(.0001f)
+        val normalX = gradientX / gradientLength
+        val normalY = gradientY / gradientLength
+        val magnitude = projectedMagnitudes.getOrElse(index) { 0f }.sanitizedUnit()
+        val primary = minimumDimension * RING_PRIMARY_SPIKE * magnitude * (.35f + .65f * mid)
+        val detail = minimumDimension * RING_HIGH_DETAIL * high * abs(sin(angle * 7f + orbitPhase * 2f))
+        val length = (minimumDimension * RING_BASE_SPIKE + primary + detail).coerceAtMost(minimumDimension * RING_MAX_SPIKE)
+        RingSpike(
+            base = base,
+            tip = boundedPoint(base.x + normalX * length, base.y + normalY * length, safeWidth, safeHeight, inset),
+            depth = ((sin(angle) + 1f) / 2f).coerceIn(0f, 1f),
+            length = length,
+        )
+    }
+    val echo = if (effectsEnabled && echoState != null && echoState.age in 0..3) {
+        val scale = 1f + RING_ECHO_STEP * (echoState.age + 1)
+        RingEcho(
+            points = List(count) { index ->
+                val angle = TWO_PI * index / count
+                boundedPoint(
+                    center.x + cos(angle) * horizontalRadius * scale,
+                    center.y + sin(angle) * verticalRadius * scale,
+                    safeWidth,
+                    safeHeight,
+                    inset,
                 )
             },
-            depth = 1f,
+            alpha = echoState.intensity.sanitizedUnit() * RING_ECHO_ALPHA * (1f - echoState.age / 4f),
+            scale = scale,
         )
     } else {
         null
     }
-    return TunnelGeometry(center, layers, echoLayer, rotationDegrees, depthPhase)
+    return RingGeometry(center, horizontalRadius, verticalRadius, basePoints, spikes, echo, orbitPhase)
 }
 
-private fun tunnelLayerPoints(
-    center: VisualizerPoint,
-    radius: Float,
-    maximumRadius: Float,
-    rotationRadians: Float,
-    waveform: FloatArray,
-    mid: Float,
-    high: Float,
-    width: Float,
-    height: Float,
-): List<VisualizerPoint> {
-    val corners = List(4) { side ->
-        val angle = -PI.toFloat() / 4f + side * PI.toFloat() / 2f
-        VisualizerPoint(cos(angle) * radius, sin(angle) * radius)
+internal fun ringMagnitudes(frame: AudioAnalysisFrame, count: Int): List<Float> {
+    if (count <= 0 || frame.waveform.isEmpty()) return List(count.coerceAtLeast(0)) { 0f }
+    val phase = Math.floorMod(frame.frameId, RING_ORBIT_PERIOD).toFloat() / RING_ORBIT_PERIOD
+    val raw = List(count) { index ->
+        val position = (index.toFloat() / count + phase) % 1f
+        circularSample(frame.waveform, position)
     }
-    return buildList(TUNNEL_POINT_COUNT) {
-        repeat(4) { side ->
-            val start = corners[side]
-            val end = corners[(side + 1) % 4]
-            repeat(TUNNEL_EDGE_SEGMENTS) { step ->
-                val fraction = step.toFloat() / TUNNEL_EDGE_SEGMENTS
-                var localX = start.x + (end.x - start.x) * fraction
-                var localY = start.y + (end.y - start.y) * fraction
-                val localRadius = hypot(localX, localY).coerceAtLeast(.0001f)
-                val cornerWeight = abs(2f * fraction - 1f)
-                val waveformOffset = waveform[step] * radius * TUNNEL_WAVEFORM_DEFORMATION
-                val highRipple = sin(2f * PI.toFloat() * fraction) * radius * TUNNEL_HIGH_RIPPLE * high
-                val cornerPull = radius * TUNNEL_MID_CORNER_PULL * mid * cornerWeight
-                val adjustedRadius = (localRadius + waveformOffset + highRipple - cornerPull)
-                    .coerceIn(0f, maximumRadius)
-                val radialScale = adjustedRadius / localRadius
-                localX *= radialScale
-                localY *= radialScale
-                val rotatedX = localX * cos(rotationRadians) - localY * sin(rotationRadians)
-                val rotatedY = localX * sin(rotationRadians) + localY * cos(rotationRadians)
-                add(
-                    boundedTunnelPoint(
-                        center = center,
-                        x = center.x + rotatedX,
-                        y = center.y + rotatedY,
-                        maximumRadius = maximumRadius,
-                        width = width,
-                        height = height,
-                    ),
-                )
-            }
-        }
+    return List(count) { index ->
+        val previous = raw[Math.floorMod(index - 1, count)]
+        val current = raw[index]
+        val next = raw[(index + 1) % count]
+        previous * .25f + current * .50f + next * .25f
     }
 }
 
-private fun boundedTunnelPoint(
-    center: VisualizerPoint,
-    x: Float,
-    y: Float,
-    maximumRadius: Float,
-    width: Float,
-    height: Float,
-): VisualizerPoint {
-    var dx = (x - center.x).takeIf(Float::isFinite) ?: 0f
-    var dy = (y - center.y).takeIf(Float::isFinite) ?: 0f
-    val distance = hypot(dx, dy)
-    if (distance > maximumRadius && distance > 0f) {
-        val scale = maximumRadius / distance
-        dx *= scale
-        dy *= scale
-    }
-    val inset = min(width, height) * TUNNEL_SAFETY_INSET_FRACTION
-    val minX = inset.coerceAtMost(width / 2f)
-    val minY = inset.coerceAtMost(height / 2f)
+private fun circularSample(samples: List<Float>, position: Float): Float {
+    if (samples.isEmpty()) return 0f
+    val scaled = position.coerceIn(0f, .999999f) * samples.size
+    val lower = floor(scaled).toInt().coerceIn(0, samples.lastIndex)
+    val upper = (lower + 1) % samples.size
+    val fraction = scaled - lower
+    val first = samples[lower].sanitizedSampleMagnitude()
+    val second = samples[upper].sanitizedSampleMagnitude()
+    return first + (second - first) * fraction
+}
+
+private fun resampleCircular(values: List<Float>, count: Int): List<Float> {
+    if (count <= 0 || values.isEmpty()) return List(count.coerceAtLeast(0)) { 0f }
+    return List(count) { index -> circularSample(values, index.toFloat() / count) }
+}
+
+private fun ringSpikeCount(minimumDimension: Float): Int = when {
+    minimumDimension < RING_SMALL_THRESHOLD -> 64
+    minimumDimension < RING_MEDIUM_THRESHOLD -> 80
+    else -> 96
+}
+
+private fun boundedPoint(x: Float, y: Float, width: Float, height: Float, inset: Float): VisualizerPoint {
+    val maxX = (width - inset).coerceAtLeast(inset)
+    val maxY = (height - inset).coerceAtLeast(inset)
     return VisualizerPoint(
-        (center.x + dx).coerceIn(minX, (width - minX).coerceAtLeast(minX)),
-        (center.y + dy).coerceIn(minY, (height - minY).coerceAtLeast(minY)),
+        (x.takeIf { it.isFinite() } ?: width / 2f).coerceIn(inset.coerceAtMost(width / 2f), maxX),
+        (y.takeIf { it.isFinite() } ?: height / 2f).coerceIn(inset.coerceAtMost(height / 2f), maxY),
     )
 }
 
-private fun foldedTunnelWaveform(waveform: List<Float>): FloatArray {
-    if (waveform.isEmpty()) return FloatArray(TUNNEL_EDGE_SEGMENTS + 1)
-    val halfLastIndex = (waveform.lastIndex / 2f).coerceAtLeast(0f)
-    val folded = FloatArray(TUNNEL_EDGE_SEGMENTS / 2 + 1) { position ->
-        val fraction = position.toFloat() / (TUNNEL_EDGE_SEGMENTS / 2)
-        val firstIndex = (halfLastIndex * fraction).roundToInt().coerceIn(0, waveform.lastIndex)
-        val secondIndex = waveform.lastIndex - firstIndex
-        (waveform[firstIndex].sanitizedSample() + waveform[secondIndex].sanitizedSample()) / 2f
-    }
-    return FloatArray(TUNNEL_EDGE_SEGMENTS + 1) { position ->
-        folded[min(position, TUNNEL_EDGE_SEGMENTS - position)]
-    }
-}
-
 private fun Float.sanitizedUnit(): Float = if (isFinite()) coerceIn(0f, 1f) else 0f
+private fun Float.sanitizedSampleMagnitude(): Float = if (isFinite()) abs(coerceIn(-1f, 1f)) else 0f
 
-private fun Float.sanitizedSample(): Float = if (isFinite()) coerceIn(-1f, 1f) else 0f
-
-private const val TUNNEL_EDGE_SEGMENTS = 8
-private const val TUNNEL_POINT_COUNT = 32
-private const val TUNNEL_DEPTH_PERIOD = 120L
-private const val TUNNEL_ROTATION_PERIOD = 1_800L
-private const val TUNNEL_ROTATION_STEP_DEGREES = .2f
-private const val TUNNEL_SMALL_THRESHOLD = 96f
-private const val TUNNEL_MEDIUM_THRESHOLD = 192f
-private const val TUNNEL_MIN_RADIUS_FRACTION = .08f
-private const val TUNNEL_RADIUS_SPAN_FRACTION = .34f
-private const val TUNNEL_MAX_RADIUS_FRACTION = .46f
-private const val TUNNEL_SAFETY_INSET_FRACTION = .04f
-private const val TUNNEL_BASS_SPACING_EXPONENT = .20f
-private const val TUNNEL_BASS_PULSE = .04f
-private const val TUNNEL_WAVEFORM_DEFORMATION = .035f
-private const val TUNNEL_MID_CORNER_PULL = .04f
-private const val TUNNEL_HIGH_RIPPLE = .025f
-private const val TUNNEL_ECHO_EXPANSION = .08f
+private const val TWO_PI = (2.0 * PI).toFloat()
+private const val RING_ORBIT_PERIOD = 1_440L
+private const val RING_SMALL_THRESHOLD = 160f
+private const val RING_MEDIUM_THRESHOLD = 280f
+private const val RING_HORIZONTAL_RADIUS = .28f
+private const val RING_VERTICAL_RADIUS = .15f
+private const val RING_BASS_PULSE = .08f
+private const val RING_BASE_SPIKE = .015f
+private const val RING_PRIMARY_SPIKE = .13f
+private const val RING_HIGH_DETAIL = .04f
+private const val RING_MAX_SPIKE = .185f
+private const val RING_SAFETY_INSET = .04f
+private const val RING_ECHO_STEP = .03f
+private const val RING_ECHO_ALPHA = .85f

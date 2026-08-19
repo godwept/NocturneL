@@ -98,7 +98,7 @@ private val spectrumFrame = radarFrame.copy(
     transient = .35f,
     frameId = 42,
 )
-private val tunnelFrame = radarFrame.copy(
+private val ringFrame = radarFrame.copy(
     waveform = List(128) { index -> (sin(2.0 * PI * index / 24.0) * .8).toFloat() },
     lowEnergy = .55f,
     midEnergy = .62f,
@@ -315,26 +315,44 @@ fun VisualizerBandsPreview() = TerminalPreview {
 }
 
 @PreviewTest
-@Preview(name = "Visualizer tunnel", widthDp = 320, heightDp = 320)
+@Preview(name = "Visualizer ring", widthDp = 320, heightDp = 320)
 @Composable
-fun VisualizerTunnelPreview() = TerminalPreview {
-    TerminalVisualizerScene(VisualizerDisplayMode.TUNNEL, tunnelFrame, true, Modifier.fillMaxSize())
+fun VisualizerRingPreview() = TerminalPreview {
+    TerminalVisualizerScene(VisualizerDisplayMode.RING, ringFrame, true, Modifier.fillMaxSize())
 }
 
 @PreviewTest
-@Preview(name = "Visualizer tunnel effects off", widthDp = 320, heightDp = 320)
+@Preview(name = "Visualizer ring effects off", widthDp = 320, heightDp = 320)
 @Composable
-fun VisualizerTunnelEffectsOffPreview() = TerminalPreview {
-    TerminalVisualizerScene(VisualizerDisplayMode.TUNNEL, tunnelFrame, false, Modifier.fillMaxSize())
+fun VisualizerRingEffectsOffPreview() = TerminalPreview {
+    TerminalVisualizerScene(VisualizerDisplayMode.RING, ringFrame, false, Modifier.fillMaxSize())
 }
 
 @PreviewTest
-@Preview(name = "Visualizer tunnel transient", widthDp = 320, heightDp = 320)
+@Preview(name = "Visualizer ring quiet", widthDp = 320, heightDp = 320)
 @Composable
-fun VisualizerTunnelTransientPreview() = TerminalPreview {
+fun VisualizerRingQuietPreview() = TerminalPreview {
     TerminalVisualizerScene(
-        VisualizerDisplayMode.TUNNEL,
-        tunnelFrame.copy(transient = 1f, frameId = 44),
+        VisualizerDisplayMode.RING,
+        ringFrame.copy(
+            waveform = List(128) { index -> (sin(2.0 * PI * index / 24.0) * .08).toFloat() },
+            lowEnergy = .08f,
+            midEnergy = .08f,
+            highEnergy = .05f,
+            frameId = 44,
+        ),
+        true,
+        Modifier.fillMaxSize(),
+    )
+}
+
+@PreviewTest
+@Preview(name = "Visualizer ring transient", widthDp = 320, heightDp = 320)
+@Composable
+fun VisualizerRingTransientPreview() = TerminalPreview {
+    TerminalVisualizerScene(
+        VisualizerDisplayMode.RING,
+        ringFrame.copy(transient = 1f, frameId = 45),
         true,
         Modifier.fillMaxSize(),
     )
