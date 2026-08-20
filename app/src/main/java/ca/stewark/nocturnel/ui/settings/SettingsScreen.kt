@@ -25,6 +25,7 @@ fun SettingsScreen(
     onRescan: () -> Unit,
     state: TerminalSettingsState,
     onEffectsChanged: (Boolean) -> Unit,
+    onOpenPrivacyPolicy: () -> Unit = {},
     onCancelRescan: () -> Unit = {},
     scanRunning: Boolean = false,
     scanProgress: ScanProgress? = null,
@@ -48,6 +49,7 @@ fun SettingsScreen(
             if (scanProgress != null) LibraryScanStatus(scanProgress, onCancelRescan)
             else if (scanRunning) BracketButton("CANCEL SCAN", onCancelRescan)
             TerminalToggle("CRT EFFECTS", state.savedEffectsEnabled, onEffectsChanged)
+            BracketButton("PRIVACY POLICY", onOpenPrivacyPolicy)
             if (!confirmingClear) {
                 BracketButton("CLEAR HISTORY + COUNTS", { confirmingClear = true })
             } else {

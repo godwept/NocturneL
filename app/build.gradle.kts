@@ -5,17 +5,31 @@ plugins {
     alias(libs.plugins.screenshot)
 }
 
+val releaseVersionCode = 1
+val releaseVersionName = "0.1.0"
+
 android {
     namespace = "ca.stewark.nocturnel"
     compileSdk = 36
 
     defaultConfig {
         applicationId = "ca.stewark.nocturnel"
-        minSdk = 33
+        minSdk = 31
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = releaseVersionCode
+        versionName = releaseVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+        }
     }
 
     buildFeatures { compose = true; buildConfig = true }
@@ -26,6 +40,10 @@ android {
     kotlin { jvmToolchain(17) }
     experimentalProperties["android.experimental.enableScreenshotTest"] = true
     sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
+}
+
+tasks.register("printReleaseVersion") {
+    doLast { println("$releaseVersionName $releaseVersionCode") }
 }
 
 ksp {

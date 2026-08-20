@@ -1,8 +1,9 @@
 package ca.stewark.nocturnel
 
-import android.os.Bundle
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -15,7 +16,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+        val notificationPermissionGranted =
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+        if (
+            NotificationPermissionPolicy.shouldRequest(
+                sdkInt = Build.VERSION.SDK_INT,
+                alreadyGranted = notificationPermissionGranted,
+            )
+        ) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
         setContent {

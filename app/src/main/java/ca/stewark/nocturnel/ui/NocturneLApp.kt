@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.playback.PlaybackConnection
@@ -48,6 +49,8 @@ import ca.stewark.nocturnel.ui.listening.ListeningHistoryScreen
 import ca.stewark.nocturnel.ui.listening.ListeningViewModel
 import ca.stewark.nocturnel.ui.listening.resumeState
 
+private const val PRIVACY_POLICY_URL = "https://godwept.github.io/NocturneL/privacy/"
+
 @Composable
 fun NocturneLApp(
     viewModel: LibrarySourceViewModel = viewModel(),
@@ -66,6 +69,7 @@ fun NocturneLApp(
         artworkAlbum = null
     }
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val application = context.applicationContext as NocturneLApplication
     val listeningViewModel: ListeningViewModel = viewModel(factory = remember(application) { ListeningViewModel.Factory(application) })
     val listening by listeningViewModel.state.collectAsState()
@@ -286,6 +290,7 @@ fun NocturneLApp(
                     onCancelRescan = viewModel::cancelRescan,
                     state = settings,
                     onEffectsChanged = settingsViewModel::setEffectsEnabled,
+                    onOpenPrivacyPolicy = { uriHandler.openUri(PRIVACY_POLICY_URL) },
                     scanRunning = viewModel.scanState.running,
                     scanProgress = viewModel.scanState.progress,
                     onClearListeningData = listeningViewModel::clearHistoryAndCounts,

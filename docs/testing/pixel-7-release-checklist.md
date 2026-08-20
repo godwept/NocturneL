@@ -1,6 +1,11 @@
 # Pixel 7 release checklist
 
-- [ ] Install a fresh `nocturnel-debug-apk` artifact from GitHub Actions.
+- [ ] Install a fresh NocturneL build from the Google Play Internal testing track; uninstall a debug-signed copy first if signatures conflict.
+- [ ] Perform an upgrade from the preceding closed-test version and confirm local data is preserved.
+- [ ] Confirm foreground, background, notification, and lock-screen playback controls.
+- [ ] Force process death during playback, reopen the app, and confirm restoration is safe.
+- [ ] Restart the device and confirm the selected folder and expected playback state restore.
+- [ ] Open Settings, tap PRIVACY POLICY, and confirm the approved public page opens.
 - [ ] Choose the intended local music folder and confirm it survives an app restart.
 - [ ] Run an explicit rescan and check the added/missing/skipped summary.
 - [ ] Confirm `cover.jpg` or `folder.jpg` appears for an album without embedded art.
