@@ -125,7 +125,7 @@ fun NocturneLApp(
             librarySubview = "LANDING"
         },
         effectsEnabled = settings.effectiveEffectsEnabled,
-        status = when {
+        notice = when {
             queueEditorOpen -> viewModel.notices.current
             playbackState.queueNotice != null -> AppNotice(playbackState.queueNotice!!, NoticeSeverity.INFO, transient = false)
             listening.message != null -> AppNotice(listening.message!!, NoticeSeverity.INFO, transient = false)

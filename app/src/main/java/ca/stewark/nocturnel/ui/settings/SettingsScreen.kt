@@ -21,9 +21,9 @@ import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 fun SettingsScreen(
     onChooseFolder: () -> Unit,
     onRescan: () -> Unit,
-    onCancelRescan: () -> Unit = {},
     state: TerminalSettingsState,
     onEffectsChanged: (Boolean) -> Unit,
+    onCancelRescan: () -> Unit = {},
     scanRunning: Boolean = false,
     onClearListeningData: () -> Unit = {},
     listeningMessage: String? = null,

@@ -19,8 +19,9 @@ fun TerminalScaffold(
     onSelected: (NocturneLDestination) -> Unit,
     effectsEnabled: Boolean,
     modifier: Modifier = Modifier,
-    status: AppNotice? = null,
+    status: String? = null,
     content: @Composable () -> Unit,
+    notice: AppNotice? = null,
 ) {
     Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding()) {
         Column(Modifier.fillMaxSize()) {
@@ -32,7 +33,8 @@ fun TerminalScaffold(
             )
             TerminalNavigation(selected, onSelected, effectsEnabled)
             Box(Modifier.weight(1f).fillMaxSize()) { content() }
-            status?.let { TerminalNotice(it.text, Modifier.padding(TerminalDimensions.xs), it.severity) }
+            notice?.let { TerminalNotice(it.text, Modifier.padding(TerminalDimensions.xs), it.severity) }
+                ?: status?.let { TerminalNotice(it, Modifier.padding(TerminalDimensions.xs)) }
         }
         Scanlines(effectsEnabled)
     }
