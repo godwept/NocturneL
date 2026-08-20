@@ -3,16 +3,12 @@ package ca.stewark.nocturnel.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -207,7 +203,9 @@ fun SearchPreview() = TerminalPreview {
 @Preview(name = "Playlist detail", widthDp = 412, heightDp = 915)
 @Composable
 fun PlaylistDetailPreview() = TerminalPreview {
-    val tracks = previewTracks.mapIndexed { index, track -> if (index == 0) track.copy(title = previewLongTrackTitle) else track }
+    val tracks = previewTracks.mapIndexed { index, track ->
+        if (index == 0) track.copy(title = previewLongTrackTitle, artist = previewLongArtist) else track
+    }
     val rows = tracks.take(2).mapIndexed { index, track ->
         PlaylistEntryRow(index, track.relativePath, track.title, track.artist, track.durationMs, track.status)
     }
@@ -287,23 +285,27 @@ fun QueueEditorPreview() = TerminalPreview {
     )
 }
 private const val previewLongTrackTitle = "Carrier Across The Endless Terminal Horizon Repeating Forever"
+private const val previewLongArtist = "The Extremely Long Terminal Ensemble Beyond The Horizon"
 
 @PreviewTest
-@Preview(name = "Visualizer sync controls", widthDp = 412, heightDp = 460)
+@Preview(name = "Visualizer sync controls", widthDp = 412, heightDp = 412)
 @Composable
 fun VisualizerSyncControlsPreview() = TerminalPreview {
-    Column(Modifier.width(392.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Box(Modifier.size(392.dp)) {
+        TerminalVisualizerScene(
+            mode = VisualizerDisplayMode.RADAR,
+            frame = radarFrame,
+            effectsEnabled = true,
+            modifier = Modifier.fillMaxSize(),
+        )
         VisualizerSyncControls(
             syncOffsetMs = 150,
             onDecrease = {},
             onIncrease = {},
             onReset = {},
-        )
-        TerminalVisualizerScene(
-            mode = VisualizerDisplayMode.RADAR,
-            frame = radarFrame,
-            effectsEnabled = true,
-            modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+            modifier = Modifier.fillMaxSize(),
+            labelVisible = true,
+            labelAlpha = 1f,
         )
     }
 }

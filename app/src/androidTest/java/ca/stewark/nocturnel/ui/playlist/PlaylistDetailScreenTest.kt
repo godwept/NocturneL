@@ -1,6 +1,5 @@
 package ca.stewark.nocturnel.ui.playlist
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
@@ -33,12 +32,15 @@ class PlaylistDetailScreenTest {
     @get:Rule val compose = createComposeRule()
 
     @Test fun playlistRowsAreCompactAndAvailableRowsKeepAddActions() {
-        val availableTrack = sampleTracks[1]
+        val availableTrack = sampleTracks[1].copy(
+            title = "Available Carrier",
+            artist = "Available Artist",
+        )
         val rows = listOf(
-            PlaylistEntryRow(0, sampleTracks[0].relativePath, "Carrier", "Artist", 1_000, "PLAYABLE"),
+            PlaylistEntryRow(0, sampleTracks[0].relativePath, "Carrier", "Playlist Artist", 1_000, "PLAYABLE"),
             PlaylistEntryRow(1, "missing.flac", "Missing", "Artist", 1_000, "MISSING"),
         )
-        val state = playlistDetailState(samplePlaylist, rows, sampleTracks)
+        val state = playlistDetailState(samplePlaylist, rows, listOf(sampleTracks[0], availableTrack))
         var queued = 0
         var skipped = 0
         var added = ""
@@ -59,7 +61,9 @@ class PlaylistDetailScreenTest {
 
         compose.onNodeWithText("[ PLAY NEXT ]").assertDoesNotExist()
         compose.onNodeWithContentDescription("Play Carrier next").assertDoesNotExist()
-        compose.onNodeWithText("Artist :: Carrier").assertIsDisplayed()
+        compose.onNodeWithText("Playlist Artist").assertIsDisplayed()
+        compose.onNodeWithText("Carrier").assertIsDisplayed()
+        compose.onNodeWithText("Playlist Artist :: Carrier").assertDoesNotExist()
         compose.onNodeWithContentDescription("Reorder Carrier").assertIsDisplayed()
         compose.onNodeWithContentDescription("Remove Carrier").assertIsDisplayed()
         compose.onNodeWithContentDescription("Add Carrier to queue").assertDoesNotExist()
@@ -71,7 +75,9 @@ class PlaylistDetailScreenTest {
         assertEquals(1, skipped)
 
         compose.onNodeWithText("[ ADD TRACK ]").performClick()
-        compose.onNodeWithText("${availableTrack.artist} :: ${availableTrack.title}").assertIsDisplayed()
+        compose.onNodeWithText("Available Artist").assertIsDisplayed()
+        compose.onNodeWithText("Available Carrier").assertIsDisplayed()
+        compose.onNodeWithText("Available Artist :: Available Carrier").assertDoesNotExist()
         compose.onNodeWithContentDescription("Add ${availableTrack.title}").performClick()
         assertEquals(availableTrack.relativePath, added)
 
@@ -83,33 +89,27 @@ class PlaylistDetailScreenTest {
         assertEquals(1, compose.onNodeWithText("[ ADD QUEUE ]").textLayoutResult().lineCount)
     }
 
-    @Test fun playlistTrackTextUsesSingleEllipsizedLines() {
+    @Test fun playlistTrackLabelEllipsizesArtistAndTitleIndependently() {
         val longTitle = "Carrier Across The Endless Terminal Horizon Repeating Forever"
         val longArtist = "The Extremely Long Terminal Ensemble Beyond The Horizon"
-        val track = sampleTracks.first().copy(title = longTitle, artist = longArtist)
-        val availableTrack = sampleTracks[1].copy(
-            title = "Available Track Across The Endless Terminal Horizon Repeating Forever",
-            artist = longArtist,
-        )
-        val rows = listOf(PlaylistEntryRow(0, track.relativePath, longTitle, longArtist, 1_000, "PLAYABLE"))
         compose.setContent {
             NocturneLTheme {
-                Box(Modifier.width(320.dp)) {
-                    PlaylistDetailScreen(
-                        state = playlistDetailState(samplePlaylist, rows, listOf(track, availableTrack)),
-                        onBack = {}, onPlay = {}, onRename = {}, onAdd = {}, onRemove = {}, onMove = { _, _ -> },
-                    )
-                }
+                PlaylistTrackLabel(
+                    artist = longArtist,
+                    title = longTitle,
+                    modifier = Modifier.width(160.dp),
+                )
             }
         }
 
-        compose.onNodeWithText("[ ADD TRACK ]").performClick()
-        val availableLayout = compose.onNodeWithText("$longArtist :: ${availableTrack.title}").textLayoutResult()
-        val entryLayout = compose.onNodeWithText("$longArtist :: $longTitle").textLayoutResult()
-        assertEquals(1, availableLayout.lineCount)
-        assertEquals(1, entryLayout.lineCount)
-        assertTrue(availableLayout.hasVisualOverflow)
-        assertTrue(entryLayout.hasVisualOverflow)
+        compose.onNodeWithText(longArtist).assertIsDisplayed()
+        compose.onNodeWithText(longTitle).assertIsDisplayed()
+        val artistLayout = compose.onNodeWithText(longArtist).textLayoutResult()
+        val titleLayout = compose.onNodeWithText(longTitle).textLayoutResult()
+        assertEquals(1, artistLayout.lineCount)
+        assertEquals(1, titleLayout.lineCount)
+        assertTrue(artistLayout.hasVisualOverflow)
+        assertTrue(titleLayout.hasVisualOverflow)
     }
 
     @Test fun dragAcrossMultipleRowsCommitsOnceInBothDirections() {
@@ -176,7 +176,7 @@ class PlaylistDetailScreenTest {
             }
         }
 
-        compose.onNodeWithText("Artist :: Second").assertIsDisplayed()
+        compose.onNodeWithText("Second").assertIsDisplayed()
         compose.onNodeWithTag("playlist-drag-1").performTouchInput {
             down(center); moveBy(Offset(0f, -center.y * 4f)); up()
         }

@@ -18,9 +18,16 @@ class SettingsViewModelTest {
             assertEquals(25, viewModel.state.value.visualizerSyncOffsetMs)
             viewModel.decreaseVisualizerSyncOffset()
             assertEquals(0, viewModel.state.value.visualizerSyncOffsetMs)
-            repeat(50) { viewModel.increaseVisualizerSyncOffset() }
+            repeat(VisualizerSyncOffset.MAX_MS / VisualizerSyncOffset.STEP_MS + 1) {
+                viewModel.increaseVisualizerSyncOffset()
+            }
             assertEquals(VisualizerSyncOffset.MAX_MS, viewModel.state.value.visualizerSyncOffsetMs)
-            repeat(100) { viewModel.decreaseVisualizerSyncOffset() }
+            repeat(
+                (VisualizerSyncOffset.MAX_MS - VisualizerSyncOffset.MIN_MS) /
+                    VisualizerSyncOffset.STEP_MS + 1,
+            ) {
+                viewModel.decreaseVisualizerSyncOffset()
+            }
             assertEquals(VisualizerSyncOffset.MIN_MS, viewModel.state.value.visualizerSyncOffsetMs)
             viewModel.resetVisualizerSyncOffset()
             assertEquals(0, viewModel.state.value.visualizerSyncOffsetMs)

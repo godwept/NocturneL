@@ -2,8 +2,8 @@ package ca.stewark.nocturnel.visualizer
 
 object VisualizerSyncOffset {
     const val DEFAULT_MS = 0
-    const val MIN_MS = -500
-    const val MAX_MS = 1_000
+    const val MIN_MS = -2_000
+    const val MAX_MS = 2_000
     const val STEP_MS = 25
 
     fun clamp(offsetMs: Int): Int = offsetMs.coerceIn(MIN_MS, MAX_MS)

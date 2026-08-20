@@ -27,7 +27,12 @@ class TerminalPreferencesRepositoryTest {
         TerminalPreferencesRepository(context, name).setVisualizerSyncOffsetMs(175)
         assertEquals(175, TerminalPreferencesRepository(context, name).visualizerSyncOffsetMs.value)
 
-        preferences.edit().putInt("visualizer_sync_offset_ms", -999).commit()
+        TerminalPreferencesRepository(context, name).setVisualizerSyncOffsetMs(-2_000)
+        assertEquals(-2_000, TerminalPreferencesRepository(context, name).visualizerSyncOffsetMs.value)
+        TerminalPreferencesRepository(context, name).setVisualizerSyncOffsetMs(2_000)
+        assertEquals(2_000, TerminalPreferencesRepository(context, name).visualizerSyncOffsetMs.value)
+
+        preferences.edit().putInt("visualizer_sync_offset_ms", -9_999).commit()
         assertEquals(VisualizerSyncOffset.MIN_MS, TerminalPreferencesRepository(context, name).visualizerSyncOffsetMs.value)
         preferences.edit().putInt("visualizer_sync_offset_ms", 9_999).commit()
         assertEquals(VisualizerSyncOffset.MAX_MS, TerminalPreferencesRepository(context, name).visualizerSyncOffsetMs.value)

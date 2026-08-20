@@ -73,13 +73,17 @@ fun PlaylistDetailScreen(
                     state.availableTracks.filter { "${it.title} ${it.artist} ${it.album}".contains(query, true) },
                     key = { "available:${it.relativePath}" },
                 ) { track ->
-                    Row(Modifier.fillMaxWidth()) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         BracketIconButton("+", "Add ${track.title}", { onAdd(track.relativePath) })
-                        Text(
-                            "${track.artist} :: ${track.title}",
-                            Modifier.weight(1f).padding(top = TerminalDimensions.sm),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                        PlaylistTrackLabel(
+                            artist = track.artist,
+                            title = track.title,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = TerminalDimensions.xs),
                         )
                     }
                 }
@@ -107,6 +111,18 @@ fun PlaylistDetailScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+internal fun PlaylistTrackLabel(
+    artist: String,
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier) {
+        Text(artist, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -152,11 +168,12 @@ internal fun PlaylistTrackEntryRow(
             onDragEnd = onDragEnd,
             onDragCancel = onDragCancel,
         )
-        Text(
-            "${row.artist} :: ${row.title}",
-            Modifier.weight(1f).padding(horizontal = TerminalDimensions.xs),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        PlaylistTrackLabel(
+            artist = row.artist,
+            title = row.title,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = TerminalDimensions.xs),
         )
         BracketIconButton("X", "Remove ${row.title}", { onRemove(row.position) })
     }

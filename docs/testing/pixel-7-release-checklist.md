@@ -24,9 +24,12 @@
 - [ ] After a quiet passage, seek and change tracks; confirm the learned spectrum gain does not carry into the new signal.
 - [ ] Run a visualizer for 30 minutes and check for dropped audio, animation stutter, excessive heat, or unreasonable battery drain.
 - [ ] In radar and bands, confirm visualizer sync minus/plus changes the shared value by exactly 25 ms per tap without changing modes.
-- [ ] Tap the visualizer sync value and confirm it resets to `0 ms`.
-- [ ] Confirm minus disables at `-500 ms` and plus disables at `+1000 ms`.
-- [ ] Calibrate an obvious percussion track first over the phone or wired output, then over Bluetooth earbuds; confirm positive values delay both visualizers consistently.
+- [ ] Confirm album art, radar, and bands retain identical square bounds with no vertical jump while switching modes.
+- [ ] Confirm minus occupies the top-left corner, plus occupies the top-right corner, and neither control changes modes.
+- [ ] Confirm the current sync value appears on visualizer entry, remains visible for three seconds after the latest adjustment, then fades away.
+- [ ] Tap the visible visualizer sync value and confirm it resets to `0 ms`; confirm the mode label appears at bottom-right.
+- [ ] Confirm minus disables at `-2000 ms` and plus disables at `+2000 ms`.
+- [ ] Calibrate an obvious percussion track first over the phone or wired output, then in the target Bluetooth vehicle; confirm the expanded range is sufficient and positive values delay both visualizers consistently.
 - [ ] Set a non-zero visualizer sync value, fully close and reopen the app, and confirm the same value is restored.
 - [ ] At a large positive offset, verify pause, seek, track transition, and fresh visualizer activation settle cleanly while PCM accumulates.
 - [ ] Adjust and reset visualizer sync repeatedly during playback and confirm there is no audible seek, interruption, or glitch.

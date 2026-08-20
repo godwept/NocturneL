@@ -68,7 +68,13 @@ class NowPlayingVisualizerTest {
             }
         }
         compose.onNodeWithTag("visualizer-sync-controls").assertDoesNotExist()
+        val artBounds = compose.onNodeWithTag("visualizer-art").fetchSemanticsNode().boundsInRoot
         compose.onNodeWithTag("visualizer-art").performClick()
+        val visualizerBounds = compose.onNodeWithTag("visualizer-deck").fetchSemanticsNode().boundsInRoot
+        assertEquals(artBounds.left, visualizerBounds.left, 0.5f)
+        assertEquals(artBounds.top, visualizerBounds.top, 0.5f)
+        assertEquals(artBounds.right, visualizerBounds.right, 0.5f)
+        assertEquals(artBounds.bottom, visualizerBounds.bottom, 0.5f)
         compose.onNodeWithText("VIS SYNC +75 MS", substring = true).assertIsDisplayed()
         compose.onNodeWithTag("visualizer-sync-decrease").performClick()
         compose.onNodeWithTag("visualizer-sync-increase").performClick()
@@ -77,5 +83,11 @@ class NowPlayingVisualizerTest {
         assertEquals(1, decreases)
         assertEquals(1, increases)
         assertEquals(1, resets)
+        compose.onNodeWithTag("visualizer-deck").performClick()
+        compose.onNodeWithTag("visualizer-bands").assertIsDisplayed()
+        compose.onNodeWithTag("visualizer-sync-controls").assertIsDisplayed()
+        compose.onNodeWithTag("visualizer-deck").performClick()
+        compose.onNodeWithTag("visualizer-art").assertIsDisplayed()
+        compose.onNodeWithTag("visualizer-sync-controls").assertDoesNotExist()
     }
 }
