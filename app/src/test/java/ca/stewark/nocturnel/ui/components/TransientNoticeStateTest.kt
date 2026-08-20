@@ -3,10 +3,12 @@ package ca.stewark.nocturnel.ui.components
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class TransientNoticeStateTest {
     @Test fun successNoticeExpiresAfterFiveSeconds() = runTest {
         val notices = TransientNoticeState(this, timeoutMillis = 5_000)

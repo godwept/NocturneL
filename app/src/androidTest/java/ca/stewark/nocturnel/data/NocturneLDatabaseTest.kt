@@ -8,6 +8,7 @@ import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.data.entity.LibrarySourceEntity
 import ca.stewark.nocturnel.data.entity.PlaylistEntity
 import ca.stewark.nocturnel.data.entity.PlaylistEntryEntity
+import ca.stewark.nocturnel.data.entity.ScanReportEntity
 import ca.stewark.nocturnel.playlist.PlaylistNotFoundException
 import ca.stewark.nocturnel.playlist.PlaylistRepository
 import kotlinx.coroutines.flow.first
@@ -115,6 +116,29 @@ class NocturneLDatabaseTest {
         database.replaceLibrarySource(source.copy(treeUri = "content://other"), sourceChanged = true)
         assertTrue(database.listeningDao().favoriteTrackPaths().first().isEmpty())
         assertTrue(database.listeningDao().history().first().isEmpty())
+    }
+
+    @Test
+    fun successfulReplacementCommitsSourceCatalogAndListeningResetTogether() = runTest {
+        val dao = database.libraryDao()
+        val oldSource = LibrarySourceEntity(treeUri = "content://old", displayName = "Old", lastScanEpochMillis = 1, accessLost = false)
+        database.replaceLibrarySource(oldSource, sourceChanged = false)
+        dao.saveAlbum(album(manualArtworkUri = null, title = "Old album"))
+        database.listeningDao().toggleFavoriteTrack("old.flac", 1)
+
+        val newSource = oldSource.copy(treeUri = "content://new", displayName = "New", lastScanEpochMillis = 2)
+        database.saveSourceAndCompletedScan(
+            source = newSource,
+            albums = listOf(album(manualArtworkUri = null, title = "New album")),
+            tracks = emptyList(),
+            report = ScanReportEntity(2, 0, 0, 0, 0, 0),
+            issues = emptyList(),
+            sourceChanged = true,
+        )
+
+        assertEquals("content://new", dao.librarySource()?.treeUri)
+        assertEquals("New album", dao.album("album-id")?.title)
+        assertTrue(database.listeningDao().favoriteTrackPaths().first().isEmpty())
     }
 
     private fun album(manualArtworkUri: String?, title: String = "Album") = AlbumEntity(

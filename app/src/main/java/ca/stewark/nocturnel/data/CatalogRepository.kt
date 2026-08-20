@@ -19,16 +19,6 @@ class CatalogRepository(private val database: NocturneLDatabase, private val sca
     private val dao: LibraryDao = database.libraryDao()
     suspend fun source(): LibrarySource? = dao.librarySource()?.let { LibrarySource(it.treeUri, it.displayName, it.lastScanEpochMillis, it.accessLost) }
 
-    suspend fun saveSource(treeUri: String, displayName: String): Boolean {
-        val previous = dao.librarySource()
-        val changed = previous != null && previous.treeUri != treeUri
-        database.replaceLibrarySource(
-            LibrarySourceEntity(treeUri = treeUri, displayName = displayName, lastScanEpochMillis = null, accessLost = false),
-            sourceChanged = changed,
-        )
-        return changed
-    }
-
     suspend fun markAccessLost() {
         dao.librarySource()?.let { dao.saveLibrarySource(it.copy(accessLost = true)) }
     }
@@ -50,7 +40,7 @@ class CatalogRepository(private val database: NocturneLDatabase, private val sca
         val previous = dao.librarySource()
         scan(
             LibrarySourceEntity(treeUri = treeUri, displayName = displayName, lastScanEpochMillis = null, accessLost = false),
-            sourceChanged = previous?.treeUri != treeUri,
+            sourceChanged = previous != null && previous.treeUri != treeUri,
             cancelled = cancelled,
             onProgress = onProgress,
         )
@@ -80,11 +70,18 @@ class CatalogRepository(private val database: NocturneLDatabase, private val sca
         val counts = ScanReconciler.count(existing.map(::fingerprint), result.tracks.map(::fingerprint))
         val report = ScanReport(now, counts.added, counts.changed, counts.missing, result.skipped, result.unsupported, result.issues)
         val entity = ScanReportEntity(now, report.added, report.changed, report.missing, report.skipped, report.unsupported)
-        if (sourceChanged) {
-            database.replaceSourceAndCompletedScan(source.copy(lastScanEpochMillis = now), result.albums, result.tracks, entity, report.issues.map { ScanIssueEntity(now, it.relativePath, it.message) })
-        } else {
+        if (dao.librarySource()?.treeUri == source.treeUri) {
             dao.replaceCompletedScan(result.albums, result.tracks, entity, report.issues.map { ScanIssueEntity(now, it.relativePath, it.message) })
             dao.saveLibrarySource(source.copy(lastScanEpochMillis = now))
+        } else {
+            database.saveSourceAndCompletedScan(
+                source = source.copy(lastScanEpochMillis = now),
+                albums = result.albums,
+                tracks = result.tracks,
+                report = entity,
+                issues = report.issues.map { ScanIssueEntity(now, it.relativePath, it.message) },
+                sourceChanged = sourceChanged,
+            )
         }
         return report
     }

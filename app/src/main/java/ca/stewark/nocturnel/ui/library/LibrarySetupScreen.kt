@@ -19,10 +19,10 @@ import ca.stewark.nocturnel.ui.components.TerminalNotice
 
 @Composable
 fun LibrarySetupScreen(
-    onChooseFolder: () -> Unit,
     scanProgress: ScanProgress? = null,
     onCancelScan: () -> Unit = {},
     notice: AppNotice? = null,
+    onChooseFolder: () -> Unit,
 ) {
     Column(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(TerminalDimensions.lg),

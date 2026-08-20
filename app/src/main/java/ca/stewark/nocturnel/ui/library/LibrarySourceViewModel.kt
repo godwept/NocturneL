@@ -60,7 +60,8 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
     fun selectFolder(uri: Uri) = viewModelScope.launch {
         runCatching {
             app.treeAccess.persist(uri)
-            startSelectedSourceScan(uri.toString(), app.treeAccess.displayName(uri), source?.treeUri != uri.toString())
+            val changed = source?.treeUri?.let { it != uri.toString() } == true
+            startSelectedSourceScan(uri.toString(), app.treeAccess.displayName(uri), changed)
         }.onFailure { notices.persistent("Could not retain access to that folder.") }
     }
 
@@ -82,9 +83,9 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
     fun cancelSourceChange() { pendingSourceChange = null }
 
     fun rescan() {
-        if (scanState.running) return
+        if (scanJob?.isActive == true || scanState.running) return
+        scanState = RescanUiState(progress = ScanProgress.Discovering)
         scanJob = viewModelScope.launch {
-            scanState = RescanUiState(progress = ScanProgress.Discovering)
             val runningContext = currentCoroutineContext()
             try {
                 val report = catalog.rescan(
@@ -93,14 +94,17 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
                 )
                 source = catalog.source()
                 scanState = RescanUiState(report = report)
+                scanJob = null
                 notices.info("Rescan complete")
             } catch (error: LibraryAccessLostException) {
                 source = catalog.source()
                 scanState = RescanUiState()
+                scanJob = null
                 notices.persistent(error.message ?: "Access to the selected music folder was lost.")
             } catch (error: Exception) {
                 if (runningContext.isActive) {
                     scanState = RescanUiState()
+                    scanJob = null
                     notices.persistent(error.message ?: "Rescan failed")
                 }
             }
@@ -131,9 +135,9 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun startSelectedSourceScan(treeUri: String, displayName: String, changed: Boolean) {
-        if (scanState.running) return
+        if (scanJob?.isActive == true || scanState.running) return
+        scanState = RescanUiState(progress = ScanProgress.Discovering)
         scanJob = viewModelScope.launch {
-            scanState = RescanUiState(progress = ScanProgress.Discovering)
             val runningContext = currentCoroutineContext()
             try {
                 val report = catalog.scanSelectedSource(treeUri, displayName, { !runningContext.isActive }) {
@@ -142,13 +146,16 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
                 if (changed) playbackStateRepository.clear()
                 source = catalog.source()
                 scanState = RescanUiState(report = report)
+                scanJob = null
                 notices.info("Rescan complete")
             } catch (error: LibraryAccessLostException) {
                 scanState = RescanUiState()
+                scanJob = null
                 notices.persistent(error.message ?: "Access to the selected music folder was lost.")
             } catch (error: Exception) {
                 if (runningContext.isActive) {
                     scanState = RescanUiState()
+                    scanJob = null
                     notices.persistent(error.message ?: "Rescan failed")
                 }
             }

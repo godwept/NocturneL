@@ -16,6 +16,8 @@ import ca.stewark.nocturnel.ui.components.NoticeSeverity
 import ca.stewark.nocturnel.ui.components.TerminalNotice
 import ca.stewark.nocturnel.ui.components.TerminalToggle
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
+import ca.stewark.nocturnel.library.ScanProgress
+import ca.stewark.nocturnel.ui.library.LibraryScanStatus
 
 @Composable
 fun SettingsScreen(
@@ -25,6 +27,7 @@ fun SettingsScreen(
     onEffectsChanged: (Boolean) -> Unit,
     onCancelRescan: () -> Unit = {},
     scanRunning: Boolean = false,
+    scanProgress: ScanProgress? = null,
     onClearListeningData: () -> Unit = {},
     listeningMessage: String? = null,
     pendingSourceName: String? = null,
@@ -32,16 +35,18 @@ fun SettingsScreen(
     onCancelSourceChange: () -> Unit = {},
 ) {
     var confirmingClear by rememberSaveable { mutableStateOf(false) }
+    val scanActive = scanRunning || scanProgress != null
     Column(Modifier.fillMaxSize().padding(TerminalDimensions.md)) {
         AsciiFrame("SETTINGS") {
             Text("LOCAL LIBRARY")
             BracketButton("CHANGE MUSIC FOLDER", onChooseFolder)
             BracketButton(
-                label = if (scanRunning) "SCANNING..." else "RESCAN LIBRARY",
+                label = if (scanActive) "SCANNING..." else "RESCAN LIBRARY",
                 onClick = onRescan,
-                enabled = !scanRunning,
+                enabled = !scanActive,
             )
-            if (scanRunning) BracketButton("CANCEL SCAN", onCancelRescan)
+            if (scanProgress != null) LibraryScanStatus(scanProgress, onCancelRescan)
+            else if (scanRunning) BracketButton("CANCEL SCAN", onCancelRescan)
             TerminalToggle("CRT EFFECTS", state.savedEffectsEnabled, onEffectsChanged)
             if (!confirmingClear) {
                 BracketButton("CLEAR HISTORY + COUNTS", { confirmingClear = true })

@@ -117,4 +117,24 @@ class LibraryScreenTest {
         compose.onNodeWithText("[ CANCEL ]").assertIsDisplayed().performClick()
         assertTrue(cancelled)
     }
+
+    @Test fun settingsShowsStructuredScanProgressAndCancels() {
+        var cancelled = false
+        compose.setContent {
+            NocturneLTheme {
+                SettingsScreen(
+                    onChooseFolder = {},
+                    onRescan = {},
+                    state = TerminalSettingsState(),
+                    onEffectsChanged = {},
+                    onCancelRescan = { cancelled = true },
+                    scanProgress = ScanProgress.Indexing(completed = 8, total = 20),
+                )
+            }
+        }
+
+        compose.onNodeWithText("INDEXING 8 OF 20 FILES").assertIsDisplayed()
+        compose.onNodeWithText("[ CANCEL ]").assertIsDisplayed().performClick()
+        assertTrue(cancelled)
+    }
 }

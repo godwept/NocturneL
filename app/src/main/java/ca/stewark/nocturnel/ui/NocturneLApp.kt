@@ -287,6 +287,7 @@ fun NocturneLApp(
                     state = settings,
                     onEffectsChanged = settingsViewModel::setEffectsEnabled,
                     scanRunning = viewModel.scanState.running,
+                    scanProgress = viewModel.scanState.progress,
                     onClearListeningData = listeningViewModel::clearHistoryAndCounts,
                     listeningMessage = listening.message,
                     pendingSourceName = viewModel.pendingSourceChange?.displayName,
