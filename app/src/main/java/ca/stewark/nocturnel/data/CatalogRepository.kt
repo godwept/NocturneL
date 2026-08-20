@@ -86,7 +86,7 @@ class CatalogRepository(private val database: NocturneLDatabase, private val sca
             dao.replaceCompletedScan(result.albums, result.tracks, entity, report.issues.map { ScanIssueEntity(now, it.relativePath, it.message) })
             dao.saveLibrarySource(source.copy(lastScanEpochMillis = now))
         }
-        report
+        return report
     }
 
     private fun fingerprint(track: ca.stewark.nocturnel.data.entity.TrackEntity): TrackFingerprint =
