@@ -20,8 +20,8 @@ fun TerminalScaffold(
     effectsEnabled: Boolean,
     modifier: Modifier = Modifier,
     status: String? = null,
-    content: @Composable () -> Unit,
     notice: AppNotice? = null,
+    content: @Composable () -> Unit,
 ) {
     Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding()) {
         Column(Modifier.fillMaxSize()) {
