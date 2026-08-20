@@ -20,6 +20,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import ca.stewark.nocturnel.ui.settings.SettingsScreen
 import ca.stewark.nocturnel.ui.settings.TerminalSettingsState
+import ca.stewark.nocturnel.ui.library.LibraryScanStatus
+import ca.stewark.nocturnel.library.ScanProgress
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -101,5 +103,18 @@ class LibraryScreenTest {
         compose.onNodeWithText("[ SCANNING... ]")
             .assertIsDisplayed()
             .assertIsNotEnabled()
+    }
+
+    @Test fun scanStatusShowsRealIndexingProgressAndCancels() {
+        var cancelled = false
+        compose.setContent {
+            NocturneLTheme {
+                LibraryScanStatus(ScanProgress.Indexing(completed = 4, total = 10), { cancelled = true })
+            }
+        }
+
+        compose.onNodeWithText("INDEXING 4 OF 10 FILES").assertIsDisplayed()
+        compose.onNodeWithText("[ CANCEL ]").assertIsDisplayed().performClick()
+        assertTrue(cancelled)
     }
 }

@@ -31,4 +31,21 @@ abstract class NocturneLDatabase : RoomDatabase() {
         libraryDao().selectLibrarySource(source, sourceChanged)
         if (sourceChanged) listeningDao().clearAllListeningData()
     }
+
+    suspend fun replaceSourceAndCompletedScan(
+        source: LibrarySourceEntity,
+        albums: List<AlbumEntity>,
+        tracks: List<TrackEntity>,
+        report: ScanReportEntity,
+        issues: List<ScanIssueEntity>,
+    ) = withTransaction {
+        val library = libraryDao()
+        library.clearTracks()
+        library.clearAlbums()
+        library.clearScanIssues()
+        library.clearScanReports()
+        listeningDao().clearAllListeningData()
+        library.saveLibrarySource(source)
+        library.replaceCompletedScan(albums, tracks, report, issues)
+    }
 }

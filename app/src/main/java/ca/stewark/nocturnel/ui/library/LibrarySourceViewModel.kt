@@ -15,6 +15,9 @@ import ca.stewark.nocturnel.data.entity.TrackEntity
 import ca.stewark.nocturnel.playback.SharedPreferencesPlaybackStateRepository
 import ca.stewark.nocturnel.library.model.LibrarySource
 import ca.stewark.nocturnel.library.model.ScanReport
+import ca.stewark.nocturnel.library.ScanProgress
+import ca.stewark.nocturnel.ui.components.NoticeSeverity
+import ca.stewark.nocturnel.ui.components.TransientNoticeState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -23,7 +26,9 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-data class RescanUiState(val running: Boolean = false, val progress: Int = 0, val report: ScanReport? = null, val message: String? = null)
+data class RescanUiState(val progress: ScanProgress? = null, val report: ScanReport? = null) {
+    val running: Boolean get() = progress != null
+}
 data class PendingSourceChange(val uri: Uri, val displayName: String)
 
 class LibrarySourceViewModel(application: Application) : AndroidViewModel(application) {
@@ -36,6 +41,7 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
         private set
     var scanState: RescanUiState by mutableStateOf(RescanUiState())
         private set
+    val notices = TransientNoticeState(viewModelScope)
     private var scanJob: Job? = null
     var pendingSourceChange: PendingSourceChange? by mutableStateOf(null)
         private set
@@ -46,7 +52,7 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
             if (source != null && !app.treeAccess.canRead(source!!.treeUri)) {
                 catalog.markAccessLost()
                 source = catalog.source()
-                scanState = RescanUiState(message = "Access to the selected music folder was lost. Choose the folder again in settings.")
+                notices.persistent("Access to the selected music folder was lost. Choose the folder again in settings.")
             }
         }
     }
@@ -54,11 +60,8 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
     fun selectFolder(uri: Uri) = viewModelScope.launch {
         runCatching {
             app.treeAccess.persist(uri)
-            val changed = catalog.saveSource(uri.toString(), app.treeAccess.displayName(uri))
-            if (changed) playbackStateRepository.clear()
-            source = catalog.source()
-            scanState = RescanUiState(message = "Folder selected. Choose RESCAN to index it.")
-        }.onFailure { scanState = RescanUiState(message = "Could not retain access to that folder.") }
+            startSelectedSourceScan(uri.toString(), app.treeAccess.displayName(uri), source?.treeUri != uri.toString())
+        }.onFailure { notices.persistent("Could not retain access to that folder.") }
     }
 
     fun requestFolder(uri: Uri) {
@@ -81,7 +84,7 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
     fun rescan() {
         if (scanState.running) return
         scanJob = viewModelScope.launch {
-            scanState = RescanUiState(running = true)
+            scanState = RescanUiState(progress = ScanProgress.Discovering)
             val runningContext = currentCoroutineContext()
             try {
                 val report = catalog.rescan(
@@ -89,12 +92,17 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
                     onProgress = { scanState = scanState.copy(progress = it) },
                 )
                 source = catalog.source()
-                scanState = RescanUiState(report = report, message = "Rescan complete")
+                scanState = RescanUiState(report = report)
+                notices.info("Rescan complete")
             } catch (error: LibraryAccessLostException) {
                 source = catalog.source()
-                scanState = RescanUiState(message = error.message)
+                scanState = RescanUiState()
+                notices.persistent(error.message ?: "Access to the selected music folder was lost.")
             } catch (error: Exception) {
-                if (runningContext.isActive) scanState = RescanUiState(message = error.message ?: "Rescan failed")
+                if (runningContext.isActive) {
+                    scanState = RescanUiState()
+                    notices.persistent(error.message ?: "Rescan failed")
+                }
             }
         }
     }
@@ -103,7 +111,8 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
         if (!scanState.running) return
         scanJob?.cancel()
         scanJob = null
-        scanState = RescanUiState(message = "Rescan cancelled; the previous catalog was preserved.")
+        scanState = RescanUiState()
+        notices.persistent("Rescan cancelled; the previous catalog was preserved.", NoticeSeverity.WARNING)
     }
 
     fun tracks(albumId: String) = app.database.libraryDao().tracksForAlbum(albumId)
@@ -117,7 +126,32 @@ class LibrarySourceViewModel(application: Application) : AndroidViewModel(applic
             }
             app.database.libraryDao().updateManualArtwork(albumId, uri?.toString())
         } catch (_: SecurityException) {
-            scanState = scanState.copy(message = "Could not retain access to that cover image.")
+            notices.persistent("Could not retain access to that cover image.")
+        }
+    }
+
+    private fun startSelectedSourceScan(treeUri: String, displayName: String, changed: Boolean) {
+        if (scanState.running) return
+        scanJob = viewModelScope.launch {
+            scanState = RescanUiState(progress = ScanProgress.Discovering)
+            val runningContext = currentCoroutineContext()
+            try {
+                val report = catalog.scanSelectedSource(treeUri, displayName, { !runningContext.isActive }) {
+                    scanState = scanState.copy(progress = it)
+                }
+                if (changed) playbackStateRepository.clear()
+                source = catalog.source()
+                scanState = RescanUiState(report = report)
+                notices.info("Rescan complete")
+            } catch (error: LibraryAccessLostException) {
+                scanState = RescanUiState()
+                notices.persistent(error.message ?: "Access to the selected music folder was lost.")
+            } catch (error: Exception) {
+                if (runningContext.isActive) {
+                    scanState = RescanUiState()
+                    notices.persistent(error.message ?: "Rescan failed")
+                }
+            }
         }
     }
 }

@@ -10,6 +10,11 @@ import java.security.MessageDigest
 
 enum class ScanOutcome { COMPLETED, CANCELLED, ACCESS_LOST }
 
+sealed interface ScanProgress {
+    data object Discovering : ScanProgress
+    data class Indexing(val completed: Int, val total: Int) : ScanProgress
+}
+
 data class ScanResult(
     val albums: List<AlbumEntity>,
     val tracks: List<TrackEntity>,
@@ -25,7 +30,12 @@ class LibraryScanner(
 ) {
     fun canAccess(treeUri: String): Boolean = treeAccess.canRead(treeUri)
 
-    fun scan(treeUri: String, scanEpochMillis: Long, cancelled: () -> Boolean = { false }, onProgress: (Int) -> Unit = {}): ScanResult {
+    fun scan(
+        treeUri: String,
+        scanEpochMillis: Long,
+        cancelled: () -> Boolean = { false },
+        onProgress: (ScanProgress) -> Unit = {},
+    ): ScanResult {
         val root = treeAccess.openTree(treeUri)
             ?.takeIf { it.canRead() }
             ?: return ScanResult(emptyList(), emptyList(), listOf(ScanIssue("", "Music folder is unavailable")), 0, 0, ScanOutcome.ACCESS_LOST)
@@ -35,6 +45,7 @@ class LibraryScanner(
         var skipped = 0
         var unsupported = 0
         var count = 0
+        onProgress(ScanProgress.Discovering)
         val documents = DocumentTreeWalker.walk(root, cancelled).toList()
         if (cancelled()) return ScanResult(emptyList(), emptyList(), emptyList(), 0, 0, ScanOutcome.CANCELLED)
         val folderCovers = documents.filter { ArtworkResolver.isFolderCoverFile(it.document.name.orEmpty()) }
@@ -42,7 +53,7 @@ class LibraryScanner(
         documents.forEach { discovered ->
             if (cancelled()) return@forEach
             count += 1
-            onProgress(count)
+            onProgress(ScanProgress.Indexing(count, documents.size))
             if (!SupportedAudioFormats.isCandidateAudioFile(discovered.relativePath)) {
                 if (!ArtworkResolver.isFolderCoverFile(discovered.document.name.orEmpty())) skipped += 1
                 return@forEach

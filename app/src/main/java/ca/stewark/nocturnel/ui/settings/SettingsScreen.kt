@@ -21,6 +21,7 @@ import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 fun SettingsScreen(
     onChooseFolder: () -> Unit,
     onRescan: () -> Unit,
+    onCancelRescan: () -> Unit = {},
     state: TerminalSettingsState,
     onEffectsChanged: (Boolean) -> Unit,
     scanRunning: Boolean = false,
@@ -40,6 +41,7 @@ fun SettingsScreen(
                 onClick = onRescan,
                 enabled = !scanRunning,
             )
+            if (scanRunning) BracketButton("CANCEL SCAN", onCancelRescan)
             TerminalToggle("CRT EFFECTS", state.savedEffectsEnabled, onEffectsChanged)
             if (!confirmingClear) {
                 BracketButton("CLEAR HISTORY + COUNTS", { confirmingClear = true })

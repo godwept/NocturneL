@@ -13,17 +13,27 @@ import androidx.compose.ui.Modifier
 import ca.stewark.nocturnel.ui.components.AsciiFrame
 import ca.stewark.nocturnel.ui.components.BracketButton
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
+import ca.stewark.nocturnel.library.ScanProgress
+import ca.stewark.nocturnel.ui.components.AppNotice
+import ca.stewark.nocturnel.ui.components.TerminalNotice
 
 @Composable
-fun LibrarySetupScreen(onChooseFolder: () -> Unit) {
+fun LibrarySetupScreen(
+    onChooseFolder: () -> Unit,
+    scanProgress: ScanProgress? = null,
+    onCancelScan: () -> Unit = {},
+    notice: AppNotice? = null,
+) {
     Column(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(TerminalDimensions.lg),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        AsciiFrame("LOCAL LIBRARY") {
+        if (scanProgress != null) LibraryScanStatus(scanProgress, onCancelScan)
+        else AsciiFrame("LOCAL LIBRARY") {
             Text("Grant read access to one music folder. Only that folder and its subfolders will be scanned.")
             BracketButton("CHOOSE MUSIC FOLDER", onChooseFolder, Modifier.padding(top = TerminalDimensions.md))
+            notice?.let { TerminalNotice(it.text, severity = it.severity, modifier = Modifier.padding(top = TerminalDimensions.sm)) }
         }
     }
 }

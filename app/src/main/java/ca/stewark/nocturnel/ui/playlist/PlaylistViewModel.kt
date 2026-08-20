@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ca.stewark.nocturnel.data.entity.TrackEntity
+import ca.stewark.nocturnel.ui.components.NoticeSeverity
+import ca.stewark.nocturnel.ui.components.TransientNoticeState
 
 class PlaylistViewModel(application: Application) : AndroidViewModel(application) {
     private val app = application as NocturneLApplication
@@ -26,8 +28,8 @@ class PlaylistViewModel(application: Application) : AndroidViewModel(application
     private val repository = PlaylistRepository(dao)
     private val documentService = PlaylistDocumentService(application.contentResolver)
     val playlists = dao.playlists().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-    var message: String? by mutableStateOf(null)
-        private set
+    private val notices = TransientNoticeState(viewModelScope)
+    val message: String? get() = notices.current?.text
     private val _detail = MutableStateFlow<PlaylistDetailState?>(null)
     val detail: StateFlow<PlaylistDetailState?> = _detail.asStateFlow()
     private val _albumPlaylistState = MutableStateFlow<AlbumPlaylistUiState>(AlbumPlaylistUiState.Idle)
@@ -45,7 +47,7 @@ class PlaylistViewModel(application: Application) : AndroidViewModel(application
 
     fun create(name: String = "New playlist") = viewModelScope.launch {
         repository.create(name)
-        message = "Playlist created"
+        notices.info("Playlist created")
     }
 
     fun open(id: Long) = viewModelScope.launch { refresh(id) }
@@ -53,13 +55,13 @@ class PlaylistViewModel(application: Application) : AndroidViewModel(application
 
     fun rename(id: Long, name: String) = viewModelScope.launch {
         repository.rename(id, name)
-        message = "Playlist renamed"
+        notices.info("Playlist renamed")
         if (_detail.value?.playlist?.id == id) refresh(id)
     }
     fun delete(id: Long) = viewModelScope.launch {
         repository.delete(id)
         if (_detail.value?.playlist?.id == id) _detail.value = null
-        message = "Playlist deleted"
+        notices.info("Playlist deleted")
     }
     fun add(id: Long, path: String) = viewModelScope.launch { repository.add(id, path); refresh(id) }
     fun remove(id: Long, index: Int) = viewModelScope.launch { repository.removeAt(id, index); refresh(id) }
@@ -81,14 +83,14 @@ class PlaylistViewModel(application: Application) : AndroidViewModel(application
 
     fun import(uri: Uri) = viewModelScope.launch {
         runCatching { importCommand.import(documentService.readImport(uri)).message }
-            .onSuccess { message = it }
-            .onFailure { message = PlaylistTransferMessages.IMPORT_FAILED }
+            .onSuccess { notices.info(it) }
+            .onFailure { notices.persistent(PlaylistTransferMessages.IMPORT_FAILED) }
     }
 
     fun export(playlistId: Long, uri: Uri) = viewModelScope.launch {
         runCatching { documentService.writeM3u8(uri, M3u8Codec.encode(repository.paths(playlistId))) }
-            .onSuccess { message = PlaylistTransferMessages.PLAYLIST_EXPORTED }
-            .onFailure { message = PlaylistTransferMessages.EXPORT_FAILED }
+            .onSuccess { notices.info(PlaylistTransferMessages.PLAYLIST_EXPORTED) }
+            .onFailure { notices.persistent(PlaylistTransferMessages.EXPORT_FAILED) }
     }
 
     fun exportAll(uri: Uri) = viewModelScope.launch {
@@ -96,11 +98,11 @@ class PlaylistViewModel(application: Application) : AndroidViewModel(application
             val playlists = exportCommand.collect()
             documentService.writeBundle(uri, playlists)
             PlaylistExportSummary(playlists.size).message
-        }.onSuccess { message = it }.onFailure { message = PlaylistTransferMessages.EXPORT_FAILED }
+        }.onSuccess { notices.info(it) }.onFailure { notices.persistent(PlaylistTransferMessages.EXPORT_FAILED) }
     }
 
-    fun importCancelled() { message = PlaylistTransferMessages.IMPORT_CANCELLED }
-    fun exportCancelled() { message = PlaylistTransferMessages.EXPORT_CANCELLED }
+    fun importCancelled() { notices.persistent(PlaylistTransferMessages.IMPORT_CANCELLED, NoticeSeverity.WARNING) }
+    fun exportCancelled() { notices.persistent(PlaylistTransferMessages.EXPORT_CANCELLED, NoticeSeverity.WARNING) }
     suspend fun playableTracks(playlistId: Long): List<TrackEntity> = repository.playableTracks(playlistId)
 
     private suspend fun refresh(id: Long) {

@@ -42,3 +42,8 @@
 - [ ] Begin a drag as playback changes tracks and confirm the stale drag is cancelled without corrupting the queue.
 - [ ] Reorder a queue containing duplicate tracks, restart the app/service, and confirm order plus the selected duplicate occurrence restore.
 - [ ] After queue edits, confirm notification, lock-screen, and headset controls remain responsive.
+- [ ] On first folder selection, confirm the app immediately shows `DISCOVERING FILES...`, then real indexing counts without requiring a Settings rescan.
+- [ ] With a large library, cancel once during discovery and once during indexing; confirm initial setup remains retryable and no partial catalog is shown.
+- [ ] Change an existing library folder, cancel or make the replacement inaccessible, and confirm the previous library remains available.
+- [ ] Complete a replacement-folder scan and confirm the new library replaces the old one and listening data is cleared.
+- [ ] Confirm routine scan and playlist success messages disappear after five seconds, while errors and scan cancellation messages remain visible.

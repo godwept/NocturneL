@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -19,6 +20,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.playback.PlaybackConnection
 import ca.stewark.nocturnel.ui.components.TerminalScaffold
+import ca.stewark.nocturnel.ui.components.AppNotice
+import ca.stewark.nocturnel.ui.components.NoticeSeverity
 import ca.stewark.nocturnel.ui.library.AlbumDetailScreen
 import ca.stewark.nocturnel.ui.library.AlbumGridScreen
 import ca.stewark.nocturnel.ui.library.ArtistDetailScreen
@@ -26,6 +29,7 @@ import ca.stewark.nocturnel.ui.library.ArtistRow
 import ca.stewark.nocturnel.ui.library.ArtistsScreen
 import ca.stewark.nocturnel.ui.library.LibrarySetupScreen
 import ca.stewark.nocturnel.ui.library.LibrarySourceViewModel
+import ca.stewark.nocturnel.ui.library.LibraryScanStatus
 import ca.stewark.nocturnel.ui.library.SearchScreen
 import ca.stewark.nocturnel.ui.library.groupArtists
 import ca.stewark.nocturnel.ui.navigation.NocturneLDestination
@@ -101,7 +105,12 @@ fun NocturneLApp(
     }
 
     if (viewModel.source == null) {
-        LibrarySetupScreen { launcher.launch(null) }
+        LibrarySetupScreen(
+            onChooseFolder = { launcher.launch(null) },
+            scanProgress = viewModel.scanState.progress,
+            onCancelScan = viewModel::cancelRescan,
+            notice = viewModel.notices.current,
+        )
         return
     }
 
@@ -116,9 +125,32 @@ fun NocturneLApp(
             librarySubview = "LANDING"
         },
         effectsEnabled = settings.effectiveEffectsEnabled,
-        status = if (queueEditorOpen) viewModel.scanState.message else playbackState.queueNotice ?: listening.message ?: viewModel.scanState.message,
+        status = when {
+            queueEditorOpen -> viewModel.notices.current
+            playbackState.queueNotice != null -> AppNotice(playbackState.queueNotice!!, NoticeSeverity.INFO, transient = false)
+            listening.message != null -> AppNotice(listening.message!!, NoticeSeverity.INFO, transient = false)
+            else -> viewModel.notices.current
+        },
     ) {
         when {
+            viewModel.scanState.progress != null && destination == NocturneLDestination.LIBRARY && selectedAlbum == null && selectedArtist == null -> {
+                Column {
+                    LibraryScanStatus(viewModel.scanState.progress!!, viewModel::cancelRescan)
+                    LibraryLandingScreen(
+                        albums = albums,
+                        listening = listening,
+                        resume = resumeState(playbackState, viewModel.source?.accessLost != true),
+                        state = libraryGridState,
+                        onResume = playback::toggle,
+                        onAlbumSelected = { selectedAlbumId = it.id },
+                        onTrackSelected = playback::play,
+                        onFavoriteAlbum = listeningViewModel::toggleAlbum,
+                        onFavoriteTrack = listeningViewModel::toggleTrack,
+                        onViewFavorites = { librarySubview = "FAVORITES" },
+                        onViewHistory = { librarySubview = "HISTORY" },
+                    )
+                }
+            }
             selectedAlbum != null -> {
                 val albumTracks by viewModel.tracks(selectedAlbum.id).collectAsState(emptyList())
                 AlbumDetailScreen(
@@ -251,6 +283,7 @@ fun NocturneLApp(
                 NocturneLDestination.SETTINGS -> SettingsScreen(
                     onChooseFolder = { launcher.launch(null) },
                     onRescan = viewModel::rescan,
+                    onCancelRescan = viewModel::cancelRescan,
                     state = settings,
                     onEffectsChanged = settingsViewModel::setEffectsEnabled,
                     scanRunning = viewModel.scanState.running,

@@ -19,7 +19,7 @@ fun TerminalScaffold(
     onSelected: (NocturneLDestination) -> Unit,
     effectsEnabled: Boolean,
     modifier: Modifier = Modifier,
-    status: String? = null,
+    status: AppNotice? = null,
     content: @Composable () -> Unit,
 ) {
     Box(modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding()) {
@@ -32,7 +32,7 @@ fun TerminalScaffold(
             )
             TerminalNavigation(selected, onSelected, effectsEnabled)
             Box(Modifier.weight(1f).fillMaxSize()) { content() }
-            status?.let { TerminalNotice(it, Modifier.padding(TerminalDimensions.xs)) }
+            status?.let { TerminalNotice(it.text, Modifier.padding(TerminalDimensions.xs), it.severity) }
         }
         Scanlines(effectsEnabled)
     }
