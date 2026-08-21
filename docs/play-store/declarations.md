@@ -36,4 +36,4 @@ Use this worksheet as the source of truth, then answer the live Play Console for
 ## Public contacts
 
 - Privacy policy: https://godwept.github.io/NocturneL/privacy/
-- Support email: mathew.stewart@gmail.com
+- Support email: nocturnelapp@gmail.com

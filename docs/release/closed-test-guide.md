@@ -12,6 +12,6 @@ NocturneL is a paid app. Give each tester a paid-app promo code, the closed-test
 6. Create a playlist and try export/import.
 7. Use the app in airplane mode.
 8. Open Settings and test PRIVACY POLICY.
-9. Send feedback to mathew.stewart@gmail.com using the feedback template.
+9. Send feedback to nocturnelapp@gmail.com using the feedback template.
 
 Do not commit tester email addresses, Google Accounts, device identifiers, or raw private feedback to this repository. Keep only pseudonymous summaries needed for the production-access application.

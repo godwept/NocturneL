@@ -21,7 +21,7 @@ Prepare NocturneL for a paid public Google Play release without adding online ru
 - Audience: ages 13 and older; not directed to children
 - Runtime privacy: offline, no ads, accounts, analytics, telemetry, remote crash reporting, or user-data transmission
 - Privacy URL: https://godwept.github.io/NocturneL/privacy/
-- Support email: mathew.stewart@gmail.com
+- Support email: nocturnelapp@gmail.com
 - Delivery: CI builds and signs; the developer uploads and promotes manually
 
 ## Tasks
@@ -185,7 +185,7 @@ Record only the updated Settings preview reference using the repository's screen
 
 **Test first:**
 
-Create PlayStoreMetadataTest.kt. Read ../docs/privacy/index.md and assert it identifies NocturneL, contains mathew.stewart@gmail.com, states that data is not collected or shared, explains local media-folder access, retention/deletion, disabled backup, and the 13+ audience. Confirm it fails because the page is absent.
+Create PlayStoreMetadataTest.kt. Read ../docs/privacy/index.md and assert it identifies NocturneL, contains nocturnelapp@gmail.com, states that data is not collected or shared, explains local media-folder access, retention/deletion, disabled backup, and the 13+ audience. Confirm it fails because the page is absent.
 
 **Implementation:**
 

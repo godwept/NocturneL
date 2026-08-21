@@ -51,4 +51,9 @@
 - [ ] With a large library, cancel once during discovery and once during indexing; confirm initial setup remains retryable and no partial catalog is shown.
 - [ ] Change an existing library folder, cancel or make the replacement inaccessible, and confirm the previous library remains available.
 - [ ] Complete a replacement-folder scan and confirm the new library replaces the old one and listening data is cleared.
+- [ ] Upgrade a version-2 database, scan once to populate file fingerprints, then run an unchanged rescan and confirm indexing is visibly faster.
+- [ ] Confirm files with unknown modified times are conservatively reread and still refresh their metadata.
+- [ ] Change tags, add a file, move a file, and delete a file; rescan and confirm all four changes reconcile correctly.
+- [ ] Scan an album whose first track has no embedded image and a later track does; confirm the first usable image is retained.
+- [ ] Cancel during indexing and confirm the previous catalog remains intact.
 - [ ] Confirm routine scan and playlist success messages disappear after five seconds, while errors and scan cancellation messages remain visible.

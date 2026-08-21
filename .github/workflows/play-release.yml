@@ -33,6 +33,28 @@ jobs:
             "$VERSION_NAME" "$VERSION_CODE" "$GITHUB_REF_NAME" "${PRIOR_TAGS[@]}"
           echo "version-name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
           echo "version-code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+      - name: Require Play Store assets
+        shell: bash
+        run: |
+          ASSET_ROOT="docs/play-store/listing/graphics"
+          REQUIRED_ASSETS=(
+            "icon.png"
+            "feature-graphic.png"
+            "phone/01-library.png"
+            "phone/02-album.png"
+            "phone/03-now-playing.png"
+            "phone/04-queue.png"
+            "tablet/01-library.png"
+            "tablet/02-album.png"
+            "tablet/03-now-playing.png"
+            "tablet/04-queue.png"
+          )
+          for RELATIVE_PATH in "${REQUIRED_ASSETS[@]}"; do
+            if [[ ! -f "$ASSET_ROOT/$RELATIVE_PATH" ]]; then
+              echo "Missing required Play Store asset: $ASSET_ROOT/$RELATIVE_PATH" >&2
+              exit 1
+            fi
+          done
       - name: Unit tests
         run: ./gradlew testDebugUnitTest
       - name: Validate terminal UI screenshots

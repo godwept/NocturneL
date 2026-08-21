@@ -20,6 +20,7 @@ class ReleaseWorkflowContractTest {
         listOf(
             "play/*", "contents: read", "java-version: '17'", "quality:", "device-tests:",
             "package:", "environment: play-release", "testDebugUnitTest",
+            "Require Play Store assets",
             "validateDebugScreenshotTest", "lintRelease", "assembleDebugAndroidTest",
             "bundleRelease", "api-level: [31, 36]", "connectedDebugAndroidTest",
             ":app:printReleaseVersion", "validate-release-version.sh", "bundletool-all-1.18.3.jar",
@@ -30,6 +31,9 @@ class ReleaseWorkflowContractTest {
             "NOCTURNEL_UPLOAD_STORE_PASSWORD", "NOCTURNEL_UPLOAD_KEY_PASSWORD",
             "jarsigner", "-storepass:env", "-keypass:env", "-verify", "-strict",
             "sha256sum", "mapping.txt", "retention-days: 30", "if: always()",
+            "phone/01-library.png", "phone/02-album.png", "phone/03-now-playing.png",
+            "phone/04-queue.png", "tablet/01-library.png", "tablet/02-album.png",
+            "tablet/03-now-playing.png", "tablet/04-queue.png",
         ).forEach { expected -> assertTrue("Missing workflow contract: $expected", expected in release) }
         assertTrue("needs: [quality, device-tests]" in release)
         assertFalse("NOCTURNEL_UPLOAD_" in release.substringBefore("\n  package:"))

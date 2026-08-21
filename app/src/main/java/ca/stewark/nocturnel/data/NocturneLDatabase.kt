@@ -20,7 +20,7 @@ import ca.stewark.nocturnel.data.entity.PlayHistoryEntity
 
 @Database(
     entities = [LibrarySourceEntity::class, AlbumEntity::class, TrackEntity::class, PlaylistEntity::class, PlaylistEntryEntity::class, ScanReportEntity::class, ScanIssueEntity::class, PlaybackPreferenceEntity::class, FavoriteTrackEntity::class, FavoriteAlbumEntity::class, TrackPlayStatsEntity::class, PlayHistoryEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class NocturneLDatabase : RoomDatabase() {

@@ -2,7 +2,7 @@
 
 **Last updated:** August 20, 2026
 
-NocturneL is an offline Android music player. Questions about this Privacy Policy may be sent to [mathew.stewart@gmail.com](mailto:mathew.stewart@gmail.com).
+NocturneL is an offline Android music player. Questions about this Privacy Policy may be sent to [nocturnelapp@gmail.com](mailto:nocturnelapp@gmail.com).
 
 ## Information NocturneL accesses
 
@@ -30,4 +30,4 @@ If NocturneL's data practices change, this policy and the Google Play Data safet
 
 ## Contact
 
-Privacy and support inquiries: [mathew.stewart@gmail.com](mailto:mathew.stewart@gmail.com)
+Privacy and support inquiries: [nocturnelapp@gmail.com](mailto:nocturnelapp@gmail.com)

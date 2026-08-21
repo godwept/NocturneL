@@ -9,6 +9,7 @@ import ca.stewark.nocturnel.data.entity.LibrarySourceEntity
 import ca.stewark.nocturnel.data.entity.PlaylistEntity
 import ca.stewark.nocturnel.data.entity.PlaylistEntryEntity
 import ca.stewark.nocturnel.data.entity.ScanReportEntity
+import ca.stewark.nocturnel.data.entity.TrackEntity
 import ca.stewark.nocturnel.playlist.PlaylistNotFoundException
 import ca.stewark.nocturnel.playlist.PlaylistRepository
 import kotlinx.coroutines.flow.first
@@ -116,6 +117,24 @@ class NocturneLDatabaseTest {
         database.replaceLibrarySource(source.copy(treeUri = "content://other"), sourceChanged = true)
         assertTrue(database.listeningDao().favoriteTrackPaths().first().isEmpty())
         assertTrue(database.listeningDao().history().first().isEmpty())
+    }
+
+    @Test fun completedScanPersistsTrackFingerprint() = runTest {
+        val dao = database.libraryDao()
+        val track = TrackEntity(
+            "Artist/Album/01.mp3", "content://track/1", "album-id", "Title", "Artist", "Album",
+            1_000, 1, 1, "PLAYABLE", 10, 42, 1_000,
+        )
+
+        dao.replaceCompletedScan(
+            albums = listOf(album(manualArtworkUri = null)),
+            tracks = listOf(track),
+            report = ScanReportEntity(10, 1, 0, 0, 0, 0),
+            issues = emptyList(),
+        )
+
+        assertEquals(42L, dao.track(track.relativePath)?.fileSizeBytes)
+        assertEquals(1_000L, dao.track(track.relativePath)?.lastModifiedEpochMillis)
     }
 
     @Test

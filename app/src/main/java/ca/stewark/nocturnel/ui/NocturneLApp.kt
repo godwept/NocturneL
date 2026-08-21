@@ -43,11 +43,8 @@ import ca.stewark.nocturnel.ui.playlist.PlaylistViewModel
 import ca.stewark.nocturnel.ui.settings.SettingsScreen
 import ca.stewark.nocturnel.ui.settings.SettingsViewModel
 import ca.stewark.nocturnel.NocturneLApplication
-import ca.stewark.nocturnel.ui.listening.FavoritesScreen
 import ca.stewark.nocturnel.ui.listening.LibraryLandingScreen
-import ca.stewark.nocturnel.ui.listening.ListeningHistoryScreen
 import ca.stewark.nocturnel.ui.listening.ListeningViewModel
-import ca.stewark.nocturnel.ui.listening.resumeState
 
 private const val PRIVACY_POLICY_URL = "https://godwept.github.io/NocturneL/privacy/"
 
@@ -88,7 +85,6 @@ fun NocturneLApp(
     var playlistPickerExpanded by rememberSaveable(selectedAlbumId) { mutableStateOf(false) }
     var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
     var queueEditorOpen by rememberSaveable { mutableStateOf(false) }
-    var librarySubview by rememberSaveable { mutableStateOf("LANDING") }
     val selectedAlbum = albums.firstOrNull { it.id == selectedAlbumId }
     val selectedArtist: ArtistRow? = groupArtists(albums).firstOrNull { it.name == selectedArtistName }
     LaunchedEffect(selectedAlbumId) {
@@ -98,13 +94,12 @@ fun NocturneLApp(
     LaunchedEffect(albumPlaylistState) {
         if (albumPlaylistState is AlbumPlaylistUiState.Success) playlistPickerExpanded = false
     }
-    BackHandler(enabled = queueEditorOpen || playlistPickerExpanded || selectedAlbumId != null || selectedArtistName != null || librarySubview != "LANDING") {
+    BackHandler(enabled = queueEditorOpen || playlistPickerExpanded || selectedAlbumId != null || selectedArtistName != null) {
         when {
             queueEditorOpen -> { playback.expireQueueUndo(); queueEditorOpen = false }
             playlistPickerExpanded -> playlistPickerExpanded = false
             selectedAlbumId != null -> selectedAlbumId = null
             selectedArtistName != null -> selectedArtistName = null
-            else -> librarySubview = "LANDING"
         }
     }
 
@@ -126,7 +121,6 @@ fun NocturneLApp(
             destinationName = it.name
             selectedAlbumId = null
             selectedArtistName = null
-            librarySubview = "LANDING"
         },
         effectsEnabled = settings.effectiveEffectsEnabled,
         notice = when {
@@ -142,16 +136,11 @@ fun NocturneLApp(
                     LibraryScanStatus(viewModel.scanState.progress!!, viewModel::cancelRescan)
                     LibraryLandingScreen(
                         albums = albums,
-                        listening = listening,
-                        resume = resumeState(playbackState, viewModel.source?.accessLost != true),
+                        favoriteAlbumIds = listening.favoriteAlbumIds,
+                        albumPlayCounts = listening.albumPlayCounts,
                         state = libraryGridState,
-                        onResume = playback::toggle,
                         onAlbumSelected = { selectedAlbumId = it.id },
-                        onTrackSelected = playback::play,
                         onFavoriteAlbum = listeningViewModel::toggleAlbum,
-                        onFavoriteTrack = listeningViewModel::toggleTrack,
-                        onViewFavorites = { librarySubview = "FAVORITES" },
-                        onViewHistory = { librarySubview = "HISTORY" },
                     )
                 }
             }
@@ -202,35 +191,14 @@ fun NocturneLApp(
                 onToggleFavorite = { listeningViewModel.toggleAlbum(it.id) },
             )
             else -> when (destination) {
-                NocturneLDestination.LIBRARY -> when (librarySubview) {
-                    "FAVORITES" -> FavoritesScreen(
-                        listening,
-                        onBack = { librarySubview = "LANDING" },
-                        onAlbumSelected = { selectedAlbumId = it.id },
-                        onTrackSelected = playback::play,
-                        onFavoriteAlbum = listeningViewModel::toggleAlbum,
-                        onFavoriteTrack = listeningViewModel::toggleTrack,
-                    )
-                    "HISTORY" -> ListeningHistoryScreen(
-                        listening,
-                        onBack = { librarySubview = "LANDING" },
-                        onTrackSelected = playback::play,
-                        onFavoriteTrack = listeningViewModel::toggleTrack,
-                    )
-                    else -> LibraryLandingScreen(
-                        albums = albums,
-                        listening = listening,
-                        resume = resumeState(playbackState, viewModel.source?.accessLost != true),
-                        state = libraryGridState,
-                        onResume = playback::toggle,
-                        onAlbumSelected = { selectedAlbumId = it.id },
-                        onTrackSelected = playback::play,
-                        onFavoriteAlbum = listeningViewModel::toggleAlbum,
-                        onFavoriteTrack = listeningViewModel::toggleTrack,
-                        onViewFavorites = { librarySubview = "FAVORITES" },
-                        onViewHistory = { librarySubview = "HISTORY" },
-                    )
-                }
+                NocturneLDestination.LIBRARY -> LibraryLandingScreen(
+                    albums = albums,
+                    favoriteAlbumIds = listening.favoriteAlbumIds,
+                    albumPlayCounts = listening.albumPlayCounts,
+                    state = libraryGridState,
+                    onAlbumSelected = { selectedAlbumId = it.id },
+                    onFavoriteAlbum = listeningViewModel::toggleAlbum,
+                )
                 NocturneLDestination.SEARCH -> SearchScreen(
                     tracks,
                     albums,

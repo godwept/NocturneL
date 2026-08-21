@@ -16,7 +16,6 @@ import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.data.entity.PlaylistEntity
 import ca.stewark.nocturnel.data.entity.TrackEntity
 import ca.stewark.nocturnel.data.model.PlaylistEntryRow
-import ca.stewark.nocturnel.data.model.ListeningHistoryRow
 import ca.stewark.nocturnel.playback.PlaybackQueueItem
 import ca.stewark.nocturnel.playback.PlaybackUiState
 import ca.stewark.nocturnel.playback.QueueEntry
@@ -25,11 +24,7 @@ import ca.stewark.nocturnel.ui.library.AlbumGridScreen
 import ca.stewark.nocturnel.ui.library.ArtistsScreen
 import ca.stewark.nocturnel.ui.library.LibrarySetupScreen
 import ca.stewark.nocturnel.ui.library.SearchScreen
-import ca.stewark.nocturnel.ui.listening.FavoritesScreen
 import ca.stewark.nocturnel.ui.listening.LibraryLandingScreen
-import ca.stewark.nocturnel.ui.listening.ListeningHistoryScreen
-import ca.stewark.nocturnel.ui.listening.ListeningUiState
-import ca.stewark.nocturnel.ui.listening.ResumeUiState
 import ca.stewark.nocturnel.ui.playback.NowPlayingScreen
 import ca.stewark.nocturnel.ui.playback.QueueEditorScreen
 import ca.stewark.nocturnel.ui.playback.QueueEditorRow
@@ -63,25 +58,6 @@ private val previewTracks = previewAlbums.flatMapIndexed { index, album ->
         TrackEntity("${album.id}/02.flac", "content://${album.id}/2", album.id, "Afterimage ${index + 1}", album.artist, album.title, 241_000, 2, 1, "PLAYABLE", 1),
     )
 }
-private val previewHistory = previewTracks.take(4).mapIndexed { index, track ->
-    ListeningHistoryRow(
-        id = index.toLong(), qualificationId = "preview-$index", relativePath = track.relativePath,
-        playedAtEpochMillis = 1_786_000_000_000L - index * 60_000L,
-        title = track.title, artist = track.artist, album = track.album, albumId = track.albumId,
-        durationMs = track.durationMs, status = track.status, documentUri = track.documentUri,
-    )
-}
-private val previewListening = ListeningUiState(
-    favoriteTrackPaths = previewTracks.take(3).mapTo(mutableSetOf()) { it.relativePath },
-    favoriteAlbumIds = previewAlbums.take(3).mapTo(mutableSetOf()) { it.id },
-    favoriteTracks = previewTracks.take(3),
-    favoriteAlbums = previewAlbums.take(3),
-    trackPlayCounts = previewTracks.associate { it.relativePath to (it.trackNumber ?: 0).toLong() * 4 },
-    albumPlayCounts = previewAlbums.associate { it.id to 12L },
-    history = previewHistory,
-    recentTracks = previewHistory,
-)
-
 private val radarFrame = AudioAnalysisFrame(
     waveform = List(128) { 0f },
     bands = List(32) { index -> if (index < 10) .85f - index * .04f else .12f },
@@ -115,27 +91,14 @@ fun AlbumGridPreview() = TerminalPreview { AlbumGridScreen(previewAlbums, onAlbu
 fun RootPreview() = TerminalPreview {
     TerminalScaffold(NocturneLDestination.LIBRARY, {}, effectsEnabled = false, status = "LIBRARY READY") {
         LibraryLandingScreen(
-            previewAlbums, previewListening,
-            ResumeUiState(previewLongTrackTitle, "Signal One", 72_000, 183_000, true),
-            rememberLazyGridState(), {}, {}, {}, {}, {}, {}, {},
+            albums = previewAlbums,
+            favoriteAlbumIds = setOf("red"),
+            albumPlayCounts = previewAlbums.associate { it.id to 12L },
+            state = rememberLazyGridState(),
+            onAlbumSelected = {},
+            onFavoriteAlbum = {},
         )
     }
-}
-
-@PreviewTest
-@Preview(name = "Favorites", widthDp = 412, heightDp = 915)
-@Composable
-fun FavoritesPreview() = TerminalPreview {
-    val longTrack = previewTracks.first().copy(title = previewLongTrackTitle)
-    FavoritesScreen(previewListening.copy(favoriteTracks = listOf(longTrack) + previewTracks.drop(1).take(2)), {}, {}, {}, {}, {})
-}
-
-@PreviewTest
-@Preview(name = "History", widthDp = 412, heightDp = 915)
-@Composable
-fun HistoryPreview() = TerminalPreview {
-    val longHistory = previewHistory.mapIndexed { index, row -> if (index == 0) row.copy(title = previewLongTrackTitle) else row }
-    ListeningHistoryScreen(previewListening.copy(history = longHistory), {}, {}, {}, formatTimestamp = { "AUG 18 · 21:00" })
 }
 
 @PreviewTest

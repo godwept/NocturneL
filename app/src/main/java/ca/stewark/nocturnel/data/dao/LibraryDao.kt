@@ -28,6 +28,7 @@ interface LibraryDao {
     @Query("SELECT * FROM tracks WHERE albumId = :albumId ORDER BY discNumber, trackNumber, title") fun tracksForAlbum(albumId: String): Flow<List<TrackEntity>>
     @Query("SELECT * FROM tracks WHERE relativePath = :path") suspend fun track(path: String): TrackEntity?
     @Query("SELECT * FROM tracks") suspend fun allTracks(): List<TrackEntity>
+    @Query("SELECT * FROM albums") suspend fun allAlbums(): List<AlbumEntity>
     @Query("SELECT * FROM tracks WHERE status = 'PLAYABLE' ORDER BY artist, album, discNumber, trackNumber, title") fun playableTracks(): Flow<List<TrackEntity>>
     @Query("SELECT * FROM albums WHERE id = :id") suspend fun album(id: String): AlbumEntity?
     @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun saveAlbum(album: AlbumEntity)

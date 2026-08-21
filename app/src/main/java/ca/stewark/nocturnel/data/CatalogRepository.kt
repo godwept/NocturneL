@@ -4,7 +4,8 @@ import ca.stewark.nocturnel.data.dao.LibraryDao
 import ca.stewark.nocturnel.data.entity.LibrarySourceEntity
 import ca.stewark.nocturnel.data.entity.ScanIssueEntity
 import ca.stewark.nocturnel.data.entity.ScanReportEntity
-import ca.stewark.nocturnel.library.LibraryScanner
+import ca.stewark.nocturnel.library.ExistingCatalogSnapshot
+import ca.stewark.nocturnel.library.LibraryScanEngine
 import ca.stewark.nocturnel.library.ScanOutcome
 import ca.stewark.nocturnel.library.ScanProgress
 import ca.stewark.nocturnel.library.model.LibrarySource
@@ -15,7 +16,7 @@ import kotlinx.coroutines.withContext
 class LibraryAccessLostException : IllegalStateException("Access to the selected music folder was lost.")
 class ScanCancelledException : IllegalStateException("Library scan was cancelled.")
 
-class CatalogRepository(private val database: NocturneLDatabase, private val scanner: LibraryScanner) {
+class CatalogRepository(private val database: NocturneLDatabase, private val scanner: LibraryScanEngine) {
     private val dao: LibraryDao = database.libraryDao()
     suspend fun source(): LibrarySource? = dao.librarySource()?.let { LibrarySource(it.treeUri, it.displayName, it.lastScanEpochMillis, it.accessLost) }
 
@@ -57,7 +58,14 @@ class CatalogRepository(private val database: NocturneLDatabase, private val sca
             throw LibraryAccessLostException()
         }
         val now = System.currentTimeMillis()
-        val result = scanner.scan(source.treeUri, now, cancelled, onProgress)
+        val existingTracks = if (sourceChanged) emptyList() else dao.allTracks()
+        val existingAlbums = if (sourceChanged) emptyList() else dao.allAlbums()
+        val existingCatalog = if (sourceChanged) {
+            ExistingCatalogSnapshot.Empty
+        } else {
+            ExistingCatalogSnapshot.from(existingAlbums, existingTracks)
+        }
+        val result = scanner.scan(source.treeUri, now, cancelled, onProgress, existingCatalog)
         when (result.outcome) {
             ScanOutcome.ACCESS_LOST -> {
                 if (!sourceChanged) markAccessLost()
@@ -66,8 +74,7 @@ class CatalogRepository(private val database: NocturneLDatabase, private val sca
             ScanOutcome.CANCELLED -> throw ScanCancelledException()
             ScanOutcome.COMPLETED -> Unit
         }
-        val existing = if (sourceChanged) emptyList() else dao.allTracks()
-        val counts = ScanReconciler.count(existing.map(::fingerprint), result.tracks.map(::fingerprint))
+        val counts = ScanReconciler.count(existingTracks.map(::fingerprint), result.tracks.map(::fingerprint))
         val report = ScanReport(now, counts.added, counts.changed, counts.missing, result.skipped, result.unsupported, result.issues)
         val entity = ScanReportEntity(now, report.added, report.changed, report.missing, report.skipped, report.unsupported)
         if (dao.librarySource()?.treeUri == source.treeUri) {

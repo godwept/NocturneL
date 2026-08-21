@@ -2,8 +2,6 @@ package ca.stewark.nocturnel.library
 
 import androidx.documentfile.provider.DocumentFile
 
-data class DiscoveredDocument(val relativePath: String, val document: DocumentFile)
-
 object DocumentTreeWalker {
     fun walk(root: DocumentFile, cancelled: () -> Boolean = { false }): Sequence<DiscoveredDocument> = sequence {
         suspend fun SequenceScope<DiscoveredDocument>.visit(folder: DocumentFile, prefix: String) {
@@ -14,7 +12,16 @@ object DocumentTreeWalker {
                 val path = if (prefix.isBlank()) name else "$prefix/$name"
                 when {
                     child.isDirectory -> visit(child, path)
-                    child.isFile -> yield(DiscoveredDocument(path, child))
+                    child.isFile -> {
+                        val audio = SupportedAudioFormats.isCandidateAudioFile(name)
+                        yield(DiscoveredDocument(
+                            relativePath = path,
+                            documentUri = child.uri.toString(),
+                            displayName = name,
+                            fileSizeBytes = if (audio) child.length().takeIf { it >= 0 } else null,
+                            lastModifiedEpochMillis = if (audio) child.lastModified().takeIf { it > 0 } else null,
+                        ))
+                    }
                 }
             }
         }

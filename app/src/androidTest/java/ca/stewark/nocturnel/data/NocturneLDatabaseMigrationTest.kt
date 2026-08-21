@@ -8,6 +8,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,6 +34,22 @@ class NocturneLDatabaseMigrationTest {
             query("SELECT displayName FROM library_source").use { cursor -> cursor.moveToFirst(); assertEquals("Music", cursor.getString(0)) }
             query("SELECT COUNT(*) FROM favorite_tracks").use { cursor -> cursor.moveToFirst(); assertEquals(0, cursor.getInt(0)) }
             query("SELECT COUNT(*) FROM play_history").use { cursor -> cursor.moveToFirst(); assertEquals(0, cursor.getInt(0)) }
+            close()
+        }
+    }
+
+    @Test fun migrationTwoToThreePreservesTracksWithUnknownFingerprints() {
+        helper.createDatabase(TEST_DB, 2).apply {
+            execSQL("INSERT INTO tracks(relativePath, documentUri, albumId, title, artist, album, durationMs, trackNumber, discNumber, status, lastSeenScanEpochMillis) VALUES('a.mp3', 'content://a', 'album', 'A', 'Artist', 'Album', 1000, 1, 1, 'PLAYABLE', 1)")
+            close()
+        }
+        helper.runMigrationsAndValidate(TEST_DB, 3, true, MIGRATION_2_3).apply {
+            query("SELECT title, fileSizeBytes, lastModifiedEpochMillis FROM tracks").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("A", cursor.getString(0))
+                assertTrue(cursor.isNull(1))
+                assertTrue(cursor.isNull(2))
+            }
             close()
         }
     }

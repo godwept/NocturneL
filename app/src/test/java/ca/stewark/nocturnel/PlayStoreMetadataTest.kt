@@ -12,7 +12,7 @@ class PlayStoreMetadataTest {
         listOf(
             "Privacy Policy",
             "NocturneL",
-            "mathew.stewart@gmail.com",
+            "nocturnelapp@gmail.com",
             "does not collect",
             "does not share",
             "user-selected",
@@ -50,7 +50,7 @@ class PlayStoreMetadataTest {
             "Unrestricted",
             "No data collected or shared",
             "https://godwept.github.io/NocturneL/privacy/",
-            "mathew.stewart@gmail.com",
+            "nocturnelapp@gmail.com",
         ).forEach { expected -> assertTrue("Missing declaration: $expected", expected in declarations) }
     }
 
@@ -79,7 +79,7 @@ class PlayStoreMetadataTest {
         val closedTest = repoFile("docs/release/closed-test-guide.md").readText()
         listOf(
             "12 testers", "14 continuous days", "15–20", "Google Account", "promo code",
-            "mathew.stewart@gmail.com", "Do not commit tester email addresses", "feedback",
+            "nocturnelapp@gmail.com", "Do not commit tester email addresses", "feedback",
         ).forEach { expected -> assertTrue("Missing closed-test guidance: $expected", expected in closedTest) }
     }
 

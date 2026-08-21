@@ -37,6 +37,8 @@ data class TrackEntity(
     val discNumber: Int?,
     val status: String,
     val lastSeenScanEpochMillis: Long,
+    val fileSizeBytes: Long? = null,
+    val lastModifiedEpochMillis: Long? = null,
 )
 
 @Entity(tableName = "playlists")
