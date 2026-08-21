@@ -196,7 +196,22 @@ class PlaybackConnection(context: Context) {
     fun next() { controller?.seekToNextMediaItem() }
     fun previous() { controller?.seekToPreviousMediaItem() }
     fun seekTo(positionMs: Long) { controller?.seekTo(positionMs) }
-    fun toggleShuffle() { controller?.let { it.shuffleModeEnabled = !it.shuffleModeEnabled; refresh(it) } }
+    fun toggleShuffle() {
+        val player = controller ?: return
+        val result = QueueShufflePolicy.toggle(snapshot(player))
+        if (result.shuffle) {
+            val itemsById = List(player.mediaItemCount) { player.getMediaItemAt(it) }.associateBy(::occurrenceId)
+            val start = (player.currentMediaItemIndex + 1).coerceAtLeast(0)
+            val upcoming = result.entries.drop(start).mapNotNull { itemsById[it.occurrenceId] }
+            if (upcoming.size != result.entries.size - start) {
+                setQueueNotice("QUEUE CHANGED · TRY AGAIN")
+                return
+            }
+            player.replaceMediaItems(start, player.mediaItemCount, upcoming)
+        }
+        player.shuffleModeEnabled = result.shuffle
+        refresh(player)
+    }
     fun cycleRepeat() { controller?.let { it.repeatMode = when (it.repeatMode) { Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL; Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE; else -> Player.REPEAT_MODE_OFF }; refresh(it) } }
     fun setVisualizerActive(active: Boolean) { app.audioAnalysis.setConsumerActive(active) }
     fun setVisualizerSyncOffsetMs(offsetMs: Int) { app.audioAnalysis.setVisualizerSyncOffsetMs(offsetMs) }

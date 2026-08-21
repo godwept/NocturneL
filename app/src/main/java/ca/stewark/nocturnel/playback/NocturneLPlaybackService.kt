@@ -9,6 +9,7 @@ import androidx.media3.common.C
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.ShuffleOrder
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import ca.stewark.nocturnel.NocturneLApplication
@@ -41,6 +42,9 @@ class NocturneLPlaybackService : MediaSessionService() {
         val app = application as NocturneLApplication
         stateRepository = SharedPreferencesPlaybackStateRepository(this)
         player = ExoPlayer.Builder(this, VisualizerRenderersFactory(this, app.audioAnalysis.bufferSink)).build().apply {
+            // Shuffle randomizes the visible upcoming queue once. Keep Media3's traversal linear so the
+            // current item is always followed by every displayed item instead of ending mid-queue.
+            setShuffleOrder(ShuffleOrder.UnshuffledShuffleOrder(0))
             setAudioAttributes(
                 AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(),
                 true,

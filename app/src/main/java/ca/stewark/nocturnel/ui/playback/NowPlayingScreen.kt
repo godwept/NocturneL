@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.media3.common.Player
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.playback.PlaybackUiState
 import ca.stewark.nocturnel.ui.artwork.CrtArtwork
@@ -50,6 +51,21 @@ fun NowPlayingScreen(
     currentTrackPlayCount: Long = 0,
     onToggleCurrentFavorite: () -> Unit = {},
 ) {
+    val albumMetadata = if (state.currentPath != null) {
+        "${state.album.orEmpty()} · $currentTrackPlayCount PLAY(S)"
+    } else {
+        state.album.orEmpty()
+    }
+    val repeatGlyph = when (state.repeatMode) {
+        Player.REPEAT_MODE_ALL -> "RPT:A"
+        Player.REPEAT_MODE_ONE -> "RPT:1"
+        else -> "RPT"
+    }
+    val repeatDescription = when (state.repeatMode) {
+        Player.REPEAT_MODE_ALL -> "Repeat all"
+        Player.REPEAT_MODE_ONE -> "Repeat one"
+        else -> "Repeat off"
+    }
     LazyColumn(Modifier.fillMaxSize().padding(TerminalDimensions.md)) {
         item {
             AsciiFrame {
@@ -68,13 +84,7 @@ fun NowPlayingScreen(
                 }
                 TerminalMarquee(state.title ?: "NO TRACK SELECTED", effectsEnabled, Modifier.padding(top = TerminalDimensions.sm))
                 TerminalMarquee(state.artist.orEmpty(), effectsEnabled)
-                TerminalMarquee(state.album.orEmpty(), effectsEnabled)
-                if (state.currentPath != null) {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("$currentTrackPlayCount PLAY(S)", color = MaterialTheme.colorScheme.secondary)
-                        FavoriteToggle(state.title ?: "current track", currentTrackFavorite, onToggleCurrentFavorite)
-                    }
-                }
+                TerminalMarquee(albumMetadata, effectsEnabled)
                 state.error?.let { TerminalNotice(it, severity = NoticeSeverity.WARNING) }
                 TerminalSeekBar(
                     if (state.durationMs > 0) state.positionMs.toFloat() / state.durationMs else 0f,
@@ -89,9 +99,19 @@ fun NowPlayingScreen(
                     BracketIconButton(if (state.playing) "II" else ">", if (state.playing) "Pause" else "Play", onToggle)
                     BracketIconButton(">|", "Next", onNext)
                 }
-                Row {
-                    BracketIconButton("SHF", "Shuffle", onShuffle, selected = state.shuffle)
-                    BracketIconButton("RPT", "Repeat", onRepeat, selected = state.repeatMode != 0)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Row {
+                        BracketIconButton("SHF", "Shuffle", onShuffle, selected = state.shuffle)
+                        BracketIconButton(
+                            repeatGlyph,
+                            repeatDescription,
+                            onRepeat,
+                            selected = state.repeatMode != Player.REPEAT_MODE_OFF,
+                        )
+                    }
+                    if (state.currentPath != null) {
+                        FavoriteToggle(state.title ?: "current track", currentTrackFavorite, onToggleCurrentFavorite)
+                    }
                 }
             }
         }

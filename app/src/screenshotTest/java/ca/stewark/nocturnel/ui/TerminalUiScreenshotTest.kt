@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.Player
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.data.entity.PlaylistEntity
@@ -220,6 +221,7 @@ fun NowPlayingPreview() = TerminalPreview {
             durationMs = 183_000,
             playing = true,
             shuffle = true,
+            repeatMode = Player.REPEAT_MODE_ALL,
             currentOccurrenceId = "current",
             currentPath = "red/01.flac",
             upNext = listOf(PlaybackQueueItem("next", "next.flac", "Afterimage", "Signal One")),
@@ -227,6 +229,8 @@ fun NowPlayingPreview() = TerminalPreview {
         previewAlbums.first(),
         true,
         {}, {}, {}, {}, {}, {},
+        currentTrackFavorite = true,
+        currentTrackPlayCount = 7,
     )
 }
 

@@ -34,4 +34,12 @@ class QueueEditingWiringTest {
         assertTrue("playback.addToQueue" in app)
         assertTrue("player.addToQueue" in playlists)
     }
+
+    @Test fun shuffleUsesTheVisibleQueueAsItsOnlyPlaybackOrder() {
+        val connection = File("src/main/java/ca/stewark/nocturnel/playback/PlaybackConnection.kt").readText()
+        val service = File("src/main/java/ca/stewark/nocturnel/playback/NocturneLPlaybackService.kt").readText()
+
+        assertTrue("QueueShufflePolicy.toggle" in connection)
+        assertTrue("ShuffleOrder.UnshuffledShuffleOrder" in service)
+    }
 }
