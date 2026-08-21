@@ -26,6 +26,7 @@ import ca.stewark.nocturnel.ui.library.ArtistsScreen
 import ca.stewark.nocturnel.ui.library.LibrarySetupScreen
 import ca.stewark.nocturnel.ui.library.SearchScreen
 import ca.stewark.nocturnel.ui.listening.LibraryLandingScreen
+import ca.stewark.nocturnel.ui.listening.LibrarySortMode
 import ca.stewark.nocturnel.ui.playback.NowPlayingScreen
 import ca.stewark.nocturnel.ui.playback.QueueEditorScreen
 import ca.stewark.nocturnel.ui.playback.QueueEditorRow
@@ -95,9 +96,11 @@ fun RootPreview() = TerminalPreview {
             albums = previewAlbums,
             favoriteAlbumIds = setOf("red"),
             albumPlayCounts = previewAlbums.associate { it.id to 12L },
+            sortMode = LibrarySortMode.ARTIST,
             state = rememberLazyGridState(),
             onAlbumSelected = {},
             onFavoriteAlbum = {},
+            onCycleSort = {},
         )
     }
 }

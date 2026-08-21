@@ -1,6 +1,7 @@
 package ca.stewark.nocturnel.ui.settings
 
 import androidx.test.core.app.ApplicationProvider
+import ca.stewark.nocturnel.ui.listening.LibrarySortMode
 import ca.stewark.nocturnel.visualizer.VisualizerSyncOffset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -8,6 +9,28 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TerminalPreferencesRepositoryTest {
+    @Test fun librarySortModeDefaultsPersistsAndRestores() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val name = "terminal-library-sort-test"
+        val preferences = context.getSharedPreferences(name, 0)
+        preferences.edit().clear().commit()
+
+        assertEquals(LibrarySortMode.ARTIST, TerminalPreferencesRepository(context, name).librarySortMode.value)
+        TerminalPreferencesRepository(context, name).setLibrarySortMode(LibrarySortMode.YEAR)
+        assertEquals(LibrarySortMode.YEAR, TerminalPreferencesRepository(context, name).librarySortMode.value)
+    }
+
+    @Test fun malformedLibrarySortModeFallsBackToArtist() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val name = "terminal-library-sort-malformed-test"
+        val preferences = context.getSharedPreferences(name, 0)
+        preferences.edit().clear().putString("library_sort_mode", "UNKNOWN").commit()
+        assertEquals(LibrarySortMode.ARTIST, TerminalPreferencesRepository(context, name).librarySortMode.value)
+
+        preferences.edit().clear().putInt("library_sort_mode", 7).commit()
+        assertEquals(LibrarySortMode.ARTIST, TerminalPreferencesRepository(context, name).librarySortMode.value)
+    }
+
     @Test fun preferenceDefaultsOnAndPersistsOff() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val name = "terminal-preferences-test"

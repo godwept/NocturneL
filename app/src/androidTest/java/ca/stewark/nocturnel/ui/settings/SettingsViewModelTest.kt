@@ -2,11 +2,34 @@ package ca.stewark.nocturnel.ui.settings
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
+import ca.stewark.nocturnel.ui.listening.LibrarySortMode
 import ca.stewark.nocturnel.visualizer.VisualizerSyncOffset
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SettingsViewModelTest {
+    @Test fun cyclesAndRestoresLibrarySortMode() {
+        val application = ApplicationProvider.getApplicationContext<Application>()
+        val preferences = application.getSharedPreferences("terminal_preferences", 0)
+        preferences.edit().clear().commit()
+        try {
+            val viewModel = SettingsViewModel(application)
+            assertEquals(LibrarySortMode.ARTIST, viewModel.state.value.librarySortMode)
+            viewModel.cycleLibrarySortMode()
+            assertEquals(LibrarySortMode.TITLE, viewModel.state.value.librarySortMode)
+            viewModel.cycleLibrarySortMode()
+            assertEquals(LibrarySortMode.YEAR, viewModel.state.value.librarySortMode)
+            viewModel.cycleLibrarySortMode()
+            assertEquals(LibrarySortMode.MOST_PLAYED, viewModel.state.value.librarySortMode)
+            viewModel.cycleLibrarySortMode()
+            assertEquals(LibrarySortMode.ARTIST, viewModel.state.value.librarySortMode)
+            viewModel.cycleLibrarySortMode()
+            assertEquals(LibrarySortMode.TITLE, SettingsViewModel(application).state.value.librarySortMode)
+        } finally {
+            preferences.edit().clear().commit()
+        }
+    }
+
     @Test fun adjustsResetsClampsAndRestoresVisualizerSyncOffset() {
         val application = ApplicationProvider.getApplicationContext<Application>()
         val preferences = application.getSharedPreferences("terminal_preferences", 0)

@@ -1,6 +1,7 @@
 package ca.stewark.nocturnel.ui
 
 import java.io.File
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -11,6 +12,8 @@ class LibraryAppWiringTest {
 
         assertTrue("favoriteAlbumIds = listening.favoriteAlbumIds" in app)
         assertTrue("albumPlayCounts = listening.albumPlayCounts" in app)
+        assertEquals(2, "sortMode = settings.librarySortMode".occurrencesIn(app))
+        assertEquals(2, "onCycleSort = settingsViewModel::cycleLibrarySortMode".occurrencesIn(app))
         assertFalse("librarySubview" in app)
         assertFalse("FavoritesScreen" in app)
         assertFalse("ListeningHistoryScreen" in app)
@@ -30,4 +33,7 @@ class LibraryAppWiringTest {
         assertFalse("previewFavoriteTracks" in models)
         assertFalse("previewRecentTracks" in models)
     }
+
+    private fun String.occurrencesIn(source: String): Int =
+        source.windowed(length).count { it == this }
 }

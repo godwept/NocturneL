@@ -33,9 +33,11 @@ class ListeningScreensTest {
                     albums = albums,
                     favoriteAlbumIds = setOf("gamma"),
                     albumPlayCounts = mapOf("gamma" to 3),
+                    sortMode = LibrarySortMode.ARTIST,
                     state = rememberLazyGridState(),
                     onAlbumSelected = {},
                     onFavoriteAlbum = {},
+                    onCycleSort = {},
                 )
             }
         }
@@ -63,11 +65,13 @@ class ListeningScreensTest {
                     albums = albums,
                     favoriteAlbumIds = favorites,
                     albumPlayCounts = emptyMap(),
+                    sortMode = LibrarySortMode.ARTIST,
                     state = rememberLazyGridState(),
                     onAlbumSelected = {},
                     onFavoriteAlbum = { id ->
                         favorites = if (id in favorites) favorites - id else favorites + id
                     },
+                    onCycleSort = {},
                 )
             }
         }
@@ -77,14 +81,61 @@ class ListeningScreensTest {
         assertEquals(listOf("ALPHA", "BETA", "GAMMA"), displayedAlbumOrder("ALPHA", "BETA", "GAMMA"))
     }
 
+    @Test fun sortButtonCyclesModesAndImmediatelyReordersAlbums() {
+        val albums = listOf(
+            sampleAlbum.copy(id = "alpha", title = "Alpha", artist = "Zulu", year = "2020"),
+            sampleAlbum.copy(id = "beta", title = "Beta", artist = "Alpha", year = "2022"),
+            sampleAlbum.copy(id = "gamma", title = "Gamma", artist = "Middle", year = "2021"),
+        )
+        compose.setContent {
+            NocturneLTheme {
+                var mode by remember { mutableStateOf(LibrarySortMode.ARTIST) }
+                LibraryLandingScreen(
+                    albums = albums,
+                    favoriteAlbumIds = emptySet(),
+                    albumPlayCounts = mapOf("alpha" to 1, "beta" to 5, "gamma" to 10),
+                    sortMode = mode,
+                    state = rememberLazyGridState(),
+                    onAlbumSelected = {},
+                    onFavoriteAlbum = {},
+                    onCycleSort = { mode = mode.next() },
+                )
+            }
+        }
+
+        compose.onNodeWithText("[ SORT: ARTIST ]").assertIsDisplayed()
+        assertEquals(listOf("BETA", "GAMMA", "ALPHA"), displayedAlbumOrder("ALPHA", "BETA", "GAMMA"))
+        compose.onNodeWithText("[ SORT: ARTIST ]").performClick()
+        compose.onNodeWithText("[ SORT: TITLE ]").assertIsDisplayed()
+        assertEquals(listOf("ALPHA", "BETA", "GAMMA"), displayedAlbumOrder("ALPHA", "BETA", "GAMMA"))
+        compose.onNodeWithText("[ SORT: TITLE ]").performClick()
+        compose.onNodeWithText("[ SORT: YEAR ]").assertIsDisplayed()
+        assertEquals(listOf("BETA", "GAMMA", "ALPHA"), displayedAlbumOrder("ALPHA", "BETA", "GAMMA"))
+        compose.onNodeWithText("[ SORT: YEAR ]").performClick()
+        compose.onNodeWithText("[ SORT: MOST PLAYED ]").assertIsDisplayed()
+        assertEquals(listOf("GAMMA", "BETA", "ALPHA"), displayedAlbumOrder("ALPHA", "BETA", "GAMMA"))
+        compose.onNodeWithText("[ SORT: MOST PLAYED ]").performClick()
+        compose.onNodeWithText("[ SORT: ARTIST ]").assertIsDisplayed()
+    }
+
     @Test fun emptyLandingShowsTheExistingNotice() {
         compose.setContent {
             NocturneLTheme {
-                LibraryLandingScreen(emptyList(), emptySet(), emptyMap(), rememberLazyGridState(), {}, {})
+                LibraryLandingScreen(
+                    albums = emptyList(),
+                    favoriteAlbumIds = emptySet(),
+                    albumPlayCounts = emptyMap(),
+                    sortMode = LibrarySortMode.ARTIST,
+                    state = rememberLazyGridState(),
+                    onAlbumSelected = {},
+                    onFavoriteAlbum = {},
+                    onCycleSort = {},
+                )
             }
         }
 
         compose.onNodeWithText("No playable albums yet. Rescan after adding music.").assertIsDisplayed()
+        compose.onNodeWithText("[ SORT: ARTIST ]").assertDoesNotExist()
     }
 
     @Test fun settingsConfirmsBothDestructiveActions() {

@@ -138,9 +138,11 @@ fun NocturneLApp(
                         albums = albums,
                         favoriteAlbumIds = listening.favoriteAlbumIds,
                         albumPlayCounts = listening.albumPlayCounts,
+                        sortMode = settings.librarySortMode,
                         state = libraryGridState,
                         onAlbumSelected = { selectedAlbumId = it.id },
                         onFavoriteAlbum = listeningViewModel::toggleAlbum,
+                        onCycleSort = settingsViewModel::cycleLibrarySortMode,
                     )
                 }
             }
@@ -195,9 +197,11 @@ fun NocturneLApp(
                     albums = albums,
                     favoriteAlbumIds = listening.favoriteAlbumIds,
                     albumPlayCounts = listening.albumPlayCounts,
+                    sortMode = settings.librarySortMode,
                     state = libraryGridState,
                     onAlbumSelected = { selectedAlbumId = it.id },
                     onFavoriteAlbum = listeningViewModel::toggleAlbum,
+                    onCycleSort = settingsViewModel::cycleLibrarySortMode,
                 )
                 NocturneLDestination.SEARCH -> SearchScreen(
                     tracks,
