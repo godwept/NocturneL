@@ -5,8 +5,8 @@ import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
 import kotlin.math.max
 
 internal const val AFTERGLOW_DURATION_NANOS = 250_000_000L
-internal const val RADAR_AFTERGLOW_MAX_ALPHA = .28f
-internal const val BAND_AFTERGLOW_MAX_ALPHA = .30f
+internal const val RADAR_AFTERGLOW_MAX_ALPHA = .42f
+internal const val BAND_AFTERGLOW_MAX_ALPHA = .48f
 
 private const val MAX_RADAR_AFTERGLOW_SAMPLES = 8
 

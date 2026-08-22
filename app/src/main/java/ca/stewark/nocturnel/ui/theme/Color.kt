@@ -10,7 +10,8 @@ val PhosphorMuted = Color(0xFF008020)
 val PhosphorBright = Color(0xFF39FF7C)
 val AlertAmber = Color(0xFFFFB000)
 val TerminalError = Color(0xFFFF3030)
-const val ScanlineAlpha = 0.18f
+const val ScanlineAlpha = 0.34f
+const val ScanlinePhosphorAlpha = 0.075f
 
 // Kept as a semantic alias for existing call sites.
 val TerminalText = Phosphor

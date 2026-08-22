@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -51,7 +52,9 @@ import ca.stewark.nocturnel.ui.playlist.playlistDetailState
 import ca.stewark.nocturnel.ui.settings.SettingsScreen
 import ca.stewark.nocturnel.ui.settings.TerminalSettingsState
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
+import ca.stewark.nocturnel.ui.theme.Phosphor
 import ca.stewark.nocturnel.ui.components.TerminalScaffold
+import ca.stewark.nocturnel.ui.components.Scanlines
 import ca.stewark.nocturnel.ui.navigation.NocturneLDestination
 import com.android.tools.screenshot.PreviewTest
 import ca.stewark.nocturnel.visualizer.AnalysisStatus
@@ -114,6 +117,26 @@ fun RootPreview() = TerminalPreview {
             onCycleSort = {},
             onToggleView = {},
         )
+    }
+}
+
+@PreviewTest
+@Preview(name = "CRT effects on", widthDp = 320, heightDp = 160)
+@Composable
+fun CrtEffectsOnPreview() = TerminalPreview {
+    Box(Modifier.fillMaxSize()) {
+        Text("CRT EFFECTS ON", color = Phosphor, modifier = Modifier.padding(24.dp))
+        Scanlines(true, Modifier.fillMaxSize())
+    }
+}
+
+@PreviewTest
+@Preview(name = "CRT effects off", widthDp = 320, heightDp = 160)
+@Composable
+fun CrtEffectsOffPreview() = TerminalPreview {
+    Box(Modifier.fillMaxSize()) {
+        Text("CRT EFFECTS OFF", color = Phosphor, modifier = Modifier.padding(24.dp))
+        Scanlines(false, Modifier.fillMaxSize())
     }
 }
 

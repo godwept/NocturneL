@@ -5,7 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class TerminalTokensTest {
-    @Test fun `palette matches the PWA`() {
+    @Test fun terminalPaletteAndCrtTokensAreStable() {
         assertEquals(0xFF000000.toInt(), TerminalBlack.toArgb())
         assertEquals(0xFF050805.toInt(), TerminalBlackAlt.toArgb())
         assertEquals(0xFF00FF41.toInt(), Phosphor.toArgb())
@@ -14,6 +14,7 @@ class TerminalTokensTest {
         assertEquals(0xFF39FF7C.toInt(), PhosphorBright.toArgb())
         assertEquals(0xFFFFB000.toInt(), AlertAmber.toArgb())
         assertEquals(0xFFFF3030.toInt(), TerminalError.toArgb())
-        assertEquals(.18f, ScanlineAlpha)
+        assertEquals(.34f, ScanlineAlpha)
+        assertEquals(.075f, ScanlinePhosphorAlpha)
     }
 }
