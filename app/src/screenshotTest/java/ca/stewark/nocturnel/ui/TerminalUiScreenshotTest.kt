@@ -56,6 +56,7 @@ import ca.stewark.nocturnel.ui.theme.FontPreset
 import ca.stewark.nocturnel.ui.theme.ColorThemePreset
 import ca.stewark.nocturnel.ui.theme.TerminalTheme
 import ca.stewark.nocturnel.ui.components.TerminalScaffold
+import ca.stewark.nocturnel.ui.components.TerminalNavigation
 import ca.stewark.nocturnel.ui.components.Scanlines
 import ca.stewark.nocturnel.ui.navigation.NocturneLDestination
 import com.android.tools.screenshot.PreviewTest
@@ -561,6 +562,13 @@ fun VisualizerRadarNeonPreview() = TerminalPreview(colorTheme = ColorThemePreset
 @Composable
 fun AlbumGridNeonPixelPreview() = TerminalPreview(FontPreset.PIXEL, ColorThemePreset.NEON_90S) {
     AlbumGridScreen(previewAlbums, onAlbumSelected = {})
+}
+
+@PreviewTest
+@Preview(name = "Navigation Pixel font 320dp", widthDp = 320, heightDp = 80)
+@Composable
+fun NavigationPixelFontPreview() = TerminalPreview(FontPreset.PIXEL) {
+    TerminalNavigation(NocturneLDestination.LIBRARY, {}, effectsEnabled = false)
 }
 
 @Composable

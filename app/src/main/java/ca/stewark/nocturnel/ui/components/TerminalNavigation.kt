@@ -17,6 +17,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.MaterialTheme
 import ca.stewark.nocturnel.ui.navigation.NocturneLDestination
 import ca.stewark.nocturnel.ui.theme.TerminalTheme
 
@@ -45,6 +46,8 @@ fun TerminalNavigation(
                     onClick = { onSelected(destination) },
                     selected = destination == selected,
                     modifier = Modifier.graphicsLayer { alpha = if (destination == selected) pulse else 1f },
+                    textStyle = MaterialTheme.typography.labelMedium,
+                    horizontalPadding = 0.dp,
                 )
             }
         }

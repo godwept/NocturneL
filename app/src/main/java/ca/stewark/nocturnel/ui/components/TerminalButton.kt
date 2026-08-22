@@ -16,6 +16,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 import ca.stewark.nocturnel.ui.theme.TerminalTheme
 
@@ -28,6 +29,7 @@ fun BracketButton(
     selected: Boolean = false,
     contentDescription: String? = null,
     textStyle: TextStyle = MaterialTheme.typography.labelLarge,
+    horizontalPadding: Dp = TerminalDimensions.xs,
 ) {
     val palette = TerminalTheme.palette
     val color = when {
@@ -46,7 +48,7 @@ fun BracketButton(
                 indication = null,
                 onClick = onClick,
             )
-            .padding(horizontal = TerminalDimensions.xs),
+            .padding(horizontal = horizontalPadding),
         contentAlignment = Alignment.Center,
     ) {
         Text(
