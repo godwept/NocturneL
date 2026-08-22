@@ -12,4 +12,8 @@ class ReleaseManifestPolicyTest {
         assertTrue("android:allowBackup=\"false\"" in manifest)
         assertFalse("android.permission.INTERNET" in manifest)
     }
+
+    @Test fun mainActivityIsRestrictedToPortraitOrientation() {
+        assertTrue("android:screenOrientation=\"portrait\"" in manifest)
+    }
 }
