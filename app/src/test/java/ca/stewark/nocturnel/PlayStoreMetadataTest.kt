@@ -26,7 +26,7 @@ class PlayStoreMetadataTest {
     @Test fun githubPagesRoutesToPrivacyPolicy() {
         assertTrue(repoFile("docs/_config.yml").isFile)
         val landing = repoFile("docs/index.md").readText()
-        assertTrue("/NocturneL/privacy/" in landing)
+        assertTrue("'/privacy/' | relative_url" in landing)
     }
 
     @Test fun englishListingFitsPlayLimits() {

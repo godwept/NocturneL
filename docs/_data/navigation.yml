@@ -1,0 +1,13 @@
+- label: Home
+  url: "/"
+- label: Features
+  url: "/#features"
+- label: Screenshots
+  url: "/#screenshots"
+- label: Manual
+  url: "/manual/"
+- label: Privacy
+  url: "/privacy/"
+- label: GitHub
+  url: "https://github.com/godwept/NocturneL"
+  external: true

@@ -1,2 +1,28 @@
 title: NocturneL
-description: Offline Android music player
+description: "An offline, terminal-themed Android music player for the library you already own."
+url: "https://godwept.github.io"
+baseurl: "/NocturneL"
+repository: "godwept/NocturneL"
+github_url: "https://github.com/godwept/NocturneL"
+support_email: "nocturnelapp@gmail.com"
+release_status: "Coming soon on Google Play"
+lang: "en-CA"
+logo: "/assets/nocturnel-icon-foreground.png"
+social_image: "/play-store/listing/graphics/feature-graphic.png"
+
+plugins:
+  - jekyll-seo-tag
+
+collections:
+  manual:
+    output: true
+
+kramdown:
+  auto_ids: true
+  toc_levels: 2..3
+
+exclude:
+  - plans
+  - specs
+  - testing
+  - release

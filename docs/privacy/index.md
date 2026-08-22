@@ -1,3 +1,10 @@
+---
+layout: page
+title: NocturneL Privacy Policy
+description: How the offline NocturneL Android music player accesses and stores local data.
+permalink: /privacy/
+---
+
 # NocturneL Privacy Policy
 
 **Last updated:** August 20, 2026

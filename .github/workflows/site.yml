@@ -1,0 +1,62 @@
+name: Product site validation
+
+on:
+  push:
+    paths:
+      - 'docs/**'
+      - '.github/workflows/site.yml'
+      - 'app/src/test/java/ca/stewark/nocturnel/ProductSiteContractTest.kt'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - '.github/workflows/site.yml'
+      - 'app/src/test/java/ca/stewark/nocturnel/ProductSiteContractTest.kt'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Build Jekyll site
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs
+          destination: ./_site
+      - name: Prepare project-path preview
+        shell: bash
+        run: |
+          mkdir -p _preview/NocturneL
+          cp -R _site/. _preview/NocturneL/
+      - name: Serve and capture responsive previews
+        shell: bash
+        run: |
+          python3 -m http.server 4173 --directory _preview > "$RUNNER_TEMP/nocturnel-site.log" 2>&1 &
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:4173/NocturneL/ > /dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 20 ]; then
+              cat "$RUNNER_TEMP/nocturnel-site.log"
+              exit 1
+            fi
+            sleep 1
+          done
+          mkdir -p site-previews
+          google-chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars \
+            --window-size=390,844 --screenshot=site-previews/landing-phone.png \
+            http://127.0.0.1:4173/NocturneL/
+          google-chrome --headless=new --no-sandbox --disable-gpu --hide-scrollbars \
+            --window-size=1440,1000 --screenshot=site-previews/landing-desktop.png \
+            http://127.0.0.1:4173/NocturneL/
+      - name: Upload visual previews
+        uses: actions/upload-artifact@v4
+        with:
+          name: nocturnel-site-previews
+          path: site-previews/
+          if-no-files-found: error

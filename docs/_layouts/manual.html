@@ -1,0 +1,45 @@
+---
+layout: default
+---
+{% assign manual_pages = site.manual | sort: "nav_order" %}
+{% assign previous_page = nil %}
+{% assign next_page = nil %}
+{% for entry in manual_pages %}
+  {% if entry.url == page.url %}
+    {% unless forloop.first %}
+      {% assign previous_index = forloop.index0 | minus: 1 %}
+      {% assign previous_page = manual_pages[previous_index] %}
+    {% endunless %}
+    {% unless forloop.last %}
+      {% assign next_index = forloop.index0 | plus: 1 %}
+      {% assign next_page = manual_pages[next_index] %}
+    {% endunless %}
+  {% endif %}
+{% endfor %}
+<div class="manual-shell">
+  <aside class="manual-sidebar">
+    <p class="manual-sidebar__label">User manual</p>
+    {% include manual-nav.html pages=manual_pages %}
+    <a href="{{ '/' | relative_url }}">← Back to NocturneL</a>
+  </aside>
+  <article class="manual-content prose">
+    <header>
+      <p class="eyebrow">Manual / {{ page.section }}</p>
+      <h1>{{ page.title }}</h1>
+      <p class="manual-description">{{ page.description }}</p>
+    </header>
+    {{ content }}
+    <nav class="manual-pager" aria-label="Adjacent manual topics">
+      <div>
+        {% if previous_page %}
+          <a href="{{ previous_page.url | relative_url }}">← Previous<br><strong>{{ previous_page.title }}</strong></a>
+        {% endif %}
+      </div>
+      <div class="manual-pager__next">
+        {% if next_page %}
+          <a href="{{ next_page.url | relative_url }}">Next →<br><strong>{{ next_page.title }}</strong></a>
+        {% endif %}
+      </div>
+    </nav>
+  </article>
+</div>

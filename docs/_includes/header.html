@@ -1,0 +1,25 @@
+<header class="site-header">
+  <div class="site-header__inner">
+    <a class="wordmark" href="{{ '/' | relative_url }}" aria-label="NocturneL home">
+      <span aria-hidden="true">&gt;_</span> NocturneL
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">
+      <span class="nav-toggle__label">Menu</span>
+      <span aria-hidden="true">[+]</span>
+    </button>
+    <nav class="site-nav" id="site-navigation" aria-label="Primary">
+      <ul>
+        {% for item in site.data.navigation %}
+          <li>
+            {% if item.external %}
+              <a href="{{ item.url }}" aria-label="{{ item.label }} (external site)">{{ item.label }} <span aria-hidden="true">↗</span></a>
+            {% else %}
+              {% assign item_url = item.url | relative_url %}
+              <a href="{{ item_url }}"{% if page.url == item.url %} aria-current="page"{% endif %}>{{ item.label }}</a>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </nav>
+  </div>
+</header>

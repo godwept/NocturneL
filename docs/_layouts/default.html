@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="{{ site.lang | default: 'en' }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#07110c">
+    {% seo %}
+    <link rel="icon" type="image/png" href="{{ '/assets/nocturnel-icon-foreground.png' | relative_url }}">
+    <link rel="stylesheet" href="{{ '/assets/css/site.css' | relative_url }}">
+    <script src="{{ '/assets/js/site.js' | relative_url }}" defer></script>
+  </head>
+  <body class="{{ page.body_class | default: 'site-page' }}">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    {% include header.html %}
+    <main id="main-content" tabindex="-1">
+      {{ content }}
+    </main>
+    {% include footer.html %}
+  </body>
+</html>
