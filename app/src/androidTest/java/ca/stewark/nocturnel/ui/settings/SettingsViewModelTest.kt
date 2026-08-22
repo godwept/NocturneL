@@ -3,11 +3,32 @@ package ca.stewark.nocturnel.ui.settings
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import ca.stewark.nocturnel.ui.listening.LibrarySortMode
+import ca.stewark.nocturnel.ui.listening.LibraryViewMode
 import ca.stewark.nocturnel.visualizer.VisualizerSyncOffset
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SettingsViewModelTest {
+    @Test fun togglesAndRestoresLibraryViewMode() {
+        val application = ApplicationProvider.getApplicationContext<Application>()
+        val preferences = application.getSharedPreferences("terminal_preferences", 0)
+        preferences.edit().clear().commit()
+        try {
+            val viewModel = SettingsViewModel(application)
+            assertEquals(LibraryViewMode.GRID, viewModel.state.value.libraryViewMode)
+            viewModel.toggleLibraryViewMode()
+            assertEquals(LibraryViewMode.FLOW, viewModel.state.value.libraryViewMode)
+            viewModel.toggleLibraryViewMode()
+            assertEquals(LibraryViewMode.GRID, viewModel.state.value.libraryViewMode)
+            viewModel.toggleLibraryViewMode()
+            viewModel.increaseVisualizerSyncOffset()
+            assertEquals(LibraryViewMode.FLOW, viewModel.state.value.libraryViewMode)
+            assertEquals(LibraryViewMode.FLOW, SettingsViewModel(application).state.value.libraryViewMode)
+        } finally {
+            preferences.edit().clear().commit()
+        }
+    }
+
     @Test fun cyclesAndRestoresLibrarySortMode() {
         val application = ApplicationProvider.getApplicationContext<Application>()
         val preferences = application.getSharedPreferences("terminal_preferences", 0)

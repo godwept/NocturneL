@@ -13,6 +13,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.data.entity.PlaylistEntity
 import ca.stewark.nocturnel.data.entity.TrackEntity
@@ -27,6 +28,7 @@ import ca.stewark.nocturnel.ui.library.LibrarySetupScreen
 import ca.stewark.nocturnel.ui.library.SearchScreen
 import ca.stewark.nocturnel.ui.listening.LibraryLandingScreen
 import ca.stewark.nocturnel.ui.listening.LibrarySortMode
+import ca.stewark.nocturnel.ui.listening.LibraryViewMode
 import ca.stewark.nocturnel.ui.playback.NowPlayingScreen
 import ca.stewark.nocturnel.ui.playback.QueueEditorScreen
 import ca.stewark.nocturnel.ui.playback.QueueEditorRow
@@ -97,10 +99,44 @@ fun RootPreview() = TerminalPreview {
             favoriteAlbumIds = setOf("red"),
             albumPlayCounts = previewAlbums.associate { it.id to 12L },
             sortMode = LibrarySortMode.ARTIST,
+            viewMode = LibraryViewMode.GRID,
             state = rememberLazyGridState(),
+            flowState = rememberLazyListState(),
+            effectsEnabled = false,
             onAlbumSelected = {},
             onFavoriteAlbum = {},
             onCycleSort = {},
+            onToggleView = {},
+        )
+    }
+}
+
+@PreviewTest
+@Preview(name = "Cover flow", widthDp = 412, heightDp = 915)
+@Composable
+fun CoverFlowPreview() = coverFlowPreview(effectsEnabled = true)
+
+@PreviewTest
+@Preview(name = "Cover flow effects off", widthDp = 412, heightDp = 915)
+@Composable
+fun CoverFlowEffectsOffPreview() = coverFlowPreview(effectsEnabled = false)
+
+@Composable
+private fun coverFlowPreview(effectsEnabled: Boolean) = TerminalPreview {
+    TerminalScaffold(NocturneLDestination.LIBRARY, {}, effectsEnabled = effectsEnabled, status = "LIBRARY READY") {
+        LibraryLandingScreen(
+            albums = previewAlbums,
+            favoriteAlbumIds = setOf("red"),
+            albumPlayCounts = previewAlbums.associate { it.id to 12L },
+            sortMode = LibrarySortMode.ARTIST,
+            viewMode = LibraryViewMode.FLOW,
+            state = rememberLazyGridState(),
+            flowState = rememberLazyListState(initialFirstVisibleItemIndex = 1),
+            effectsEnabled = effectsEnabled,
+            onAlbumSelected = {},
+            onFavoriteAlbum = {},
+            onCycleSort = {},
+            onToggleView = {},
         )
     }
 }

@@ -2,6 +2,7 @@ package ca.stewark.nocturnel.ui.settings
 
 import androidx.test.core.app.ApplicationProvider
 import ca.stewark.nocturnel.ui.listening.LibrarySortMode
+import ca.stewark.nocturnel.ui.listening.LibraryViewMode
 import ca.stewark.nocturnel.visualizer.VisualizerSyncOffset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -9,6 +10,30 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TerminalPreferencesRepositoryTest {
+    @Test fun libraryViewModeDefaultsPersistsAndRestores() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val name = "terminal-library-view-test"
+        val preferences = context.getSharedPreferences(name, 0)
+        preferences.edit().clear().commit()
+
+        val repository = TerminalPreferencesRepository(context, name)
+        assertEquals(LibraryViewMode.GRID, repository.libraryViewMode.value)
+        repository.setLibraryViewMode(LibraryViewMode.FLOW)
+        assertEquals(LibraryViewMode.FLOW, repository.libraryViewMode.value)
+        assertEquals(LibraryViewMode.FLOW, TerminalPreferencesRepository(context, name).libraryViewMode.value)
+    }
+
+    @Test fun malformedLibraryViewModeFallsBackToGrid() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val name = "terminal-library-view-malformed-test"
+        val preferences = context.getSharedPreferences(name, 0)
+        preferences.edit().clear().putString("library_view_mode", "UNKNOWN").commit()
+        assertEquals(LibraryViewMode.GRID, TerminalPreferencesRepository(context, name).libraryViewMode.value)
+
+        preferences.edit().clear().putInt("library_view_mode", 7).commit()
+        assertEquals(LibraryViewMode.GRID, TerminalPreferencesRepository(context, name).libraryViewMode.value)
+    }
+
     @Test fun librarySortModeDefaultsPersistsAndRestores() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val name = "terminal-library-sort-test"

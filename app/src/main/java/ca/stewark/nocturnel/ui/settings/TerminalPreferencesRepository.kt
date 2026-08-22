@@ -3,6 +3,7 @@ package ca.stewark.nocturnel.ui.settings
 import android.content.Context
 import android.content.SharedPreferences
 import ca.stewark.nocturnel.ui.listening.LibrarySortMode
+import ca.stewark.nocturnel.ui.listening.LibraryViewMode
 import ca.stewark.nocturnel.visualizer.VisualizerSyncOffset
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +23,12 @@ class TerminalPreferencesRepository(
         ),
     )
     val librarySortMode: StateFlow<LibrarySortMode> = _librarySortMode.asStateFlow()
+    private val _libraryViewMode = MutableStateFlow(
+        LibraryViewMode.fromPersisted(
+            runCatching { preferences.getString(LIBRARY_VIEW_MODE, null) }.getOrNull(),
+        ),
+    )
+    val libraryViewMode: StateFlow<LibraryViewMode> = _libraryViewMode.asStateFlow()
     private val _visualizerSyncOffsetMs = MutableStateFlow(
         runCatching { preferences.getInt(VISUALIZER_SYNC_OFFSET_MS, VisualizerSyncOffset.DEFAULT_MS) }
             .getOrDefault(VisualizerSyncOffset.DEFAULT_MS)
@@ -39,6 +46,11 @@ class TerminalPreferencesRepository(
         _librarySortMode.value = mode
     }
 
+    fun setLibraryViewMode(mode: LibraryViewMode) {
+        preferences.edit().putString(LIBRARY_VIEW_MODE, mode.name).apply()
+        _libraryViewMode.value = mode
+    }
+
     fun setVisualizerSyncOffsetMs(offsetMs: Int) {
         val clamped = VisualizerSyncOffset.clamp(offsetMs)
         runCatching { preferences.edit().putInt(VISUALIZER_SYNC_OFFSET_MS, clamped).apply() }
@@ -48,6 +60,7 @@ class TerminalPreferencesRepository(
     private companion object {
         const val EFFECTS_ENABLED = "effects_enabled"
         const val LIBRARY_SORT_MODE = "library_sort_mode"
+        const val LIBRARY_VIEW_MODE = "library_view_mode"
         const val VISUALIZER_SYNC_OFFSET_MS = "visualizer_sync_offset_ms"
     }
 }

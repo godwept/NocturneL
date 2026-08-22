@@ -1,9 +1,11 @@
 package ca.stewark.nocturnel.ui.listening
 
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.runtime.getValue
@@ -34,10 +36,14 @@ class ListeningScreensTest {
                     favoriteAlbumIds = setOf("gamma"),
                     albumPlayCounts = mapOf("gamma" to 3),
                     sortMode = LibrarySortMode.ARTIST,
+                    viewMode = LibraryViewMode.GRID,
                     state = rememberLazyGridState(),
+                    flowState = rememberLazyListState(),
+                    effectsEnabled = false,
                     onAlbumSelected = {},
                     onFavoriteAlbum = {},
                     onCycleSort = {},
+                    onToggleView = {},
                 )
             }
         }
@@ -66,12 +72,16 @@ class ListeningScreensTest {
                     favoriteAlbumIds = favorites,
                     albumPlayCounts = emptyMap(),
                     sortMode = LibrarySortMode.ARTIST,
+                    viewMode = LibraryViewMode.GRID,
                     state = rememberLazyGridState(),
+                    flowState = rememberLazyListState(),
+                    effectsEnabled = false,
                     onAlbumSelected = {},
                     onFavoriteAlbum = { id ->
                         favorites = if (id in favorites) favorites - id else favorites + id
                     },
                     onCycleSort = {},
+                    onToggleView = {},
                 )
             }
         }
@@ -95,10 +105,14 @@ class ListeningScreensTest {
                     favoriteAlbumIds = emptySet(),
                     albumPlayCounts = mapOf("alpha" to 1, "beta" to 5, "gamma" to 10),
                     sortMode = mode,
+                    viewMode = LibraryViewMode.GRID,
                     state = rememberLazyGridState(),
+                    flowState = rememberLazyListState(),
+                    effectsEnabled = false,
                     onAlbumSelected = {},
                     onFavoriteAlbum = {},
                     onCycleSort = { mode = mode.next() },
+                    onToggleView = {},
                 )
             }
         }
@@ -126,16 +140,54 @@ class ListeningScreensTest {
                     favoriteAlbumIds = emptySet(),
                     albumPlayCounts = emptyMap(),
                     sortMode = LibrarySortMode.ARTIST,
+                    viewMode = LibraryViewMode.GRID,
                     state = rememberLazyGridState(),
+                    flowState = rememberLazyListState(),
+                    effectsEnabled = false,
                     onAlbumSelected = {},
                     onFavoriteAlbum = {},
                     onCycleSort = {},
+                    onToggleView = {},
                 )
             }
         }
 
         compose.onNodeWithText("No playable albums yet. Rescan after adding music.").assertIsDisplayed()
         compose.onNodeWithText("[ SORT: ARTIST ]").assertDoesNotExist()
+        compose.onNodeWithText("[ VIEW: GRID ]").assertDoesNotExist()
+    }
+
+    @Test fun viewButtonTogglesBetweenIndependentGridAndFlowViews() {
+        val albums = listOf(
+            sampleAlbum.copy(id = "alpha", title = "Alpha", artist = "Artist A"),
+            sampleAlbum.copy(id = "beta", title = "Beta", artist = "Artist B"),
+        )
+        compose.setContent {
+            NocturneLTheme {
+                var mode by remember { mutableStateOf(LibraryViewMode.GRID) }
+                LibraryLandingScreen(
+                    albums = albums,
+                    favoriteAlbumIds = emptySet(),
+                    albumPlayCounts = emptyMap(),
+                    sortMode = LibrarySortMode.ARTIST,
+                    viewMode = mode,
+                    state = rememberLazyGridState(),
+                    flowState = rememberLazyListState(),
+                    effectsEnabled = false,
+                    onAlbumSelected = {},
+                    onFavoriteAlbum = {},
+                    onCycleSort = {},
+                    onToggleView = { mode = mode.next() },
+                )
+            }
+        }
+
+        compose.onNodeWithText("[ VIEW: GRID ]").assertIsDisplayed().performClick()
+        compose.onNodeWithText("[ VIEW: FLOW ]").assertIsDisplayed()
+        compose.onNodeWithTag("cover-flow-reel").assertIsDisplayed()
+        compose.onNodeWithText("[ VIEW: FLOW ]").performClick()
+        compose.onNodeWithText("[ VIEW: GRID ]").assertIsDisplayed()
+        compose.onNodeWithTag("cover-flow-reel").assertDoesNotExist()
     }
 
     @Test fun settingsConfirmsBothDestructiveActions() {

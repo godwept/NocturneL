@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -82,6 +83,7 @@ fun NocturneLApp(
     val destination = NocturneLDestination.entries.firstOrNull { it.name == destinationName } ?: NocturneLDestination.LIBRARY
     var selectedAlbumId by rememberSaveable { mutableStateOf<String?>(null) }
     val libraryGridState = rememberLazyGridState()
+    val libraryFlowState = rememberLazyListState()
     var playlistPickerExpanded by rememberSaveable(selectedAlbumId) { mutableStateOf(false) }
     var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
     var queueEditorOpen by rememberSaveable { mutableStateOf(false) }
@@ -139,10 +141,14 @@ fun NocturneLApp(
                         favoriteAlbumIds = listening.favoriteAlbumIds,
                         albumPlayCounts = listening.albumPlayCounts,
                         sortMode = settings.librarySortMode,
+                        viewMode = settings.libraryViewMode,
                         state = libraryGridState,
+                        flowState = libraryFlowState,
+                        effectsEnabled = settings.effectiveEffectsEnabled,
                         onAlbumSelected = { selectedAlbumId = it.id },
                         onFavoriteAlbum = listeningViewModel::toggleAlbum,
                         onCycleSort = settingsViewModel::cycleLibrarySortMode,
+                        onToggleView = settingsViewModel::toggleLibraryViewMode,
                     )
                 }
             }
@@ -198,10 +204,14 @@ fun NocturneLApp(
                     favoriteAlbumIds = listening.favoriteAlbumIds,
                     albumPlayCounts = listening.albumPlayCounts,
                     sortMode = settings.librarySortMode,
+                    viewMode = settings.libraryViewMode,
                     state = libraryGridState,
+                    flowState = libraryFlowState,
+                    effectsEnabled = settings.effectiveEffectsEnabled,
                     onAlbumSelected = { selectedAlbumId = it.id },
                     onFavoriteAlbum = listeningViewModel::toggleAlbum,
                     onCycleSort = settingsViewModel::cycleLibrarySortMode,
+                    onToggleView = settingsViewModel::toggleLibraryViewMode,
                 )
                 NocturneLDestination.SEARCH -> SearchScreen(
                     tracks,

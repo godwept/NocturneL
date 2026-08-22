@@ -5,6 +5,7 @@ import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import ca.stewark.nocturnel.ui.effects.EffectsPolicy
 import ca.stewark.nocturnel.ui.listening.LibrarySortMode
+import ca.stewark.nocturnel.ui.listening.LibraryViewMode
 import ca.stewark.nocturnel.visualizer.VisualizerSyncOffset
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +17,7 @@ data class TerminalSettingsState(
     val reducedMotion: Boolean = false,
     val visualizerSyncOffsetMs: Int = VisualizerSyncOffset.DEFAULT_MS,
     val librarySortMode: LibrarySortMode = LibrarySortMode.DEFAULT,
+    val libraryViewMode: LibraryViewMode = LibraryViewMode.DEFAULT,
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -25,6 +27,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             repository.effectsEnabled.value,
             repository.visualizerSyncOffsetMs.value,
             repository.librarySortMode.value,
+            repository.libraryViewMode.value,
         ),
     )
     val state: StateFlow<TerminalSettingsState> = _state.asStateFlow()
@@ -34,18 +37,40 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             repository.effectsEnabled.value,
             repository.visualizerSyncOffsetMs.value,
             repository.librarySortMode.value,
+            repository.libraryViewMode.value,
         )
     }
 
     fun setEffectsEnabled(enabled: Boolean) {
         repository.setEffectsEnabled(enabled)
-        _state.value = resolve(enabled, _state.value.visualizerSyncOffsetMs, _state.value.librarySortMode)
+        _state.value = resolve(
+            enabled,
+            _state.value.visualizerSyncOffsetMs,
+            _state.value.librarySortMode,
+            _state.value.libraryViewMode,
+        )
     }
 
     fun cycleLibrarySortMode() {
         val next = _state.value.librarySortMode.next()
         repository.setLibrarySortMode(next)
-        _state.value = resolve(_state.value.savedEffectsEnabled, _state.value.visualizerSyncOffsetMs, next)
+        _state.value = resolve(
+            _state.value.savedEffectsEnabled,
+            _state.value.visualizerSyncOffsetMs,
+            next,
+            _state.value.libraryViewMode,
+        )
+    }
+
+    fun toggleLibraryViewMode() {
+        val next = _state.value.libraryViewMode.next()
+        repository.setLibraryViewMode(next)
+        _state.value = resolve(
+            _state.value.savedEffectsEnabled,
+            _state.value.visualizerSyncOffsetMs,
+            _state.value.librarySortMode,
+            next,
+        )
     }
 
     fun increaseVisualizerSyncOffset() = setVisualizerSyncOffset(
@@ -64,6 +89,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _state.value.savedEffectsEnabled,
             repository.visualizerSyncOffsetMs.value,
             _state.value.librarySortMode,
+            _state.value.libraryViewMode,
         )
     }
 
@@ -71,6 +97,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         saved: Boolean,
         visualizerSyncOffsetMs: Int,
         librarySortMode: LibrarySortMode,
+        libraryViewMode: LibraryViewMode,
     ): TerminalSettingsState {
         val animationsEnabled = runCatching {
             Settings.Global.getFloat(
@@ -86,6 +113,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             reducedMotion = !animationsEnabled,
             visualizerSyncOffsetMs = VisualizerSyncOffset.clamp(visualizerSyncOffsetMs),
             librarySortMode = librarySortMode,
+            libraryViewMode = libraryViewMode,
         )
     }
 }
