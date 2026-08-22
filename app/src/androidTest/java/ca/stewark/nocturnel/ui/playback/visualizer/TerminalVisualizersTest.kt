@@ -8,7 +8,11 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
+import ca.stewark.nocturnel.visualizer.AnalysisStatus
 import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
 import org.junit.Rule
 import org.junit.Test
@@ -37,4 +41,56 @@ class TerminalVisualizersTest {
         compose.onNodeWithTag("scanlines").assertDoesNotExist()
         compose.onNodeWithTag("visualizer-bands").assertIsDisplayed().assertHasNoClickAction()
     }
+
+    @Test fun activeSceneClearsEffectsAndHistoryAcrossLifecycleChanges() {
+        compose.mainClock.autoAdvance = false
+        var mode by mutableStateOf(VisualizerDisplayMode.RADAR)
+        var frame by mutableStateOf(activeFrame(1))
+        var effectsEnabled by mutableStateOf(true)
+        compose.setContent {
+            NocturneLTheme {
+                TerminalVisualizerScene(mode, frame, effectsEnabled, Modifier.size(200.dp))
+            }
+        }
+        compose.mainClock.advanceTimeByFrame()
+
+        compose.onNodeWithTag("visualizer-radar").assertIsDisplayed().assertHasNoClickAction()
+        compose.onNodeWithTag("scanlines").assertIsDisplayed()
+
+        compose.runOnIdle { effectsEnabled = false }
+        compose.mainClock.advanceTimeBy(300)
+        compose.onNodeWithTag("scanlines").assertDoesNotExist()
+        compose.onNodeWithTag("visualizer-radar").assertIsDisplayed().assertHasNoClickAction()
+
+        compose.runOnIdle {
+            effectsEnabled = true
+            mode = VisualizerDisplayMode.BANDS
+            frame = activeFrame(2)
+        }
+        compose.mainClock.advanceTimeByFrame()
+        compose.onNodeWithTag("visualizer-radar").assertDoesNotExist()
+        compose.onNodeWithTag("visualizer-bands").assertIsDisplayed().assertHasNoClickAction()
+
+        compose.runOnIdle { frame = AudioAnalysisFrame.Unavailable }
+        compose.onNodeWithText("SIGNAL UNAVAILABLE").assertIsDisplayed()
+        compose.mainClock.advanceTimeBy(300)
+        compose.onNodeWithText("SIGNAL UNAVAILABLE").assertIsDisplayed()
+
+        compose.runOnIdle { frame = activeFrame(3) }
+        compose.mainClock.advanceTimeByFrame()
+        compose.onNodeWithText("SIGNAL UNAVAILABLE").assertDoesNotExist()
+        compose.onNodeWithTag("visualizer-bands").assertIsDisplayed().assertHasNoClickAction()
+    }
+
+    private fun activeFrame(id: Long) = AudioAnalysisFrame(
+        waveform = List(128) { 0f },
+        bands = List(32) { index -> if (index % 3 == 0) .8f else .2f },
+        energy = .5f,
+        lowEnergy = .6f,
+        midEnergy = .4f,
+        highEnergy = .2f,
+        transient = .1f,
+        frameId = id,
+        status = AnalysisStatus.ACTIVE,
+    )
 }

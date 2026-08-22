@@ -4,6 +4,7 @@ import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.floor
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 
@@ -24,6 +25,15 @@ internal data class SpectrumBarGeometry(
     val top: Float,
     val bottom: Float,
     val peakY: Float,
+    val segments: Int,
+)
+
+internal data class SpectrumGhostGeometry(
+    val bandIndex: Int,
+    val left: Float,
+    val right: Float,
+    val bottom: Float,
+    val firstSegment: Int,
     val segments: Int,
 )
 
@@ -49,17 +59,62 @@ internal fun radarGeometry(frame: AudioAnalysisFrame, width: Float, height: Floa
     return RadarGeometry(center, gridRadii, energyRadii, spokes, echo, (frame.frameId * 2f) % 360f)
 }
 
-internal fun spectrumGeometry(frame: AudioAnalysisFrame, width: Float, height: Float): List<SpectrumBarGeometry> {
-    val inset = 8f
-    val gap = 2f
-    val count = frame.bands.size
-    val barWidth = ((width - inset * 2f - gap * (count - 1)) / count).coerceAtLeast(1f)
-    val maximumSegments = floor((height - inset * 2f) / 6f).toInt().coerceAtLeast(1)
-    return frame.bands.mapIndexed { index, value ->
+internal fun radarSweepEndpoint(center: VisualizerPoint, radius: Float, sweepDegrees: Float): VisualizerPoint {
+    val normalized = if (sweepDegrees.isFinite()) ((sweepDegrees % 360f) + 360f) % 360f else 0f
+    val angle = (normalized - 90f) * PI / 180.0
+    return VisualizerPoint(
+        center.x + cos(angle).toFloat() * radius,
+        center.y + sin(angle).toFloat() * radius,
+    )
+}
+
+internal fun spectrumGeometry(frame: AudioAnalysisFrame, width: Float, height: Float): List<SpectrumBarGeometry> =
+    spectrumGeometry(frame.bands, width, height)
+
+internal fun spectrumGeometry(bands: List<Float>, width: Float, height: Float): List<SpectrumBarGeometry> {
+    if (bands.isEmpty()) return emptyList()
+    val safeWidth = width.coerceAtLeast(0f)
+    val safeHeight = height.coerceAtLeast(0f)
+    val inset = min(8f, min(safeWidth, safeHeight) / 2f)
+    val count = bands.size
+    val contentWidth = (safeWidth - inset * 2f).coerceAtLeast(0f)
+    val gap = if (count > 1) min(2f, contentWidth / (count - 1)) else 0f
+    val barWidth = max(0f, (contentWidth - gap * (count - 1)) / count)
+    val maximumSegments = floor((safeHeight - inset * 2f).coerceAtLeast(0f) / 6f).toInt()
+    return bands.mapIndexed { index, value ->
         val segments = (value.coerceIn(0f, 1f) * maximumSegments).toInt()
-        val bottom = height - inset
+        val bottom = safeHeight - inset
         val top = bottom - segments * 6f
         val left = inset + index * (barWidth + gap)
-        SpectrumBarGeometry(left, left + barWidth, top, bottom, (top - 2f).coerceAtLeast(inset), segments)
+        SpectrumBarGeometry(
+            left,
+            left + barWidth,
+            top,
+            bottom,
+            (top - 2f).coerceIn(inset, bottom),
+            segments,
+        )
+    }
+}
+
+internal fun spectrumGhostGeometry(
+    liveLevels: List<Float>,
+    retainedLevels: List<Float>,
+    width: Float,
+    height: Float,
+): List<SpectrumGhostGeometry> {
+    if (liveLevels.size != retainedLevels.size) return emptyList()
+    val live = spectrumGeometry(liveLevels, width, height)
+    val retained = spectrumGeometry(retainedLevels, width, height)
+    return live.zip(retained).mapIndexedNotNull { index, (liveBar, retainedBar) ->
+        val ghostSegments = retainedBar.segments - liveBar.segments
+        if (ghostSegments <= 0) null else SpectrumGhostGeometry(
+            bandIndex = index,
+            left = liveBar.left,
+            right = liveBar.right,
+            bottom = liveBar.bottom,
+            firstSegment = liveBar.segments,
+            segments = ghostSegments,
+        )
     }
 }

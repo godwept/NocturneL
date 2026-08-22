@@ -36,7 +36,13 @@ import ca.stewark.nocturnel.ui.playback.QueueEditorTrack
 import ca.stewark.nocturnel.ui.playback.UpcomingQueueRow
 import ca.stewark.nocturnel.ui.playback.queueEditorState
 import ca.stewark.nocturnel.ui.playback.visualizer.TerminalVisualizerScene
+import ca.stewark.nocturnel.ui.playback.visualizer.TerminalVisualizerFrame
+import ca.stewark.nocturnel.ui.playback.visualizer.BandAfterglow
+import ca.stewark.nocturnel.ui.playback.visualizer.RadarAfterglowSample
+import ca.stewark.nocturnel.ui.playback.visualizer.RadarAfterglowState
+import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerAfterglowState
 import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerDisplayMode
+import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerSizeKey
 import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerSyncControls
 import ca.stewark.nocturnel.ui.playlist.PlaylistDetailScreen
 import ca.stewark.nocturnel.ui.playlist.PlaylistTrackEntryRow
@@ -352,6 +358,53 @@ fun VisualizerRadarPreview() = TerminalPreview {
 @Composable
 fun VisualizerBandsPreview() = TerminalPreview {
     TerminalVisualizerScene(VisualizerDisplayMode.BANDS, spectrumFrame, true, Modifier.fillMaxSize())
+}
+
+@PreviewTest
+@Preview(name = "Visualizer radar afterglow", widthDp = 320, heightDp = 320)
+@Composable
+fun VisualizerRadarAfterglowPreview() = TerminalPreview {
+    TerminalVisualizerFrame(
+        mode = VisualizerDisplayMode.RADAR,
+        frame = radarFrame.copy(frameId = 2),
+        effectsEnabled = true,
+        afterglow = VisualizerAfterglowState(
+            activeMode = VisualizerDisplayMode.RADAR,
+            size = VisualizerSizeKey(320, 320),
+            lastFrameId = 2,
+            radar = RadarAfterglowState(
+                currentFrameId = 2,
+                currentAngleDegrees = 4f,
+                samples = listOf(
+                    RadarAfterglowSample(358f, 180_000_000),
+                    RadarAfterglowSample(0f, 120_000_000),
+                    RadarAfterglowSample(2f, 60_000_000),
+                ),
+            ),
+        ),
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+
+@PreviewTest
+@Preview(name = "Visualizer bands afterglow", widthDp = 320, heightDp = 320)
+@Composable
+fun VisualizerBandsAfterglowPreview() = TerminalPreview {
+    val retained = spectrumFrame.bands.mapIndexed { index, live ->
+        if (index % 3 == 0) (live + .35f).coerceAtMost(1f) else live
+    }
+    TerminalVisualizerFrame(
+        mode = VisualizerDisplayMode.BANDS,
+        frame = spectrumFrame,
+        effectsEnabled = true,
+        afterglow = VisualizerAfterglowState(
+            activeMode = VisualizerDisplayMode.BANDS,
+            size = VisualizerSizeKey(320, 320),
+            lastFrameId = spectrumFrame.frameId,
+            bands = retained.map { BandAfterglow(it, it, 80_000_000) },
+        ),
+        modifier = Modifier.fillMaxSize(),
+    )
 }
 
 @Preview(name = "Visualizer radar idle", widthDp = 320, heightDp = 320)

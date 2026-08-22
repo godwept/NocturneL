@@ -23,11 +23,16 @@
 - [ ] Switch visualization modes rapidly and confirm there are no audible glitches.
 - [ ] Confirm silence settles to an idle trace and an unavailable signal shows `SIGNAL UNAVAILABLE` without affecting playback.
 - [ ] Toggle CRT effects and confirm both visualizers remain readable with effects both on and off.
+- [ ] With CRT effects on, confirm only the radar sweep arm leaves a slight trail; rings, spokes, and transient echoes remain crisp.
+- [ ] Confirm falling band ghosts remain dimmer than live segments, clear in about 250 ms, and do not smear the bright peak markers.
+- [ ] Pause, show unavailable analysis, switch modes, recreate/resize the screen, and disable CRT effects; confirm afterglow clears immediately with no frozen or carried-over ghosts.
+- [ ] With CRT effects off, confirm radar and bands retain their prior crisp rendering apart from the existing scanline removal.
 - [ ] Play a balanced or pink-noise-like track and confirm the spectrum's right half remains visibly active without becoming stronger than the left by default.
 - [ ] Play a quiet passage and confirm the spectrum expands gradually without pumping, then enters a loud passage promptly without widespread clipping.
 - [ ] Play a treble-rich track and confirm upper bands respond while silence and near-silence still settle to baseline.
 - [ ] After a quiet passage, seek and change tracks; confirm the learned spectrum gain does not carry into the new signal.
 - [ ] Run a visualizer for 30 minutes and check for dropped audio, animation stutter, excessive heat, or unreasonable battery drain.
+- [ ] During the 30-minute visualizer run, confirm afterglow adds no audible playback glitch, new stutter, excessive heat, or unreasonable battery drain.
 - [ ] In radar and bands, confirm visualizer sync minus/plus changes the shared value by exactly 25 ms per tap without changing modes.
 - [ ] Confirm album art, radar, and bands retain identical square bounds with no vertical jump while switching modes.
 - [ ] Confirm minus occupies the top-left corner, plus occupies the top-right corner, and neither control changes modes.

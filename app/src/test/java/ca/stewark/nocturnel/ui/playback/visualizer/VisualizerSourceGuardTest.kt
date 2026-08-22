@@ -2,6 +2,7 @@ package ca.stewark.nocturnel.ui.playback.visualizer
 
 import java.io.File
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VisualizerSourceGuardTest {
@@ -23,5 +24,22 @@ class VisualizerSourceGuardTest {
             "visualizer-ring",
             "Terminal spectrum ring",
         ).forEach { removed -> assertFalse(removed, removed in source) }
+    }
+
+    @Test fun afterglowUsesTheComposeFrameClockWithoutIndependentTimers() {
+        val source = File(
+            "src/main/java/ca/stewark/nocturnel/ui/playback/visualizer/TerminalVisualizers.kt",
+        ).readText()
+
+        assertTrue("withFrameNanos", "withFrameNanos" in source)
+        assertTrue("rememberUpdatedState", "rememberUpdatedState" in source)
+        listOf(
+            "System.currentTimeMillis",
+            "System.nanoTime",
+            "elapsedRealtime",
+            "rememberInfiniteTransition",
+            "infiniteRepeatable",
+            "delay(",
+        ).forEach { forbidden -> assertFalse(forbidden, forbidden in source) }
     }
 }
