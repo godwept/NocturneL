@@ -81,6 +81,8 @@ class ProductSiteContractTest {
             "body {", ".skip-link", ".site-header", ".site-nav", ".site-footer", ":focus-visible",
             "overflow-wrap", "min-height: 44px", "@media (max-width:",
             "prefers-reduced-motion: reduce", "prefers-contrast: more", ".js .site-nav",
+            ".manual-pager a { display: block; height: 100%;",
+            ".feature-card h3 { margin: var(--space-3) 0 var(--space-2);",
         )
         assertFalse("Remote fonts are outside the approved design", "@import url(" in css)
     }
