@@ -10,8 +10,8 @@ class ScanlineStyleTest {
         val style = scanlineStyle(enabled = true)
 
         assertNotNull(style)
-        assertTrue(style!!.phosphorAlpha >= .06f)
-        assertTrue(style.shadowAlpha >= .30f)
+        assertTrue(style!!.phosphorAlpha >= .10f)
+        assertTrue(style.shadowAlpha >= .45f)
     }
 
     @Test fun effectsOffDrawsNoScanlineOverlay() {

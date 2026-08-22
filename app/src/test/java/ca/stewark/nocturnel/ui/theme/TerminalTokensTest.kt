@@ -14,7 +14,7 @@ class TerminalTokensTest {
         assertEquals(0xFF39FF7C.toInt(), PhosphorBright.toArgb())
         assertEquals(0xFFFFB000.toInt(), AlertAmber.toArgb())
         assertEquals(0xFFFF3030.toInt(), TerminalError.toArgb())
-        assertEquals(.34f, ScanlineAlpha)
-        assertEquals(.075f, ScanlinePhosphorAlpha)
+        assertEquals(.48f, ScanlineAlpha)
+        assertEquals(.12f, ScanlinePhosphorAlpha)
     }
 }

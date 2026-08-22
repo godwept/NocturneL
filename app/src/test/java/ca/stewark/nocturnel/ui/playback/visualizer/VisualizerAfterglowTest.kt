@@ -7,6 +7,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VisualizerAfterglowTest {
+    @Test fun afterglowIsClearlyVisibleButSubordinateToLiveElements() {
+        assertTrue(RADAR_AFTERGLOW_MAX_ALPHA >= .55f)
+        assertTrue(BAND_AFTERGLOW_MAX_ALPHA >= .60f)
+        assertTrue(RADAR_AFTERGLOW_MAX_ALPHA < .8f)
+        assertTrue(BAND_AFTERGLOW_MAX_ALPHA < .75f)
+    }
+
     @Test fun firstRadarFrameHasNoInventedTrail() {
         val state = updateRadarAfterglow(RadarAfterglowState(), 1, 358f, 0)
 

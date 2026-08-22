@@ -15,9 +15,9 @@ Add a short CRT-style persistence effect to the existing radar and spectrum-band
 - Use one `AFTERGLOW_DURATION_NANOS = 250_000_000L` constant for both modes.
 - Retain at most eight prior radar sweep samples. Add a sample only when an active frame with a new, strictly increasing `frameId` arrives; repeated display frames age history without duplicating it.
 - Normalize every retained radar angle to `0f..<360f`. Draw independent historical arms rather than connecting angles, so the 360-to-0 transition cannot draw across the circle.
-- Fade radar samples linearly from maximum alpha `.42f` to zero, draw them in `PhosphorDim` with the existing `1f` sweep width, oldest first, and retain the existing live `PhosphorBright` arm at alpha `.8f`.
+- Fade radar samples linearly from maximum alpha `.55f` to zero, draw them in `PhosphorDim` with the existing `1f` sweep width, oldest first, and retain the existing live `PhosphorBright` arm at alpha `.8f`.
 - Keep one normalized `BandAfterglow` envelope per current band. A live value at or above its retained envelope replaces the baseline immediately; a falling value retains the former height, moves the envelope downward linearly, and fades it to zero over no more than 250 ms.
-- Draw only ghost segments strictly above the live bar, in `PhosphorDim` with maximum alpha `.48f`. Keep existing live `Phosphor` segments and the current `PhosphorBright` peak line unchanged and above the ghost layer.
+- Draw only ghost segments strictly above the live bar, in `PhosphorDim` with maximum alpha `.60f`. Keep existing live `Phosphor` segments and the current `PhosphorBright` peak line unchanged and above the ghost layer.
 - Sanitize retained band values to finite `0f..1f`; a band-count change rebuilds all envelopes from the current live values with no visible ghost.
 - Drive elapsed time with `withFrameNanos`, read the latest analysis frame through `rememberUpdatedState`, and never use wall-clock time, `delay`, an infinite transition, or a coroutine per band.
 - Store normalized angles and band levels, not pixel coordinates. Also key/reset state on measured Canvas size so the approved resize-clear behavior is explicit.
