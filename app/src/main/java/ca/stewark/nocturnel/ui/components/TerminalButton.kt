@@ -15,6 +15,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import ca.stewark.nocturnel.ui.theme.AlertAmber
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 
@@ -47,7 +48,13 @@ fun BracketButton(
             .padding(horizontal = TerminalDimensions.xs),
         contentAlignment = Alignment.Center,
     ) {
-        Text("[ ${label.uppercase()} ]", color = color, style = textStyle, maxLines = 1)
+        Text(
+            "[ ${label.uppercase()} ]",
+            color = color,
+            style = textStyle,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

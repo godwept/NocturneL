@@ -52,6 +52,7 @@ import ca.stewark.nocturnel.ui.playlist.playlistDetailState
 import ca.stewark.nocturnel.ui.settings.SettingsScreen
 import ca.stewark.nocturnel.ui.settings.TerminalSettingsState
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
+import ca.stewark.nocturnel.ui.theme.FontPreset
 import ca.stewark.nocturnel.ui.theme.Phosphor
 import ca.stewark.nocturnel.ui.components.TerminalScaffold
 import ca.stewark.nocturnel.ui.components.Scanlines
@@ -89,7 +90,10 @@ private val spectrumFrame = radarFrame.copy(
 )
 
 @Composable
-private fun TerminalPreview(content: @Composable () -> Unit) = NocturneLTheme {
+private fun TerminalPreview(
+    fontPreset: FontPreset = FontPreset.DEFAULT,
+    content: @Composable () -> Unit,
+) = NocturneLTheme(fontPreset) {
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { content() }
 }
 
@@ -174,7 +178,7 @@ private fun coverFlowPreview(effectsEnabled: Boolean) = TerminalPreview {
 @Preview(name = "Settings source confirmation", widthDp = 412, heightDp = 915)
 @Composable
 fun SettingsSourceConfirmationPreview() = TerminalPreview {
-    SettingsScreen({}, {}, TerminalSettingsState(), {}, pendingSourceName = "ARCHIVE")
+    SettingsScreen({}, {}, TerminalSettingsState(), {}, {}, pendingSourceName = "ARCHIVE")
 }
 
 @PreviewTest
@@ -305,7 +309,15 @@ fun NowPlayingPreview() = TerminalPreview {
 @PreviewTest
 @Preview(name = "Queue editor", widthDp = 412, heightDp = 915)
 @Composable
-fun QueueEditorPreview() = TerminalPreview {
+fun QueueEditorPreview() = queueEditorPreview(FontPreset.CLASSIC)
+
+@PreviewTest
+@Preview(name = "Queue editor Pixel font", widthDp = 412, heightDp = 915)
+@Composable
+fun QueueEditorPixelFontPreview() = queueEditorPreview(FontPreset.PIXEL)
+
+@Composable
+private fun queueEditorPreview(fontPreset: FontPreset) = TerminalPreview(fontPreset) {
     QueueEditorScreen(
         state = queueEditorState(
             current = QueueEntry("current", "red/01.flac", previewLongTrackTitle, "Signal One", "Red Horizon", 183_000),
@@ -446,5 +458,41 @@ fun VisualizerUnavailablePreview() = TerminalPreview {
 @Preview(name = "Settings effects off", widthDp = 412, heightDp = 915)
 @Composable
 fun SettingsPreview() = TerminalPreview {
-    SettingsScreen({}, {}, TerminalSettingsState(savedEffectsEnabled = false, effectiveEffectsEnabled = false), {})
+    SettingsScreen({}, {}, TerminalSettingsState(savedEffectsEnabled = false, effectiveEffectsEnabled = false), {}, {})
+}
+
+@PreviewTest
+@Preview(name = "Settings font Classic", widthDp = 412, heightDp = 915)
+@Composable
+fun SettingsFontClassicPreview() = settingsFontPreview(FontPreset.CLASSIC)
+
+@PreviewTest
+@Preview(name = "Settings font Mainframe", widthDp = 412, heightDp = 915)
+@Composable
+fun SettingsFontMainframePreview() = settingsFontPreview(FontPreset.MAINFRAME)
+
+@PreviewTest
+@Preview(name = "Settings font Pixel", widthDp = 412, heightDp = 915)
+@Composable
+fun SettingsFontPixelPreview() = settingsFontPreview(FontPreset.PIXEL)
+
+@PreviewTest
+@Preview(name = "Settings font Modern", widthDp = 412, heightDp = 915)
+@Composable
+fun SettingsFontModernPreview() = settingsFontPreview(FontPreset.MODERN)
+
+@PreviewTest
+@Preview(name = "Settings font Pixel constrained", widthDp = 320, heightDp = 568, fontScale = 1.3f)
+@Composable
+fun SettingsFontPixelConstrainedPreview() = settingsFontPreview(FontPreset.PIXEL)
+
+@Composable
+private fun settingsFontPreview(fontPreset: FontPreset) = TerminalPreview(fontPreset) {
+    SettingsScreen(
+        onChooseFolder = {},
+        onRescan = {},
+        state = TerminalSettingsState(fontPreset = fontPreset),
+        onEffectsChanged = {},
+        onCycleFontPreset = {},
+    )
 }

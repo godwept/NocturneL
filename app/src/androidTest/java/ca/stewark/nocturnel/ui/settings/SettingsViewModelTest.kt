@@ -4,11 +4,34 @@ import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import ca.stewark.nocturnel.ui.listening.LibrarySortMode
 import ca.stewark.nocturnel.ui.listening.LibraryViewMode
+import ca.stewark.nocturnel.ui.theme.FontPreset
 import ca.stewark.nocturnel.visualizer.VisualizerSyncOffset
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SettingsViewModelTest {
+    @Test fun cyclesAndRestoresFontPreset() {
+        val application = ApplicationProvider.getApplicationContext<Application>()
+        val preferences = application.getSharedPreferences("terminal_preferences", 0)
+        preferences.edit().clear().commit()
+        try {
+            val viewModel = SettingsViewModel(application)
+            assertEquals(FontPreset.CLASSIC, viewModel.state.value.fontPreset)
+            viewModel.cycleFontPreset()
+            assertEquals(FontPreset.MAINFRAME, viewModel.state.value.fontPreset)
+            viewModel.cycleFontPreset()
+            assertEquals(FontPreset.PIXEL, viewModel.state.value.fontPreset)
+            viewModel.cycleFontPreset()
+            assertEquals(FontPreset.MODERN, viewModel.state.value.fontPreset)
+            viewModel.cycleFontPreset()
+            assertEquals(FontPreset.CLASSIC, viewModel.state.value.fontPreset)
+            viewModel.cycleFontPreset()
+            assertEquals(FontPreset.MAINFRAME, SettingsViewModel(application).state.value.fontPreset)
+        } finally {
+            preferences.edit().clear().commit()
+        }
+    }
+
     @Test fun togglesAndRestoresLibraryViewMode() {
         val application = ApplicationProvider.getApplicationContext<Application>()
         val preferences = application.getSharedPreferences("terminal_preferences", 0)

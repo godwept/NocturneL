@@ -79,6 +79,7 @@ class LibraryScreenTest {
                     onRescan = { rescanned = true },
                     state = TerminalSettingsState(),
                     onEffectsChanged = {},
+                    onCycleFontPreset = {},
                 )
             }
         }
@@ -96,6 +97,7 @@ class LibraryScreenTest {
                     scanRunning = true,
                     state = TerminalSettingsState(),
                     onEffectsChanged = {},
+                    onCycleFontPreset = {},
                 )
             }
         }
@@ -127,6 +129,7 @@ class LibraryScreenTest {
                     onRescan = {},
                     state = TerminalSettingsState(),
                     onEffectsChanged = {},
+                    onCycleFontPreset = {},
                     onCancelRescan = { cancelled = true },
                     scanProgress = ScanProgress.Indexing(completed = 8, total = 20),
                 )

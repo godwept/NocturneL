@@ -25,8 +25,11 @@ private val NocturneLColors = darkColorScheme(
 )
 
 @Composable
-fun NocturneLTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = NocturneLColors, typography = NocturneLTypography) {
+fun NocturneLTheme(
+    fontPreset: FontPreset = FontPreset.DEFAULT,
+    content: @Composable () -> Unit,
+) {
+    MaterialTheme(colorScheme = NocturneLColors, typography = typographyFor(fontPreset)) {
         CompositionLocalProvider(LocalContentColor provides Phosphor, content = content)
     }
 }

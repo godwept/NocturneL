@@ -195,7 +195,7 @@ class ListeningScreensTest {
         var changed = 0
         compose.setContent {
             NocturneLTheme {
-                SettingsScreen({}, {}, TerminalSettingsState(), {}, onClearListeningData = { cleared++ }, pendingSourceName = "OTHER", onConfirmSourceChange = { changed++ })
+                SettingsScreen({}, {}, TerminalSettingsState(), {}, {}, onClearListeningData = { cleared++ }, pendingSourceName = "OTHER", onConfirmSourceChange = { changed++ })
             }
         }
         compose.onNodeWithText("[ CLEAR HISTORY + COUNTS ]").performClick()

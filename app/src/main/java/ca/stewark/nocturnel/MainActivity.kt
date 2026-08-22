@@ -8,7 +8,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import ca.stewark.nocturnel.ui.NocturneLApp
+import ca.stewark.nocturnel.ui.settings.SettingsViewModel
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
 
 class MainActivity : ComponentActivity() {
@@ -28,8 +32,10 @@ class MainActivity : ComponentActivity() {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
         setContent {
-            NocturneLTheme {
-                NocturneLApp()
+            val settingsViewModel: SettingsViewModel = viewModel()
+            val settings by settingsViewModel.state.collectAsState()
+            NocturneLTheme(settings.fontPreset) {
+                NocturneLApp(settingsViewModel = settingsViewModel)
             }
         }
     }

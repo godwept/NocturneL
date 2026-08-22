@@ -140,7 +140,7 @@ class ProductSiteContractTest {
             ManualContract("visualizers.md", 50, "/manual/visualizers/", listOf("Album art", "Circular radar", "Spectrum bars", "CRT EFFECTS", "SIGNAL UNAVAILABLE", "25 ms", "-2000", "+2000")),
             ManualContract("playlists.md", 60, "/manual/playlists/", listOf("CREATE", "RENAME", "DELETE", "M3U", "M3U8", "ZIP", "EXPORT ALL", "unavailable")),
             ManualContract("listening-activity.md", 70, "/manual/listening-activity/", listOf("favorites", "play counts", "MOST PLAYED", "qualified", "CLEAR HISTORY + COUNTS", "resume")),
-            ManualContract("settings.md", 80, "/manual/settings/", listOf("CHANGE MUSIC FOLDER", "RESCAN LIBRARY", "CRT EFFECTS", "reduced-motion", "PRIVACY POLICY", "CLEAR HISTORY + COUNTS")),
+            ManualContract("settings.md", 80, "/manual/settings/", listOf("CHANGE MUSIC FOLDER", "RESCAN LIBRARY", "CRT EFFECTS", "reduced-motion", "FONT PRESET", "CLASSIC", "MAINFRAME", "PIXEL", "MODERN", "immediately", "offline", "PRIVACY POLICY", "CLEAR HISTORY + COUNTS")),
             ManualContract("formats-and-artwork.md", 90, "/manual/formats-and-artwork/", listOf("MP3", "M4A", "AAC", "OGG", "Opus", "WAV", "FLAC", "cover.jpg", "folder.jpg", "albumart.jpg", "front.jpg")),
             ManualContract("troubleshooting.md", 100, "/manual/troubleshooting/", listOf("No playable albums", "folder access", "notification", "SIGNAL UNAVAILABLE", "QUEUE CHANGED", "nocturnelapp@gmail.com")),
             ManualContract("privacy-and-data.md", 110, "/manual/privacy-and-data/", listOf("no internet permission", "No accounts", "No ads", "No analytics", "cloud backup", "uninstall", "Google Play")),

@@ -3,6 +3,7 @@ package ca.stewark.nocturnel.ui.settings
 import androidx.test.core.app.ApplicationProvider
 import ca.stewark.nocturnel.ui.listening.LibrarySortMode
 import ca.stewark.nocturnel.ui.listening.LibraryViewMode
+import ca.stewark.nocturnel.ui.theme.FontPreset
 import ca.stewark.nocturnel.visualizer.VisualizerSyncOffset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -10,6 +11,33 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TerminalPreferencesRepositoryTest {
+    @Test fun fontPresetDefaultsPersistsAndRestoresStableValue() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val name = "terminal-font-preset-test"
+        val preferences = context.getSharedPreferences(name, 0)
+        preferences.edit().clear().commit()
+
+        val repository = TerminalPreferencesRepository(context, name)
+        assertEquals(FontPreset.CLASSIC, repository.fontPreset.value)
+        repository.setFontPreset(FontPreset.PIXEL)
+        assertEquals(FontPreset.PIXEL, repository.fontPreset.value)
+        assertEquals("pixel", preferences.getString("font_preset", null))
+        assertEquals(FontPreset.PIXEL, TerminalPreferencesRepository(context, name).fontPreset.value)
+    }
+
+    @Test fun malformedFontPresetFallsBackWithoutChangingOtherPreferences() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val name = "terminal-font-preset-malformed-test"
+        val preferences = context.getSharedPreferences(name, 0)
+        preferences.edit().clear().putBoolean("effects_enabled", false).putString("font_preset", "unknown").commit()
+        assertEquals(FontPreset.CLASSIC, TerminalPreferencesRepository(context, name).fontPreset.value)
+        assertFalse(preferences.getBoolean("effects_enabled", true))
+
+        preferences.edit().putInt("font_preset", 7).commit()
+        assertEquals(FontPreset.CLASSIC, TerminalPreferencesRepository(context, name).fontPreset.value)
+        assertFalse(preferences.getBoolean("effects_enabled", true))
+    }
+
     @Test fun libraryViewModeDefaultsPersistsAndRestores() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val name = "terminal-library-view-test"

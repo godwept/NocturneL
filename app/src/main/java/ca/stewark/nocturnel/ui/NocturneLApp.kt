@@ -272,6 +272,7 @@ fun NocturneLApp(
                     onCancelRescan = viewModel::cancelRescan,
                     state = settings,
                     onEffectsChanged = settingsViewModel::setEffectsEnabled,
+                    onCycleFontPreset = settingsViewModel::cycleFontPreset,
                     onOpenPrivacyPolicy = { uriHandler.openUri(PRIVACY_POLICY_URL) },
                     scanRunning = viewModel.scanState.running,
                     scanProgress = viewModel.scanState.progress,

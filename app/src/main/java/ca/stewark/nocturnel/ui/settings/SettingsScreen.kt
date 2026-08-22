@@ -1,8 +1,12 @@
 package ca.stewark.nocturnel.ui.settings
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -10,6 +14,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import ca.stewark.nocturnel.ui.components.AsciiFrame
 import ca.stewark.nocturnel.ui.components.BracketButton
 import ca.stewark.nocturnel.ui.components.NoticeSeverity
@@ -25,6 +32,7 @@ fun SettingsScreen(
     onRescan: () -> Unit,
     state: TerminalSettingsState,
     onEffectsChanged: (Boolean) -> Unit,
+    onCycleFontPreset: () -> Unit,
     onOpenPrivacyPolicy: () -> Unit = {},
     onCancelRescan: () -> Unit = {},
     scanRunning: Boolean = false,
@@ -37,7 +45,12 @@ fun SettingsScreen(
 ) {
     var confirmingClear by rememberSaveable { mutableStateOf(false) }
     val scanActive = scanRunning || scanProgress != null
-    Column(Modifier.fillMaxSize().padding(TerminalDimensions.md)) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(TerminalDimensions.md),
+    ) {
         AsciiFrame("SETTINGS") {
             Text("LOCAL LIBRARY")
             BracketButton("CHANGE MUSIC FOLDER", onChooseFolder)
@@ -49,6 +62,24 @@ fun SettingsScreen(
             if (scanProgress != null) LibraryScanStatus(scanProgress, onCancelRescan)
             else if (scanRunning) BracketButton("CANCEL SCAN", onCancelRescan)
             TerminalToggle("CRT EFFECTS", state.savedEffectsEnabled, onEffectsChanged)
+            BoxWithConstraints {
+                if (maxWidth < 300.dp) {
+                    Column {
+                        Text("FONT PRESET: ${state.fontPreset.label}")
+                        BracketButton("NEXT", onCycleFontPreset)
+                    }
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "FONT PRESET: ${state.fontPreset.label}",
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        BracketButton("NEXT", onCycleFontPreset)
+                    }
+                }
+            }
             BracketButton("PRIVACY POLICY", onOpenPrivacyPolicy)
             if (!confirmingClear) {
                 BracketButton("CLEAR HISTORY + COUNTS", { confirmingClear = true })
