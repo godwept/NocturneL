@@ -273,6 +273,7 @@ fun NocturneLApp(
                     state = settings,
                     onEffectsChanged = settingsViewModel::setEffectsEnabled,
                     onCycleFontPreset = settingsViewModel::cycleFontPreset,
+                    onCycleColorTheme = settingsViewModel::cycleColorTheme,
                     onOpenPrivacyPolicy = { uriHandler.openUri(PRIVACY_POLICY_URL) },
                     scanRunning = viewModel.scanState.running,
                     scanProgress = viewModel.scanState.progress,

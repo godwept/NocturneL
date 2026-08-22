@@ -17,15 +17,15 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
-import ca.stewark.nocturnel.ui.theme.Phosphor
-import ca.stewark.nocturnel.ui.theme.PhosphorDim
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
+import ca.stewark.nocturnel.ui.theme.TerminalTheme
 
 fun seekFraction(x: Float, width: Float): Float =
     if (width <= 0f) 0f else (x / width).coerceIn(0f, 1f)
 
 @Composable
 fun TerminalSeekBar(progress: Float, onSeek: (Float) -> Unit, modifier: Modifier = Modifier) {
+    val palette = TerminalTheme.palette
     var width by remember { mutableFloatStateOf(0f) }
     val value = progress.coerceIn(0f, 1f)
     Canvas(
@@ -41,8 +41,8 @@ fun TerminalSeekBar(progress: Float, onSeek: (Float) -> Unit, modifier: Modifier
             },
     ) {
         val y = size.height / 2
-        drawLine(PhosphorDim, Offset(0f, y), Offset(size.width, y), strokeWidth = 3f)
-        drawLine(Phosphor, Offset(0f, y), Offset(size.width * value, y), strokeWidth = 3f)
-        drawRect(Phosphor, topLeft = Offset((size.width * value - 4f).coerceAtLeast(0f), y - 9f), size = androidx.compose.ui.geometry.Size(8f, 18f))
+        drawLine(palette.textSecondary, Offset(0f, y), Offset(size.width, y), strokeWidth = 3f)
+        drawLine(palette.borderEmphasis, Offset(0f, y), Offset(size.width * value, y), strokeWidth = 3f)
+        drawRect(palette.borderEmphasis, topLeft = Offset((size.width * value - 4f).coerceAtLeast(0f), y - 9f), size = androidx.compose.ui.geometry.Size(8f, 18f))
     }
 }

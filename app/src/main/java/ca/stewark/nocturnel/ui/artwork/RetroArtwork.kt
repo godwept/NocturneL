@@ -19,9 +19,12 @@ import ca.stewark.nocturnel.data.entity.AlbumEntity
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
+import ca.stewark.nocturnel.ui.theme.TerminalTheme
 
 @Composable
 fun RetroArtwork(album: AlbumEntity, modifier: Modifier = Modifier) {
+    val placeholderColors = TerminalTheme.palette.artworkPlaceholderColors
+    val placeholderAccent = TerminalArtworkPlaceholder.accentFor(album.id, placeholderColors)
     val candidates: List<Any> = remember(
         album.manualArtworkUri,
         album.embeddedArtwork,
@@ -37,13 +40,13 @@ fun RetroArtwork(album: AlbumEntity, modifier: Modifier = Modifier) {
     val candidate = candidates.getOrNull(candidateIndex)
     Box(
         modifier
-            .background(TerminalArtworkPlaceholder.accentFor(album.id).copy(alpha = .12f))
+            .background(placeholderAccent.copy(alpha = .12f))
             .testTag("retro-artwork"),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             "▓▓",
-            color = TerminalArtworkPlaceholder.accentFor(album.id),
+            color = placeholderAccent,
             style = MaterialTheme.typography.displayLarge,
         )
         if (candidate != null) {

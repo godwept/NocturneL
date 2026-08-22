@@ -4,17 +4,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import ca.stewark.nocturnel.ui.theme.AlertAmber
-import ca.stewark.nocturnel.ui.theme.TerminalError
+import ca.stewark.nocturnel.ui.theme.TerminalTheme
 
 enum class NoticeSeverity { INFO, WARNING, ERROR }
 
 @Composable
 fun TerminalNotice(text: String, modifier: Modifier = Modifier, severity: NoticeSeverity = NoticeSeverity.INFO) {
+    val palette = TerminalTheme.palette
     val color = when (severity) {
-        NoticeSeverity.INFO -> MaterialTheme.colorScheme.primary
-        NoticeSeverity.WARNING -> AlertAmber
-        NoticeSeverity.ERROR -> TerminalError
+        NoticeSeverity.INFO -> palette.textPrimary
+        NoticeSeverity.WARNING -> palette.warning
+        NoticeSeverity.ERROR -> palette.error
     }
     Text(":: $text", modifier = modifier, color = color)
 }

@@ -34,7 +34,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             val settingsViewModel: SettingsViewModel = viewModel()
             val settings by settingsViewModel.state.collectAsState()
-            NocturneLTheme(settings.fontPreset) {
+            NocturneLTheme(
+                fontPreset = settings.fontPreset,
+                colorTheme = settings.colorTheme,
+                effectsEnabled = settings.effectiveEffectsEnabled,
+            ) {
                 NocturneLApp(settingsViewModel = settingsViewModel)
             }
         }

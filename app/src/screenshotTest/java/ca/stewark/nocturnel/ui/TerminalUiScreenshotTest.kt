@@ -53,7 +53,8 @@ import ca.stewark.nocturnel.ui.settings.SettingsScreen
 import ca.stewark.nocturnel.ui.settings.TerminalSettingsState
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
 import ca.stewark.nocturnel.ui.theme.FontPreset
-import ca.stewark.nocturnel.ui.theme.Phosphor
+import ca.stewark.nocturnel.ui.theme.ColorThemePreset
+import ca.stewark.nocturnel.ui.theme.TerminalTheme
 import ca.stewark.nocturnel.ui.components.TerminalScaffold
 import ca.stewark.nocturnel.ui.components.Scanlines
 import ca.stewark.nocturnel.ui.navigation.NocturneLDestination
@@ -92,8 +93,10 @@ private val spectrumFrame = radarFrame.copy(
 @Composable
 private fun TerminalPreview(
     fontPreset: FontPreset = FontPreset.DEFAULT,
+    colorTheme: ColorThemePreset = ColorThemePreset.DEFAULT,
+    effectsEnabled: Boolean = true,
     content: @Composable () -> Unit,
-) = NocturneLTheme(fontPreset) {
+) = NocturneLTheme(fontPreset, colorTheme, effectsEnabled) {
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { content() }
 }
 
@@ -129,7 +132,7 @@ fun RootPreview() = TerminalPreview {
 @Composable
 fun CrtEffectsOnPreview() = TerminalPreview {
     Box(Modifier.fillMaxSize()) {
-        Text("CRT EFFECTS ON", color = Phosphor, modifier = Modifier.padding(24.dp))
+        Text("CRT EFFECTS ON", color = TerminalTheme.palette.textPrimary, modifier = Modifier.padding(24.dp))
         Scanlines(true, Modifier.fillMaxSize())
     }
 }
@@ -139,7 +142,7 @@ fun CrtEffectsOnPreview() = TerminalPreview {
 @Composable
 fun CrtEffectsOffPreview() = TerminalPreview {
     Box(Modifier.fillMaxSize()) {
-        Text("CRT EFFECTS OFF", color = Phosphor, modifier = Modifier.padding(24.dp))
+        Text("CRT EFFECTS OFF", color = TerminalTheme.palette.textPrimary, modifier = Modifier.padding(24.dp))
         Scanlines(false, Modifier.fillMaxSize())
     }
 }
@@ -496,3 +499,83 @@ private fun settingsFontPreview(fontPreset: FontPreset) = TerminalPreview(fontPr
         onCycleFontPreset = {},
     )
 }
+
+@PreviewTest
+@Preview(name = "Settings Green Terminal", widthDp = 412, heightDp = 915)
+@Composable
+fun SettingsGreenThemePreview() = settingsThemePreview(ColorThemePreset.GREEN_TERMINAL, effectsEnabled = true)
+
+@PreviewTest
+@Preview(name = "Settings Amber Terminal", widthDp = 412, heightDp = 915)
+@Composable
+fun SettingsAmberThemePreview() = settingsThemePreview(ColorThemePreset.AMBER_TERMINAL, effectsEnabled = true)
+
+@PreviewTest
+@Preview(name = "Settings Blue Terminal", widthDp = 412, heightDp = 915)
+@Composable
+fun SettingsBlueThemePreview() = settingsThemePreview(ColorThemePreset.BLUE_TERMINAL, effectsEnabled = true)
+
+@PreviewTest
+@Preview(name = "Settings '80s Synthwave", widthDp = 412, heightDp = 915)
+@Composable
+fun SettingsSynthwaveThemePreview() = settingsThemePreview(ColorThemePreset.SYNTHWAVE_80S, effectsEnabled = true)
+
+@PreviewTest
+@Preview(name = "Settings '90s Neon effects on", widthDp = 412, heightDp = 915)
+@Composable
+fun SettingsNeonThemePreview() = settingsThemePreview(ColorThemePreset.NEON_90S, effectsEnabled = true)
+
+@PreviewTest
+@Preview(name = "Settings '90s Neon effects off", widthDp = 412, heightDp = 915)
+@Composable
+fun SettingsNeonEffectsOffPreview() = settingsThemePreview(ColorThemePreset.NEON_90S, effectsEnabled = false)
+
+@PreviewTest
+@Preview(name = "Visualizer bands '80s Synthwave", widthDp = 320, heightDp = 320)
+@Composable
+fun VisualizerBandsSynthwavePreview() = TerminalPreview(colorTheme = ColorThemePreset.SYNTHWAVE_80S) {
+    TerminalVisualizerFrame(
+        VisualizerDisplayMode.BANDS,
+        spectrumFrame,
+        true,
+        VisualizerAfterglowState.Empty,
+        Modifier.fillMaxSize(),
+    )
+}
+
+@PreviewTest
+@Preview(name = "Visualizer radar '90s Neon", widthDp = 320, heightDp = 320)
+@Composable
+fun VisualizerRadarNeonPreview() = TerminalPreview(colorTheme = ColorThemePreset.NEON_90S) {
+    TerminalVisualizerFrame(
+        VisualizerDisplayMode.RADAR,
+        radarFrame,
+        true,
+        VisualizerAfterglowState.Empty,
+        Modifier.fillMaxSize(),
+    )
+}
+
+@PreviewTest
+@Preview(name = "Album grid '90s Neon Pixel", widthDp = 412, heightDp = 915)
+@Composable
+fun AlbumGridNeonPixelPreview() = TerminalPreview(FontPreset.PIXEL, ColorThemePreset.NEON_90S) {
+    AlbumGridScreen(previewAlbums, onAlbumSelected = {})
+}
+
+@Composable
+private fun settingsThemePreview(theme: ColorThemePreset, effectsEnabled: Boolean) =
+    TerminalPreview(colorTheme = theme, effectsEnabled = effectsEnabled) {
+        SettingsScreen(
+            onChooseFolder = {},
+            onRescan = {},
+            state = TerminalSettingsState(
+                savedEffectsEnabled = effectsEnabled,
+                effectiveEffectsEnabled = effectsEnabled,
+                colorTheme = theme,
+            ),
+            onEffectsChanged = {},
+            onCycleFontPreset = {},
+            onCycleColorTheme = {},
+        )
+    }

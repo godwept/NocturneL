@@ -7,6 +7,7 @@ import ca.stewark.nocturnel.ui.effects.EffectsPolicy
 import ca.stewark.nocturnel.ui.listening.LibrarySortMode
 import ca.stewark.nocturnel.ui.listening.LibraryViewMode
 import ca.stewark.nocturnel.ui.theme.FontPreset
+import ca.stewark.nocturnel.ui.theme.ColorThemePreset
 import ca.stewark.nocturnel.visualizer.VisualizerSyncOffset
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,7 @@ data class TerminalSettingsState(
     val librarySortMode: LibrarySortMode = LibrarySortMode.DEFAULT,
     val libraryViewMode: LibraryViewMode = LibraryViewMode.DEFAULT,
     val fontPreset: FontPreset = FontPreset.DEFAULT,
+    val colorTheme: ColorThemePreset = ColorThemePreset.DEFAULT,
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -31,6 +33,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             repository.librarySortMode.value,
             repository.libraryViewMode.value,
             repository.fontPreset.value,
+            repository.colorTheme.value,
         ),
     )
     val state: StateFlow<TerminalSettingsState> = _state.asStateFlow()
@@ -42,6 +45,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             repository.librarySortMode.value,
             repository.libraryViewMode.value,
             repository.fontPreset.value,
+            repository.colorTheme.value,
         )
     }
 
@@ -53,6 +57,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _state.value.librarySortMode,
             _state.value.libraryViewMode,
             _state.value.fontPreset,
+            _state.value.colorTheme,
         )
     }
 
@@ -65,6 +70,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             next,
             _state.value.libraryViewMode,
             _state.value.fontPreset,
+            _state.value.colorTheme,
         )
     }
 
@@ -77,6 +83,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _state.value.librarySortMode,
             next,
             _state.value.fontPreset,
+            _state.value.colorTheme,
         )
     }
 
@@ -88,6 +95,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _state.value.visualizerSyncOffsetMs,
             _state.value.librarySortMode,
             _state.value.libraryViewMode,
+            next,
+            _state.value.colorTheme,
+        )
+    }
+
+    fun cycleColorTheme() {
+        val next = _state.value.colorTheme.next()
+        repository.setColorTheme(next)
+        _state.value = resolve(
+            _state.value.savedEffectsEnabled,
+            _state.value.visualizerSyncOffsetMs,
+            _state.value.librarySortMode,
+            _state.value.libraryViewMode,
+            _state.value.fontPreset,
             next,
         )
     }
@@ -110,6 +131,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _state.value.librarySortMode,
             _state.value.libraryViewMode,
             _state.value.fontPreset,
+            _state.value.colorTheme,
         )
     }
 
@@ -119,6 +141,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         librarySortMode: LibrarySortMode,
         libraryViewMode: LibraryViewMode,
         fontPreset: FontPreset,
+        colorTheme: ColorThemePreset,
     ): TerminalSettingsState {
         val animationsEnabled = runCatching {
             Settings.Global.getFloat(
@@ -136,6 +159,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             librarySortMode = librarySortMode,
             libraryViewMode = libraryViewMode,
             fontPreset = fontPreset,
+            colorTheme = colorTheme,
         )
     }
 }

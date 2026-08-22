@@ -33,6 +33,7 @@ fun SettingsScreen(
     state: TerminalSettingsState,
     onEffectsChanged: (Boolean) -> Unit,
     onCycleFontPreset: () -> Unit,
+    onCycleColorTheme: () -> Unit = {},
     onOpenPrivacyPolicy: () -> Unit = {},
     onCancelRescan: () -> Unit = {},
     scanRunning: Boolean = false,
@@ -62,24 +63,12 @@ fun SettingsScreen(
             if (scanProgress != null) LibraryScanStatus(scanProgress, onCancelRescan)
             else if (scanRunning) BracketButton("CANCEL SCAN", onCancelRescan)
             TerminalToggle("CRT EFFECTS", state.savedEffectsEnabled, onEffectsChanged)
-            BoxWithConstraints {
-                if (maxWidth < 300.dp) {
-                    Column {
-                        Text("FONT PRESET: ${state.fontPreset.label}")
-                        BracketButton("NEXT", onCycleFontPreset)
-                    }
-                } else {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "FONT PRESET: ${state.fontPreset.label}",
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        BracketButton("NEXT", onCycleFontPreset)
-                    }
-                }
-            }
+            SettingsCycleRow(
+                label = "COLOR THEME: ${state.colorTheme.label}",
+                onCycle = onCycleColorTheme,
+                contentDescription = "Next color theme",
+            )
+            SettingsCycleRow("FONT PRESET: ${state.fontPreset.label}", onCycleFontPreset, "Next font preset")
             BracketButton("PRIVACY POLICY", onOpenPrivacyPolicy)
             if (!confirmingClear) {
                 BracketButton("CLEAR HISTORY + COUNTS", { confirmingClear = true })
@@ -96,6 +85,32 @@ fun SettingsScreen(
             listeningMessage?.let { TerminalNotice(it) }
             if (state.reducedMotion && state.savedEffectsEnabled) {
                 TerminalNotice("Effects are paused by Android reduced-motion settings.", severity = NoticeSeverity.WARNING)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsCycleRow(
+    label: String,
+    onCycle: () -> Unit,
+    contentDescription: String,
+) {
+    BoxWithConstraints {
+        if (maxWidth < 300.dp) {
+            Column {
+                Text(label)
+                BracketButton("NEXT", onCycle, contentDescription = contentDescription)
+            }
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    label,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                BracketButton("NEXT", onCycle, contentDescription = contentDescription)
             }
         }
     }

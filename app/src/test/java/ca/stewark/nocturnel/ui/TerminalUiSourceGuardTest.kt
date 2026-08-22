@@ -2,9 +2,33 @@ package ca.stewark.nocturnel.ui
 
 import java.io.File
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class TerminalUiSourceGuardTest {
+    @Test fun `production ui uses semantic theme colors`() {
+        val root = File("src/main/java/ca/stewark/nocturnel/ui")
+        val forbidden = listOf(
+            "TerminalBlack", "TerminalBlackAlt", "Phosphor", "PhosphorDim", "PhosphorMuted",
+            "PhosphorBright", "AlertAmber", "TerminalError", "TerminalText", "TerminalPanel",
+        )
+        val violations = root.walkTopDown()
+            .filter { it.isFile && it.extension == "kt" && it.name != "Color.kt" }
+            .flatMap { file ->
+                val source = file.readText()
+                forbidden.filter { Regex("\\b${Regex.escape(it)}\\b").containsMatchIn(source) }
+                    .map { "${file.name}: $it" }
+            }
+            .toList()
+        assertTrue("Fixed terminal colors remain: $violations", violations.isEmpty())
+
+        val uiSource = root.walkTopDown().filter { it.isFile && it.extension == "kt" && it.name != "Color.kt" }
+            .joinToString("\n") { it.readText() }
+        listOf("Color.Red", "Color.Blue", "Color.Green", "Color.Yellow", "Color.Black", "Color.White").forEach {
+            assertFalse("Direct UI color remains: $it", it in uiSource)
+        }
+    }
+
     @Test fun `screens do not use material shaped controls directly`() {
         val root = File("src/main/java/ca/stewark/nocturnel/ui")
         val forbidden = listOf(
@@ -27,5 +51,7 @@ class TerminalUiSourceGuardTest {
             "RetroArtwork must display the decoded source without waiting for a CPU bitmap transformation.",
             ".transformations(" !in artworkSource,
         )
+        assertTrue("Album artwork must not be tinted by a color filter.", "colorFilter" !in artworkSource)
+        assertTrue("Album artwork must not be recolored by a matrix.", "ColorMatrix" !in artworkSource)
     }
 }

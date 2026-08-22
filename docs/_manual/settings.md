@@ -17,6 +17,8 @@ permalink: /manual/settings/
 
 **CRT EFFECTS** controls scanlines, glow, cover-flow movement, marquee movement, and visualizer afterglow. Android's reduced-motion setting overrides optional animation at runtime; the saved CRT preference remains unchanged and the Settings screen explains that effects are paused.
 
+**COLOR THEME** cycles through **GREEN TERMINAL**, **AMBER TERMINAL**, **BLUE TERMINAL**, **'80S SYNTHWAVE**, and **'90S NEON**. The choice recolors the complete interface and visualizers immediately, is saved automatically, works offline, and remains independent from the selected font. Album covers keep their original colors. Turning off **CRT EFFECTS** retains the theme's core colors while removing scanlines, visualizer bloom, and the '90s Neon border glow.
+
 **FONT PRESET** cycles through **CLASSIC**, **MAINFRAME**, **PIXEL**, and **MODERN** display/body font pairings. Each choice changes the entire app immediately and is saved automatically. Every font is bundled with NocturneL for fully offline use.
 
 The library's GRID/FLOW choice and sort mode persist from their controls on **LIB**. The visualizer sync offset also persists from controls on **NOW** even though those values are adjusted outside Settings.

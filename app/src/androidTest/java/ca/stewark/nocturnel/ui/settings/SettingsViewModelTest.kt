@@ -5,11 +5,37 @@ import androidx.test.core.app.ApplicationProvider
 import ca.stewark.nocturnel.ui.listening.LibrarySortMode
 import ca.stewark.nocturnel.ui.listening.LibraryViewMode
 import ca.stewark.nocturnel.ui.theme.FontPreset
+import ca.stewark.nocturnel.ui.theme.ColorThemePreset
 import ca.stewark.nocturnel.visualizer.VisualizerSyncOffset
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SettingsViewModelTest {
+    @Test fun cyclesAndRestoresColorThemeWithoutChangingFont() {
+        val application = ApplicationProvider.getApplicationContext<Application>()
+        val preferences = application.getSharedPreferences("terminal_preferences", 0)
+        preferences.edit().clear().putString("font_preset", "pixel").commit()
+        try {
+            val viewModel = SettingsViewModel(application)
+            assertEquals(ColorThemePreset.GREEN_TERMINAL, viewModel.state.value.colorTheme)
+            listOf(
+                ColorThemePreset.AMBER_TERMINAL,
+                ColorThemePreset.BLUE_TERMINAL,
+                ColorThemePreset.SYNTHWAVE_80S,
+                ColorThemePreset.NEON_90S,
+                ColorThemePreset.GREEN_TERMINAL,
+            ).forEach { expected ->
+                viewModel.cycleColorTheme()
+                assertEquals(expected, viewModel.state.value.colorTheme)
+                assertEquals(FontPreset.PIXEL, viewModel.state.value.fontPreset)
+            }
+            viewModel.cycleColorTheme()
+            assertEquals(ColorThemePreset.AMBER_TERMINAL, SettingsViewModel(application).state.value.colorTheme)
+        } finally {
+            preferences.edit().clear().commit()
+        }
+    }
+
     @Test fun cyclesAndRestoresFontPreset() {
         val application = ApplicationProvider.getApplicationContext<Application>()
         val preferences = application.getSharedPreferences("terminal_preferences", 0)

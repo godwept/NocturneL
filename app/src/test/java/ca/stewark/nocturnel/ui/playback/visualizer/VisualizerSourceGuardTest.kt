@@ -66,8 +66,8 @@ class VisualizerSourceGuardTest {
             .substringBefore("VisualizerDisplayMode.ART ->")
 
         assertTrue(bandsBranch.indexOf("spectrumGhostGeometry(") < bandsBranch.indexOf("spectrumGeometry("))
-        assertTrue("Phosphor.copy(alpha = afterglow.bands[ghost.bandIndex].alpha)" in bandsBranch)
-        assertFalse("PhosphorDim.copy(alpha = afterglow.bands" in bandsBranch)
-        assertTrue(bandsBranch.lastIndexOf("PhosphorBright") > bandsBranch.indexOf("spectrumGhostGeometry("))
+        assertTrue("palette.visualizerPrimary.copy(alpha = afterglow.bands[ghost.bandIndex].alpha)" in bandsBranch)
+        assertFalse("palette.textSecondary.copy(alpha = afterglow.bands" in bandsBranch)
+        assertTrue(bandsBranch.lastIndexOf("palette.visualizerPeak") > bandsBranch.indexOf("spectrumGhostGeometry("))
     }
 }

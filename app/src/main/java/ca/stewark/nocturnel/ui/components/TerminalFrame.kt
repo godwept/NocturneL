@@ -1,7 +1,5 @@
 package ca.stewark.nocturnel.ui.components
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,10 +15,11 @@ fun AsciiFrame(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
+    val palette = ca.stewark.nocturnel.ui.theme.TerminalTheme.palette
     Column(
         modifier
             .fillMaxWidth()
-            .border(BorderStroke(TerminalDimensions.border, MaterialTheme.colorScheme.secondary))
+            .terminalBorder(palette.border)
             .padding(horizontal = TerminalDimensions.sm, vertical = TerminalDimensions.xs),
     ) {
         if (!title.isNullOrBlank()) {

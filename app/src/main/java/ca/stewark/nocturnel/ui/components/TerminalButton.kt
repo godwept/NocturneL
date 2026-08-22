@@ -16,8 +16,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
-import ca.stewark.nocturnel.ui.theme.AlertAmber
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
+import ca.stewark.nocturnel.ui.theme.TerminalTheme
 
 @Composable
 fun BracketButton(
@@ -29,10 +29,11 @@ fun BracketButton(
     contentDescription: String? = null,
     textStyle: TextStyle = MaterialTheme.typography.labelLarge,
 ) {
+    val palette = TerminalTheme.palette
     val color = when {
-        !enabled -> MaterialTheme.colorScheme.secondary.copy(alpha = .5f)
-        selected -> AlertAmber
-        else -> MaterialTheme.colorScheme.primary
+        !enabled -> palette.textSecondary.copy(alpha = .5f)
+        selected -> palette.selection
+        else -> palette.textPrimary
     }
     Box(
         modifier

@@ -2,7 +2,6 @@ package ca.stewark.nocturnel.ui.playback.visualizer
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -24,12 +23,9 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.IntSize
 import ca.stewark.nocturnel.ui.components.Scanlines
-import ca.stewark.nocturnel.ui.theme.Phosphor
-import ca.stewark.nocturnel.ui.theme.PhosphorBright
-import ca.stewark.nocturnel.ui.theme.PhosphorDim
-import ca.stewark.nocturnel.ui.theme.PhosphorMuted
-import ca.stewark.nocturnel.ui.theme.TerminalBlack
-import ca.stewark.nocturnel.ui.theme.TerminalDimensions
+import ca.stewark.nocturnel.ui.components.terminalBorder
+import ca.stewark.nocturnel.ui.theme.TerminalPalette
+import ca.stewark.nocturnel.ui.theme.TerminalTheme
 import ca.stewark.nocturnel.visualizer.AnalysisStatus
 import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
 
@@ -111,6 +107,7 @@ internal fun TerminalVisualizerFrame(
     afterglow: VisualizerAfterglowState,
     modifier: Modifier = Modifier,
 ) {
+    val palette = TerminalTheme.palette
     val tag = when (mode) {
         VisualizerDisplayMode.RADAR -> "visualizer-radar"
         VisualizerDisplayMode.BANDS -> "visualizer-bands"
@@ -118,22 +115,22 @@ internal fun TerminalVisualizerFrame(
     }
     Box(
         modifier
-            .background(TerminalBlack)
-            .border(TerminalDimensions.border, Phosphor)
+            .background(palette.background)
+            .terminalBorder(palette.borderEmphasis, emphasized = true)
             .testTag(tag),
         contentAlignment = Alignment.Center,
     ) {
         if (frame.status == AnalysisStatus.UNAVAILABLE) {
-            Text("SIGNAL UNAVAILABLE", color = PhosphorDim)
+            Text("SIGNAL UNAVAILABLE", color = palette.textSecondary)
         } else {
             Canvas(Modifier.fillMaxSize()) {
                 when (mode) {
                     VisualizerDisplayMode.RADAR -> {
                         val geometry = radarGeometry(frame, size.width, size.height)
                         if (effectsEnabled) {
-                            drawRadarBloom(geometry, frame, afterglow.radar.samples)
+                            drawRadarBloom(geometry, frame, afterglow.radar.samples, palette)
                         }
-                        drawRadarCore(geometry, frame, afterglow.radar.samples)
+                        drawRadarCore(geometry, frame, afterglow.radar.samples, palette)
                     }
                     VisualizerDisplayMode.BANDS -> {
                         spectrumGhostGeometry(
@@ -146,7 +143,7 @@ internal fun TerminalVisualizerFrame(
                                 val segment = ghost.firstSegment + offset
                                 val bottom = ghost.bottom - segment * 6f
                                 drawRect(
-                                    Phosphor.copy(alpha = afterglow.bands[ghost.bandIndex].alpha),
+                                    palette.visualizerPrimary.copy(alpha = afterglow.bands[ghost.bandIndex].alpha),
                                     topLeft = Offset(ghost.left, bottom - 4f),
                                     size = Size(ghost.right - ghost.left, 4f),
                                 )
@@ -156,12 +153,12 @@ internal fun TerminalVisualizerFrame(
                             repeat(bar.segments) { segment ->
                                 val bottom = bar.bottom - segment * 6f
                                 drawRect(
-                                    Phosphor,
+                                    palette.visualizerPrimary,
                                     topLeft = Offset(bar.left, bottom - 4f),
                                     size = Size(bar.right - bar.left, 4f),
                                 )
                             }
-                            drawLine(PhosphorBright.copy(alpha = .75f), Offset(bar.left, bar.peakY), Offset(bar.right, bar.peakY), 1f)
+                            drawLine(palette.visualizerPeak.copy(alpha = .75f), Offset(bar.left, bar.peakY), Offset(bar.right, bar.peakY), 1f)
                         }
                     }
                     VisualizerDisplayMode.ART -> Unit
@@ -176,13 +173,14 @@ private fun DrawScope.drawRadarBloom(
     geometry: RadarGeometry,
     frame: AudioAnalysisFrame,
     samples: List<RadarAfterglowSample>,
+    palette: TerminalPalette,
 ) {
     val center = Offset(geometry.center.x, geometry.center.y)
     val sweepRadius = geometry.gridRadii.last()
 
     geometry.gridRadii.forEach { radius ->
         drawCircle(
-            Phosphor.copy(alpha = RADAR_GRID_BLOOM_ALPHA),
+            palette.visualizerPrimary.copy(alpha = RADAR_GRID_BLOOM_ALPHA),
             radius,
             center,
             style = Stroke(RADAR_GRID_BLOOM_WIDTH),
@@ -190,7 +188,7 @@ private fun DrawScope.drawRadarBloom(
     }
     geometry.energyRadii.forEach { radius ->
         drawCircle(
-            Phosphor.copy(alpha = RADAR_ENERGY_BLOOM_ALPHA),
+            palette.visualizerPrimary.copy(alpha = RADAR_ENERGY_BLOOM_ALPHA),
             radius,
             center,
             style = Stroke(RADAR_ENERGY_BLOOM_WIDTH),
@@ -198,7 +196,7 @@ private fun DrawScope.drawRadarBloom(
     }
     geometry.spokeEndpoints.forEach { point ->
         drawLine(
-            Phosphor.copy(alpha = RADAR_SPOKE_BLOOM_ALPHA),
+            palette.visualizerPrimary.copy(alpha = RADAR_SPOKE_BLOOM_ALPHA),
             center,
             Offset(point.x, point.y),
             RADAR_SPOKE_BLOOM_WIDTH,
@@ -206,7 +204,7 @@ private fun DrawScope.drawRadarBloom(
     }
     if (frame.transient > 0f) {
         drawCircle(
-            PhosphorBright.copy(
+            palette.visualizerPeak.copy(
                 alpha = frame.transient.coerceIn(0f, 1f) * RADAR_ECHO_BLOOM_MAX_ALPHA,
             ),
             geometry.echoRadius,
@@ -217,7 +215,7 @@ private fun DrawScope.drawRadarBloom(
     samples.forEach { sample ->
         val endpoint = radarSweepEndpoint(geometry.center, sweepRadius, sample.angleDegrees)
         drawLine(
-            Phosphor.copy(alpha = sample.alpha * RADAR_TRAIL_BLOOM_ALPHA_SCALE),
+            palette.visualizerPrimary.copy(alpha = sample.alpha * RADAR_TRAIL_BLOOM_ALPHA_SCALE),
             center,
             Offset(endpoint.x, endpoint.y),
             RADAR_TRAIL_BLOOM_WIDTH,
@@ -225,7 +223,7 @@ private fun DrawScope.drawRadarBloom(
     }
     val endpoint = radarSweepEndpoint(geometry.center, sweepRadius, geometry.sweepDegrees)
     drawLine(
-        PhosphorBright.copy(alpha = RADAR_SWEEP_BLOOM_ALPHA),
+        palette.visualizerPeak.copy(alpha = RADAR_SWEEP_BLOOM_ALPHA),
         center,
         Offset(endpoint.x, endpoint.y),
         RADAR_SWEEP_BLOOM_WIDTH,
@@ -236,22 +234,23 @@ private fun DrawScope.drawRadarCore(
     geometry: RadarGeometry,
     frame: AudioAnalysisFrame,
     samples: List<RadarAfterglowSample>,
+    palette: TerminalPalette,
 ) {
     val center = Offset(geometry.center.x, geometry.center.y)
     val sweepRadius = geometry.gridRadii.last()
 
     geometry.gridRadii.forEach { radius ->
-        drawCircle(PhosphorMuted.copy(alpha = .55f), radius, center, style = Stroke(1f))
+        drawCircle(palette.visualizerSecondary.copy(alpha = .55f), radius, center, style = Stroke(1f))
     }
     geometry.energyRadii.forEach { radius ->
-        drawCircle(PhosphorDim.copy(alpha = .75f), radius, center, style = Stroke(1.5f))
+        drawCircle(palette.textSecondary.copy(alpha = .75f), radius, center, style = Stroke(1.5f))
     }
     geometry.spokeEndpoints.forEach { point ->
-        drawLine(Phosphor, center, Offset(point.x, point.y), 1.5f)
+        drawLine(palette.visualizerPrimary, center, Offset(point.x, point.y), 1.5f)
     }
     if (frame.transient > 0f) {
         drawCircle(
-            PhosphorBright.copy(alpha = frame.transient),
+            palette.visualizerPeak.copy(alpha = frame.transient),
             geometry.echoRadius,
             center,
             style = Stroke(2f),
@@ -260,7 +259,7 @@ private fun DrawScope.drawRadarCore(
     samples.forEach { sample ->
         val endpoint = radarSweepEndpoint(geometry.center, sweepRadius, sample.angleDegrees)
         drawLine(
-            Phosphor.copy(alpha = sample.alpha),
+            palette.visualizerPrimary.copy(alpha = sample.alpha),
             center,
             Offset(endpoint.x, endpoint.y),
             1.5f,
@@ -268,7 +267,7 @@ private fun DrawScope.drawRadarCore(
     }
     val endpoint = radarSweepEndpoint(geometry.center, sweepRadius, geometry.sweepDegrees)
     drawLine(
-        PhosphorBright.copy(alpha = .90f),
+        palette.visualizerPeak.copy(alpha = .90f),
         center,
         Offset(endpoint.x, endpoint.y),
         1.5f,

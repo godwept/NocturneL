@@ -1,7 +1,6 @@
 package ca.stewark.nocturnel.ui.library
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
@@ -37,8 +36,9 @@ import androidx.compose.ui.unit.dp
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.ui.artwork.RetroArtwork
 import ca.stewark.nocturnel.ui.components.FavoriteToggle
-import ca.stewark.nocturnel.ui.theme.AlertAmber
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
+import ca.stewark.nocturnel.ui.theme.TerminalTheme
+import ca.stewark.nocturnel.ui.components.terminalBorder
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
@@ -55,6 +55,7 @@ fun AlbumCoverFlowScreen(
     onToggleFavorite: (AlbumEntity) -> Unit,
 ) {
     if (albums.isEmpty()) return
+    val palette = TerminalTheme.palette
 
     val albumIds = albums.map { it.id }
     val selectedIndex = albumIds.indexOf(selectedAlbumId).takeIf { it >= 0 }
@@ -127,9 +128,10 @@ fun AlbumCoverFlowScreen(
                             .size(coverSize)
                             .graphicsLayer { scaleX = scale; scaleY = scale }
                             .alpha(alpha)
-                            .border(
+                            .terminalBorder(
                                 width = if (selected) 2.dp else TerminalDimensions.border,
-                                color = if (selected) AlertAmber else MaterialTheme.colorScheme.secondary,
+                                color = if (selected) palette.selection else palette.border,
+                                emphasized = selected,
                             )
                             .semantics { contentDescription = description }
                             .testTag("cover-flow-cover-${album.id}")
@@ -153,7 +155,7 @@ fun AlbumCoverFlowScreen(
 
         Column(Modifier.fillMaxWidth().padding(horizontal = TerminalDimensions.md)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("> CURRENT_", color = AlertAmber)
+                Text("> CURRENT_", color = palette.selection)
                 Text(positionLabel(selectedIndex, albums.size), color = MaterialTheme.colorScheme.secondary)
             }
             Text(

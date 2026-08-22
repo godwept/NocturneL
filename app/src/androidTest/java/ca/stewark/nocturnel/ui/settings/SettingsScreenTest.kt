@@ -6,10 +6,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import ca.stewark.nocturnel.ui.theme.FontPreset
+import ca.stewark.nocturnel.ui.theme.ColorThemePreset
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -53,6 +55,26 @@ class SettingsScreenTest {
 
         compose.onNodeWithText("FONT PRESET: PIXEL").assertIsDisplayed()
         compose.onNodeWithText("[ NEXT ]").assertIsDisplayed().performClick()
+        assertTrue(cycles == 1)
+    }
+
+    @Test fun colorThemeControlShowsCurrentThemeAndCyclesOnce() {
+        var cycles = 0
+        compose.setContent {
+            NocturneLTheme(colorTheme = ColorThemePreset.SYNTHWAVE_80S) {
+                SettingsScreen(
+                    onChooseFolder = {},
+                    onRescan = {},
+                    state = TerminalSettingsState(colorTheme = ColorThemePreset.SYNTHWAVE_80S),
+                    onEffectsChanged = {},
+                    onCycleFontPreset = {},
+                    onCycleColorTheme = { cycles++ },
+                )
+            }
+        }
+
+        compose.onNodeWithText("COLOR THEME: '80S SYNTHWAVE").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Next color theme").assertIsDisplayed().performClick()
         assertTrue(cycles == 1)
     }
 

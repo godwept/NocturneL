@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import ca.stewark.nocturnel.ui.listening.LibrarySortMode
 import ca.stewark.nocturnel.ui.listening.LibraryViewMode
 import ca.stewark.nocturnel.ui.theme.FontPreset
+import ca.stewark.nocturnel.ui.theme.ColorThemePreset
 import ca.stewark.nocturnel.visualizer.VisualizerSyncOffset
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,12 @@ class TerminalPreferencesRepository(
         ),
     )
     val fontPreset: StateFlow<FontPreset> = _fontPreset.asStateFlow()
+    private val _colorTheme = MutableStateFlow(
+        ColorThemePreset.fromPersisted(
+            runCatching { preferences.getString(COLOR_THEME, null) }.getOrNull(),
+        ),
+    )
+    val colorTheme: StateFlow<ColorThemePreset> = _colorTheme.asStateFlow()
     private val _librarySortMode = MutableStateFlow(
         LibrarySortMode.fromPersisted(
             runCatching { preferences.getString(LIBRARY_SORT_MODE, null) }.getOrNull(),
@@ -53,6 +60,11 @@ class TerminalPreferencesRepository(
         _fontPreset.value = preset
     }
 
+    fun setColorTheme(theme: ColorThemePreset) {
+        preferences.edit().putString(COLOR_THEME, theme.persistedValue).apply()
+        _colorTheme.value = theme
+    }
+
     fun setLibrarySortMode(mode: LibrarySortMode) {
         preferences.edit().putString(LIBRARY_SORT_MODE, mode.name).apply()
         _librarySortMode.value = mode
@@ -72,6 +84,7 @@ class TerminalPreferencesRepository(
     private companion object {
         const val EFFECTS_ENABLED = "effects_enabled"
         const val FONT_PRESET = "font_preset"
+        const val COLOR_THEME = "color_theme"
         const val LIBRARY_SORT_MODE = "library_sort_mode"
         const val LIBRARY_VIEW_MODE = "library_view_mode"
         const val VISUALIZER_SYNC_OFFSET_MS = "visualizer_sync_offset_ms"

@@ -4,6 +4,7 @@ import androidx.test.core.app.ApplicationProvider
 import ca.stewark.nocturnel.ui.listening.LibrarySortMode
 import ca.stewark.nocturnel.ui.listening.LibraryViewMode
 import ca.stewark.nocturnel.ui.theme.FontPreset
+import ca.stewark.nocturnel.ui.theme.ColorThemePreset
 import ca.stewark.nocturnel.visualizer.VisualizerSyncOffset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -11,6 +12,34 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TerminalPreferencesRepositoryTest {
+    @Test fun colorThemeDefaultsPersistsAndRestoresStableValue() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val name = "terminal-color-theme-test"
+        val preferences = context.getSharedPreferences(name, 0)
+        preferences.edit().clear().commit()
+
+        val repository = TerminalPreferencesRepository(context, name)
+        assertEquals(ColorThemePreset.GREEN_TERMINAL, repository.colorTheme.value)
+        repository.setColorTheme(ColorThemePreset.NEON_90S)
+        assertEquals(ColorThemePreset.NEON_90S, repository.colorTheme.value)
+        assertEquals("90s_neon", preferences.getString("color_theme", null))
+        assertEquals(ColorThemePreset.NEON_90S, TerminalPreferencesRepository(context, name).colorTheme.value)
+    }
+
+    @Test fun malformedColorThemeFallsBackWithoutChangingOtherPreferences() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val name = "terminal-color-theme-malformed-test"
+        val preferences = context.getSharedPreferences(name, 0)
+        preferences.edit().clear().putBoolean("effects_enabled", false).putString("font_preset", "pixel")
+            .putString("color_theme", "unknown").commit()
+        assertEquals(ColorThemePreset.GREEN_TERMINAL, TerminalPreferencesRepository(context, name).colorTheme.value)
+        assertFalse(preferences.getBoolean("effects_enabled", true))
+        assertEquals("pixel", preferences.getString("font_preset", null))
+
+        preferences.edit().putInt("color_theme", 7).commit()
+        assertEquals(ColorThemePreset.GREEN_TERMINAL, TerminalPreferencesRepository(context, name).colorTheme.value)
+    }
+
     @Test fun fontPresetDefaultsPersistsAndRestoresStableValue() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val name = "terminal-font-preset-test"

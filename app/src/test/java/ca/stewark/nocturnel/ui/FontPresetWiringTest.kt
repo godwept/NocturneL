@@ -12,10 +12,13 @@ class FontPresetWiringTest {
 
         assertTrue("val settingsViewModel: SettingsViewModel = viewModel()" in activity)
         assertTrue("val settings by settingsViewModel.state.collectAsState()" in activity)
-        assertTrue("NocturneLTheme(settings.fontPreset)" in activity)
+        assertTrue("fontPreset = settings.fontPreset" in activity)
+        assertTrue("colorTheme = settings.colorTheme" in activity)
+        assertTrue("effectsEnabled = settings.effectiveEffectsEnabled" in activity)
         assertTrue("NocturneLApp(settingsViewModel = settingsViewModel)" in activity)
         assertTrue("onCycleFontPreset = settingsViewModel::cycleFontPreset" in app)
+        assertTrue("onCycleColorTheme = settingsViewModel::cycleColorTheme" in app)
         assertTrue("fontPreset: FontPreset = FontPreset.DEFAULT" in previews)
-        assertTrue("NocturneLTheme(fontPreset)" in previews)
+        assertTrue("NocturneLTheme(fontPreset, colorTheme, effectsEnabled)" in previews)
     }
 }

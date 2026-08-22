@@ -18,7 +18,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import ca.stewark.nocturnel.ui.navigation.NocturneLDestination
-import ca.stewark.nocturnel.ui.theme.PhosphorDim
+import ca.stewark.nocturnel.ui.theme.TerminalTheme
 
 @Composable
 fun TerminalNavigation(
@@ -27,6 +27,7 @@ fun TerminalNavigation(
     effectsEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val palette = TerminalTheme.palette
     val transition = rememberInfiniteTransition(label = "active navigation")
     val pulse = if (effectsEnabled) {
         transition.animateFloat(
@@ -50,7 +51,7 @@ fun TerminalNavigation(
         Canvas(Modifier.fillMaxWidth()) {
             var x = 0f
             while (x < size.width) {
-                drawLine(PhosphorDim, Offset(x, 0f), Offset((x + 6.dp.toPx()).coerceAtMost(size.width), 0f), 1.dp.toPx())
+                drawLine(palette.textSecondary, Offset(x, 0f), Offset((x + 6.dp.toPx()).coerceAtMost(size.width), 0f), 1.dp.toPx())
                 x += 10.dp.toPx()
             }
         }
