@@ -7,11 +7,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VisualizerAfterglowTest {
-    @Test fun afterglowIsClearlyVisibleButSubordinateToLiveElements() {
-        assertTrue(RADAR_AFTERGLOW_MAX_ALPHA >= .55f)
-        assertTrue(BAND_AFTERGLOW_MAX_ALPHA >= .60f)
-        assertTrue(RADAR_AFTERGLOW_MAX_ALPHA < .8f)
-        assertTrue(BAND_AFTERGLOW_MAX_ALPHA < .75f)
+    @Test fun afterglowIsPronouncedButSubordinateToLiveElements() {
+        assertEquals(500_000_000L, AFTERGLOW_DURATION_NANOS)
+        assertEquals(.70f, RADAR_AFTERGLOW_MAX_ALPHA, 0f)
+        assertEquals(.72f, BAND_AFTERGLOW_MAX_ALPHA, 0f)
+        assertTrue(RADAR_AFTERGLOW_MAX_ALPHA < .90f)
+        assertTrue(BAND_AFTERGLOW_MAX_ALPHA < 1f)
     }
 
     @Test fun firstRadarFrameHasNoInventedTrail() {
@@ -22,14 +23,14 @@ class VisualizerAfterglowTest {
         assertTrue(state.samples.isEmpty())
     }
 
-    @Test fun newRadarFramesRetainAtMostEightPriorAngles() {
+    @Test fun newRadarFramesRetainAtMostSixteenPriorAngles() {
         var state = RadarAfterglowState()
-        repeat(12) { index ->
+        repeat(20) { index ->
             state = updateRadarAfterglow(state, index.toLong(), index * 2f, 1_000_000)
         }
 
-        assertEquals(8, state.samples.size)
-        assertEquals(listOf(6f, 8f, 10f, 12f, 14f, 16f, 18f, 20f), state.samples.map { it.angleDegrees })
+        assertEquals(16, state.samples.size)
+        assertEquals((6..36 step 2).map(Int::toFloat), state.samples.map { it.angleDegrees })
     }
 
     @Test fun repeatedFrameIdAgesWithoutDuplicatingSweep() {
@@ -43,16 +44,19 @@ class VisualizerAfterglowTest {
         assertTrue(state.samples.single().alpha < initialAlpha)
     }
 
-    @Test fun radarTrailFadesMonotonicallyAndExpiresAt250Milliseconds() {
+    @Test fun radarTrailFadesMonotonicallyAndExpiresAt500Milliseconds() {
         var state = updateRadarAfterglow(RadarAfterglowState(), 1, 0f, 0)
         state = updateRadarAfterglow(state, 2, 2f, 0)
         val freshAlpha = state.samples.single().alpha
-        state = updateRadarAfterglow(state, 2, 2f, 125_000_000)
+        state = updateRadarAfterglow(state, 2, 2f, 250_000_000)
         val halfAlpha = state.samples.single().alpha
-        state = updateRadarAfterglow(state, 2, 2f, 125_000_000)
+        state = updateRadarAfterglow(state, 2, 2f, 249_000_000)
+        val nearExpiryAlpha = state.samples.single().alpha
 
         assertTrue(freshAlpha in 0f..RADAR_AFTERGLOW_MAX_ALPHA)
         assertTrue(halfAlpha in 0f..<freshAlpha)
+        assertTrue(nearExpiryAlpha in 0f..<halfAlpha)
+        state = updateRadarAfterglow(state, 2, 2f, 1_000_000)
         assertTrue(state.samples.isEmpty())
     }
 
@@ -95,7 +99,7 @@ class VisualizerAfterglowTest {
         var state = updateBandAfterglow(emptyList(), listOf(1f), 0)
         state = updateBandAfterglow(state, listOf(.1f), 1)
         val fresh = state.single()
-        state = updateBandAfterglow(state, listOf(.1f), 125_000_000)
+        state = updateBandAfterglow(state, listOf(.1f), 250_000_000)
         val halfway = state.single()
 
         assertTrue(fresh.retainedLevel > halfway.retainedLevel)
@@ -111,9 +115,15 @@ class VisualizerAfterglowTest {
         assertTrue(state.single().retainedLevel >= .6f)
     }
 
-    @Test fun bandGhostExpiresAt250Milliseconds() {
+    @Test fun bandGhostRemainsBeforeAndExpiresAt500Milliseconds() {
         var state = updateBandAfterglow(emptyList(), listOf(1f), 0)
-        state = updateBandAfterglow(state, listOf(0f), AFTERGLOW_DURATION_NANOS)
+        state = updateBandAfterglow(state, listOf(0f), 1)
+        state = updateBandAfterglow(state, listOf(0f), AFTERGLOW_DURATION_NANOS - 1_000_001)
+
+        assertTrue(state.single().retainedLevel > 0f)
+        assertTrue(state.single().alpha > 0f)
+
+        state = updateBandAfterglow(state, listOf(0f), 1_000_000)
 
         assertEquals(0f, state.single().retainedLevel, 0f)
         assertEquals(0f, state.single().alpha, 0f)

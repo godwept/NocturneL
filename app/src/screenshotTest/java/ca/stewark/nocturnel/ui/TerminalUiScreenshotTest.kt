@@ -399,9 +399,9 @@ fun VisualizerRadarAfterglowPreview() = TerminalPreview {
                 currentFrameId = 2,
                 currentAngleDegrees = 4f,
                 samples = listOf(
-                    RadarAfterglowSample(358f, 180_000_000),
-                    RadarAfterglowSample(0f, 120_000_000),
-                    RadarAfterglowSample(2f, 60_000_000),
+                    RadarAfterglowSample(358f, 360_000_000),
+                    RadarAfterglowSample(0f, 240_000_000),
+                    RadarAfterglowSample(2f, 120_000_000),
                 ),
             ),
         ),
@@ -414,7 +414,7 @@ fun VisualizerRadarAfterglowPreview() = TerminalPreview {
 @Composable
 fun VisualizerBandsAfterglowPreview() = TerminalPreview {
     val retained = spectrumFrame.bands.mapIndexed { index, live ->
-        if (index % 3 == 0) (live + .35f).coerceAtMost(1f) else live
+        if (index % 3 == 0) (live + .45f).coerceAtMost(1f) else live
     }
     TerminalVisualizerFrame(
         mode = VisualizerDisplayMode.BANDS,
@@ -424,7 +424,7 @@ fun VisualizerBandsAfterglowPreview() = TerminalPreview {
             activeMode = VisualizerDisplayMode.BANDS,
             size = VisualizerSizeKey(320, 320),
             lastFrameId = spectrumFrame.frameId,
-            bands = retained.map { BandAfterglow(it, it, 80_000_000) },
+            bands = retained.map { BandAfterglow(it, it, 160_000_000) },
         ),
         modifier = Modifier.fillMaxSize(),
     )

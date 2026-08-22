@@ -4,11 +4,11 @@ import ca.stewark.nocturnel.visualizer.AnalysisStatus
 import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
 import kotlin.math.max
 
-internal const val AFTERGLOW_DURATION_NANOS = 250_000_000L
-internal const val RADAR_AFTERGLOW_MAX_ALPHA = .55f
-internal const val BAND_AFTERGLOW_MAX_ALPHA = .60f
+internal const val AFTERGLOW_DURATION_NANOS = 500_000_000L
+internal const val RADAR_AFTERGLOW_MAX_ALPHA = .70f
+internal const val BAND_AFTERGLOW_MAX_ALPHA = .72f
 
-private const val MAX_RADAR_AFTERGLOW_SAMPLES = 8
+private const val MAX_RADAR_AFTERGLOW_SAMPLES = 16
 
 internal data class VisualizerSizeKey(val width: Int, val height: Int)
 

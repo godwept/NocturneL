@@ -42,4 +42,32 @@ class VisualizerSourceGuardTest {
             "delay(",
         ).forEach { forbidden -> assertFalse(forbidden, forbidden in source) }
     }
+
+    @Test fun radarBloomPrecedesCrispCoreWithoutPlatformBlur() {
+        val source = File(
+            "src/main/java/ca/stewark/nocturnel/ui/playback/visualizer/TerminalVisualizers.kt",
+        ).readText()
+        val radarBranch = source
+            .substringAfter("VisualizerDisplayMode.RADAR -> {")
+            .substringBefore("VisualizerDisplayMode.BANDS ->")
+
+        assertTrue("if (effectsEnabled)" in radarBranch.substringBefore("drawRadarCore("))
+        assertTrue(radarBranch.indexOf("drawRadarBloom(") < radarBranch.indexOf("drawRadarCore("))
+        assertFalse("RenderEffect" in source)
+        assertFalse("BlurEffect" in source)
+    }
+
+    @Test fun bandGhostsUseLuminousPhosphorBehindLiveBars() {
+        val source = File(
+            "src/main/java/ca/stewark/nocturnel/ui/playback/visualizer/TerminalVisualizers.kt",
+        ).readText()
+        val bandsBranch = source
+            .substringAfter("VisualizerDisplayMode.BANDS -> {")
+            .substringBefore("VisualizerDisplayMode.ART ->")
+
+        assertTrue(bandsBranch.indexOf("spectrumGhostGeometry(") < bandsBranch.indexOf("spectrumGeometry("))
+        assertTrue("Phosphor.copy(alpha = afterglow.bands[ghost.bandIndex].alpha)" in bandsBranch)
+        assertFalse("PhosphorDim.copy(alpha = afterglow.bands" in bandsBranch)
+        assertTrue(bandsBranch.lastIndexOf("PhosphorBright") > bandsBranch.indexOf("spectrumGhostGeometry("))
+    }
 }

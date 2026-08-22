@@ -23,8 +23,8 @@
 - [ ] Switch visualization modes rapidly and confirm there are no audible glitches.
 - [ ] Confirm silence settles to an idle trace and an unavailable signal shows `SIGNAL UNAVAILABLE` without affecting playback.
 - [ ] Toggle CRT effects and confirm both visualizers remain readable with effects both on and off.
-- [ ] With CRT effects on, confirm only the radar sweep arm leaves a slight trail; rings, spokes, and transient echoes remain crisp.
-- [ ] Confirm falling band ghosts remain dimmer than live segments, clear in about 250 ms, and do not smear the bright peak markers.
+- [ ] With CRT effects on, confirm the grid, energy rings, spokes, transient echo, live sweep, and retained trail have pronounced but readable radar bloom with crisp cores above it.
+- [ ] Confirm the radar trail and falling band ghosts remain visible for about 500 ms; band ghosts must be clearly noticeable while staying behind and dimmer than live segments and peak markers.
 - [ ] Pause, show unavailable analysis, switch modes, recreate/resize the screen, and disable CRT effects; confirm afterglow clears immediately with no frozen or carried-over ghosts.
 - [ ] With CRT effects off, confirm radar and bands retain their prior crisp rendering apart from the existing scanline removal.
 - [ ] Play a balanced or pink-noise-like track and confirm the spectrum's right half remains visibly active without becoming stronger than the left by default.

@@ -58,7 +58,7 @@ class TerminalVisualizersTest {
         compose.onNodeWithTag("scanlines").assertIsDisplayed()
 
         compose.runOnIdle { effectsEnabled = false }
-        compose.mainClock.advanceTimeBy(300)
+        compose.mainClock.advanceTimeBy(550)
         compose.onNodeWithTag("scanlines").assertDoesNotExist()
         compose.onNodeWithTag("visualizer-radar").assertIsDisplayed().assertHasNoClickAction()
 
@@ -73,7 +73,7 @@ class TerminalVisualizersTest {
 
         compose.runOnIdle { frame = AudioAnalysisFrame.Unavailable }
         compose.onNodeWithText("SIGNAL UNAVAILABLE").assertIsDisplayed()
-        compose.mainClock.advanceTimeBy(300)
+        compose.mainClock.advanceTimeBy(550)
         compose.onNodeWithText("SIGNAL UNAVAILABLE").assertIsDisplayed()
 
         compose.runOnIdle { frame = activeFrame(3) }
