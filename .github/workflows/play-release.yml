@@ -90,6 +90,8 @@ jobs:
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
       - name: Run API ${{ matrix.api-level }} instrumented tests
+        id: instrumented-tests
+        continue-on-error: true
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
@@ -97,7 +99,23 @@ jobs:
           arch: x86_64
           profile: pixel_6
           disable-animations: true
-          script: ./gradlew connectedDebugAndroidTest
+          script: |
+            adb shell getprop ro.build.version.sdk
+            adb shell getprop ro.build.version.codename
+            adb shell getprop ro.build.version.release
+            ./gradlew connectedDebugAndroidTest && touch .instrumented-tests-completed || touch .instrumented-tests-failed
+      - name: Verify instrumented test result
+        shell: bash
+        run: |
+          if [[ -f .instrumented-tests-failed ]]; then
+            echo 'Instrumentation tests failed.' >&2
+            exit 1
+          fi
+          if [[ -f .instrumented-tests-completed ]]; then
+            exit 0
+          fi
+          echo 'The emulator action failed before reporting an instrumentation-test result.' >&2
+          exit 1
 
   package:
     runs-on: ubuntu-latest
