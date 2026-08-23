@@ -37,7 +37,7 @@ class LibraryScreenTest {
             }
         }
 
-        compose.onNodeWithText(sampleAlbum.title).assertIsDisplayed()
+        compose.onNodeWithText(sampleAlbum.title.uppercase()).assertIsDisplayed()
         compose.onAllNodesWithText("[ RESCAN ]").assertCountEquals(0)
         compose.onAllNodesWithText("[ CANCEL ]").assertCountEquals(0)
     }

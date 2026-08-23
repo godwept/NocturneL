@@ -13,7 +13,7 @@ class ReleaseConfigurationTest {
         assertTrue("targetSdk = 36" in buildFile)
         assertTrue("versionCode = releaseVersionCode" in buildFile)
         assertTrue("versionName = releaseVersionName" in buildFile)
-        assertTrue("val releaseVersionCode = 4" in buildFile)
+        assertTrue("val releaseVersionCode = 5" in buildFile)
         assertTrue("val releaseVersionName = \"0.1.0\"" in buildFile)
     }
 

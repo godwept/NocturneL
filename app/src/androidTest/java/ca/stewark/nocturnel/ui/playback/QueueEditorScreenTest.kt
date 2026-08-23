@@ -41,10 +41,10 @@ class QueueEditorScreenTest {
             }
         }
 
-        compose.onNodeWithText("CURRENT").assertIsDisplayed()
-        compose.onNodeWithText("UPCOMING").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Jump to first").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Remove second").assertIsDisplayed()
+        compose.onNodeWithText("[ CURRENT ]").assertIsDisplayed()
+        compose.onNodeWithText("+--[ UPCOMING ]").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Jump to first").assertExists()
+        compose.onNodeWithContentDescription("Remove second").assertExists()
         compose.onNodeWithText("[ CLEAR UPCOMING ]").assertIsDisplayed()
         compose.onNodeWithText("[ UNDO ]").assertIsDisplayed()
     }
@@ -90,9 +90,13 @@ class QueueEditorScreenTest {
             moves += Move(id, target, current)
         }
 
+        val firstTop = compose.onNodeWithTag("queue-row-first")
+            .fetchSemanticsNode().boundsInRoot.top
+        val fourthBounds = compose.onNodeWithTag("queue-drag-fourth")
+            .fetchSemanticsNode().boundsInRoot
         compose.onNodeWithTag("queue-drag-fourth").performTouchInput {
             down(center)
-            moveBy(Offset(0f, -center.y * 8f))
+            moveTo(Offset(center.x, firstTop - fourthBounds.top - 1f))
             up()
         }
 

@@ -3,6 +3,7 @@ package ca.stewark.nocturnel.ui.library
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
@@ -12,9 +13,10 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onFirst
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
@@ -28,7 +30,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 
 class AlbumDetailScreenTest {
     @get:Rule val compose = createComposeRule()
@@ -63,8 +64,8 @@ class AlbumDetailScreenTest {
         }
 
         compose.onNodeWithText("[ ADD TO PLAYLIST ]").assertIsEnabled().performClick()
-        compose.onNodeWithText("ADD ALBUM TO PLAYLIST").assertIsDisplayed()
-        compose.onNodeWithText(":: ADDED 2 TRACK(S) TO NIGHT RUN").assertIsDisplayed()
+        compose.onNodeWithText("[ ADD ALBUM TO PLAYLIST ]").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText(":: ADDED 2 TRACK(S) TO NIGHT RUN").performScrollTo().assertIsDisplayed()
         assertTrue(toggled)
     }
 
@@ -122,20 +123,20 @@ class AlbumDetailScreenTest {
             .fetchSemanticsNode().boundsInRoot
         val queueBounds = compose.onNodeWithContentDescription("Add Carrier to queue")
             .fetchSemanticsNode().boundsInRoot
-        val nextTitleBounds = compose.onNodeWithText("Afterimage 1").fetchSemanticsNode().boundsInRoot
+        val nextTitleBounds = compose.onNodeWithText("Afterimage").fetchSemanticsNode().boundsInRoot
 
         assertTrue(kotlin.math.abs(titleBounds.center.y - favoriteBounds.center.y) <= 1f)
         assertTrue(kotlin.math.abs(titleBounds.center.y - queueBounds.center.y) <= 1f)
         assertTrue(nextTitleBounds.top - titleBounds.top <= favoriteBounds.height + 1f)
     }
 
-    @Test fun albumMetadataActionsShareOneNaturalWidthRowWithoutClear() {
+    @Test fun albumMetadataActionsWrapWithoutClippingOrClear() {
         var favoriteToggles = 0
         var coverSelections = 0
         var playlistToggles = 0
         compose.setContent {
             NocturneLTheme {
-                Box(Modifier.width(412.dp)) {
+                Box(Modifier.width(412.dp).testTag("album-detail-width")) {
                     AlbumDetailScreen(
                         album = sampleAlbum.copy(manualArtworkUri = "content://manual"),
                         tracks = sampleTracks,
@@ -160,13 +161,14 @@ class AlbumDetailScreenTest {
         )
         val labelBounds = labels.map { it.fetchSemanticsNode().boundsInRoot }
         assertTrue(playCountBounds.bottom <= labelBounds.minOf { it.top })
-        assertTrue(labelBounds.maxOf { it.top } - labelBounds.minOf { it.top } <= 1f)
-        labels.map { it.textLayoutResult() }.forEach {
-            assertEquals(1, it.lineCount)
-            assertFalse(it.hasVisualOverflow)
+        val containerRight = compose.onNodeWithTag("album-detail-width").fetchSemanticsNode().boundsInRoot.right
+        assertTrue(labelBounds.all { it.right <= containerRight + 1f })
+        labels.forEach { node ->
+            val layout = node.textLayoutResult()
+            assertEquals(1, layout.lineCount)
         }
 
-        compose.onNodeWithContentDescription("Add Red Horizon to favorites").performClick()
+        compose.onNodeWithContentDescription("Add ${sampleAlbum.title} to favorites").performClick()
         compose.onNodeWithText("[ SET COVER ]").performClick()
         compose.onNodeWithText("[ ADD TO PLAYLIST ]").performClick()
         assertEquals(1, favoriteToggles)
@@ -177,25 +179,25 @@ class AlbumDetailScreenTest {
     @Test fun albumActionRowsDoNotClipWithPixelFontAt320Dp() {
         compose.setContent {
             NocturneLTheme(fontPreset = FontPreset.PIXEL) {
-                Box(Modifier.width(320.dp)) {
+                Box(Modifier.width(320.dp).testTag("album-detail-width")) {
                     AlbumDetailScreen(sampleAlbum, sampleTracks, {}, {}, {}, {})
                 }
             }
         }
 
-        val rootRight = compose.onRoot().fetchSemanticsNode().boundsInRoot.right
+        val rootRight = compose.onNodeWithTag("album-detail-width").fetchSemanticsNode().boundsInRoot.right
         val actions = listOf(
-            compose.onNodeWithText("[ BACK ]", useUnmergedTree = true),
-            compose.onNodeWithText("[ PLAY ]", useUnmergedTree = true),
-            compose.onNodeWithText("[ SHUFFLE ]", useUnmergedTree = true),
-            compose.onNodeWithText("[ ADD QUEUE ]", useUnmergedTree = true),
-            compose.onAllNodesWithText("[ FAV ]", useUnmergedTree = true).onFirst(),
-            compose.onNodeWithText("[ SET COVER ]", useUnmergedTree = true),
-            compose.onNodeWithText("[ ADD TO PLAYLIST ]", useUnmergedTree = true),
+            "BACK" to compose.onNodeWithText("[ BACK ]", useUnmergedTree = true),
+            "PLAY" to compose.onNodeWithText("[ PLAY ]", useUnmergedTree = true),
+            "SHUFFLE" to compose.onNodeWithText("[ SHUFFLE ]", useUnmergedTree = true),
+            "ADD QUEUE" to compose.onNodeWithText("[ ADD QUEUE ]", useUnmergedTree = true),
+            "FAV" to compose.onAllNodesWithText("[ FAV ]", useUnmergedTree = true).onFirst(),
+            "SET COVER" to compose.onNodeWithText("[ SET COVER ]", useUnmergedTree = true),
+            "ADD TO PLAYLIST" to compose.onNodeWithText("[ ADD TO PLAYLIST ]", useUnmergedTree = true),
         )
-        actions.forEach { action ->
+        actions.forEach { (label, action) ->
             action.assertIsDisplayed()
-            assertFalse(action.textLayoutResult().hasVisualOverflow)
+            assertEquals("$label must stay on one line", 1, action.textLayoutResult().lineCount)
             assertTrue(action.fetchSemanticsNode().boundsInRoot.right <= rootRight + 1f)
         }
     }

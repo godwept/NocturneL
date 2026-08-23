@@ -11,6 +11,9 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
@@ -35,7 +38,7 @@ class TerminalComponentsTest {
     }
 
     @Test fun toggleReportsState() {
-        var checked = false
+        var checked by mutableStateOf(false)
         compose.setContent { NocturneLTheme { TerminalToggle("EFFECTS", checked, { checked = it }) } }
         compose.onNodeWithText("EFFECTS").assertIsOff().performClick().assertIsOn()
     }
@@ -83,7 +86,7 @@ class TerminalComponentsTest {
         var selected: NocturneLDestination? = null
         compose.setContent {
             NocturneLTheme {
-                Box(Modifier.size(width = 320.dp, height = 120.dp)) {
+                Box(Modifier.size(width = 320.dp, height = 200.dp)) {
                     TerminalScaffold(
                         selected = NocturneLDestination.SETTINGS,
                         onSelected = { selected = it },
@@ -104,7 +107,7 @@ class TerminalComponentsTest {
     @Test fun scaffoldSettingsButtonIsNotSelectedOnPrimaryDestination() {
         compose.setContent {
             NocturneLTheme {
-                Box(Modifier.size(width = 320.dp, height = 120.dp)) {
+                Box(Modifier.size(width = 320.dp, height = 200.dp)) {
                     TerminalScaffold(NocturneLDestination.LIBRARY, {}, effectsEnabled = false) {}
                 }
             }

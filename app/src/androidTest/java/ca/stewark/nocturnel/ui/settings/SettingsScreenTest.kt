@@ -54,7 +54,7 @@ class SettingsScreenTest {
         }
 
         compose.onNodeWithText("FONT PRESET: PIXEL").assertIsDisplayed()
-        compose.onNodeWithText("[ NEXT ]").assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription("Next font preset").assertIsDisplayed().performClick()
         assertTrue(cycles == 1)
     }
 
@@ -94,7 +94,7 @@ class SettingsScreenTest {
             }
         }
 
-        compose.onNodeWithText("[ NEXT ]").performScrollTo().assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription("Next font preset").performScrollTo().assertIsDisplayed().performClick()
         assertTrue(cycled)
     }
 }

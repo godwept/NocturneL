@@ -41,7 +41,7 @@ class AlbumCoverFlowScreenTest {
 
     @Test fun sideTapCentersAndSecondTapOpens() {
         val opened = mutableListOf<String>()
-        setFlow(onOpened = { opened += it })
+        setFlow(initiallySelectedId = "beta", onOpened = { opened += it })
 
         compose.onNodeWithTag("cover-flow-cover-gamma").performClick()
         compose.waitForIdle()
@@ -67,7 +67,7 @@ class AlbumCoverFlowScreenTest {
         compose.onNodeWithText("01 / 03").assertIsDisplayed()
     }
 
-    private fun setFlow(onOpened: (String) -> Unit = {}) {
+    private fun setFlow(initiallySelectedId: String = "alpha", onOpened: (String) -> Unit = {}) {
         val albums = listOf(
             sampleAlbum.copy(id = "alpha", title = "Alpha", artist = "Artist A"),
             sampleAlbum.copy(id = "beta", title = "Beta", artist = "Artist B"),
@@ -75,11 +75,11 @@ class AlbumCoverFlowScreenTest {
         )
         compose.setContent {
             NocturneLTheme {
-                var selectedId by remember { mutableStateOf<String?>("alpha") }
+                var selectedId by remember { mutableStateOf<String?>(initiallySelectedId) }
                 Box(Modifier.fillMaxSize()) {
                     AlbumCoverFlowScreen(
                         albums = albums,
-                        state = rememberLazyListState(),
+                        state = rememberLazyListState(initialFirstVisibleItemIndex = albums.indexOfFirst { it.id == initiallySelectedId }),
                         favoriteAlbumIds = setOf("alpha"),
                         albumPlayCounts = mapOf("alpha" to 12),
                         effectsEnabled = false,

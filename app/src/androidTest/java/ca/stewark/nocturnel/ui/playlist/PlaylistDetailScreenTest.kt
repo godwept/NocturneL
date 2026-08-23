@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -14,7 +15,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
@@ -25,7 +25,6 @@ import ca.stewark.nocturnel.ui.samplePlaylist
 import ca.stewark.nocturnel.ui.sampleTracks
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
 import ca.stewark.nocturnel.ui.theme.FontPreset
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -85,7 +84,7 @@ class PlaylistDetailScreenTest {
         assertEquals(availableTrack.relativePath, added)
 
         val backTop = compose.onNodeWithText("[ BACK ]").fetchSemanticsNode().boundsInRoot.top
-        val actionTops = listOf("[ PLAY ]", "[ RENAME ]", "[ ADD TRACK ]", "[ ADD QUEUE ]")
+        val actionTops = listOf("[ PLAY ]", "[ RENAME ]", "[ CLOSE ADD ]", "[ ADD QUEUE ]")
             .map { compose.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
         assertTrue(backTop < actionTops.min())
         assertTrue(actionTops.max() - actionTops.min() <= 1f)
@@ -118,22 +117,22 @@ class PlaylistDetailScreenTest {
     @Test fun playlistActionsDoNotClipWithPixelFontAt320Dp() {
         compose.setContent {
             NocturneLTheme(fontPreset = FontPreset.PIXEL) {
-                androidx.compose.foundation.layout.Box(Modifier.width(320.dp)) {
+                androidx.compose.foundation.layout.Box(Modifier.width(320.dp).testTag("playlist-detail-width")) {
                     PlaylistDetailScreen(state(listOf("first")), {}, {}, {}, {}, {}, { _, _ -> })
                 }
             }
         }
 
-        val rootRight = compose.onRoot().fetchSemanticsNode().boundsInRoot.right
+        val rootRight = compose.onNodeWithTag("playlist-detail-width").fetchSemanticsNode().boundsInRoot.right
         listOf("[ PLAY ]", "[ RENAME ]", "[ ADD TRACK ]", "[ ADD QUEUE ]").forEach { label ->
             val action = compose.onNodeWithText(label, useUnmergedTree = true)
             action.assertIsDisplayed()
-            assertFalse(action.textLayoutResult().hasVisualOverflow)
+            assertEquals("$label must stay on one line", 1, action.textLayoutResult().lineCount)
             assertTrue(action.fetchSemanticsNode().boundsInRoot.right <= rootRight + 1f)
         }
     }
 
-    @Test fun dragAcrossMultipleRowsCommitsOnceInBothDirections() {
+    @Test fun dragDownAcrossMultipleRowsCommitsOnce() {
         val downMoves = mutableListOf<Move>()
         setPlaylist(listOf("first", "second", "third", "fourth")) { from, to -> downMoves += Move(from, to) }
         compose.onNodeWithTag("playlist-drag-1").performTouchInput {
@@ -142,18 +141,24 @@ class PlaylistDetailScreenTest {
             up()
         }
         assertEquals(listOf(Move(1, 3)), downMoves)
+    }
 
+    @Test fun dragUpAcrossMultipleRowsCommitsOnce() {
         val upMoves = mutableListOf<Move>()
         setPlaylist(listOf("first", "second", "third", "fourth")) { from, to -> upMoves += Move(from, to) }
+        val firstTop = compose.onNodeWithTag("playlist-row-0")
+            .fetchSemanticsNode().boundsInRoot.top
+        val fourthBounds = compose.onNodeWithTag("playlist-drag-3")
+            .fetchSemanticsNode().boundsInRoot
         compose.onNodeWithTag("playlist-drag-3").performTouchInput {
             down(center)
-            moveBy(Offset(0f, -center.y * 8f))
+            moveTo(Offset(center.x, firstTop - fourthBounds.top - 1f))
             up()
         }
         assertEquals(listOf(Move(3, 0)), upMoves)
     }
 
-    @Test fun cancelledNoOpSingleAndStaleDragsDoNotMove() {
+    @Test fun cancelledAndNoOpSingleItemDragsDoNotMove() {
         val moves = mutableListOf<Move>()
         setPlaylist(listOf("only")) { from, to -> moves += Move(from, to) }
         compose.onNodeWithTag("playlist-drag-0").performTouchInput {
@@ -163,7 +168,10 @@ class PlaylistDetailScreenTest {
             down(center); moveBy(Offset(0f, center.y * 2f)); cancel()
         }
         assertTrue(moves.isEmpty())
+    }
 
+    @Test fun stalePlaylistOrderCancelsActiveDrag() {
+        val moves = mutableListOf<Move>()
         val changingState = mutableStateOf(state(listOf("first", "second", "third")))
         compose.setContent {
             NocturneLTheme {
@@ -176,7 +184,12 @@ class PlaylistDetailScreenTest {
         compose.onNodeWithTag("playlist-drag-1").performTouchInput {
             down(center); moveBy(Offset(0f, center.y * 4f))
         }
-        compose.runOnIdle { changingState.value = state(listOf("second", "first", "third")) }
+        compose.runOnIdle {
+            val entries = changingState.value.entries
+            changingState.value = changingState.value.copy(
+                entries = listOf(entries[1], entries[0], entries[2]),
+            )
+        }
         compose.onNodeWithTag("playlist-drag-1").performTouchInput { up() }
         assertTrue(moves.isEmpty())
     }
@@ -206,7 +219,7 @@ class PlaylistDetailScreenTest {
         assertEquals(1, removed)
     }
 
-    @Test fun accessibilityMovesAndLiftedStateRemainAvailable() {
+    @Test fun accessibilityMovesRemainAvailable() {
         val moves = mutableListOf<Move>()
         setPlaylist(listOf("first", "second", "third")) { from, to -> moves += Move(from, to) }
         val actions = compose.onNodeWithTag("playlist-drag-1")
@@ -216,7 +229,9 @@ class PlaylistDetailScreenTest {
             actions.first { it.label == "Move second down" }.action()
         }
         assertEquals(listOf(Move(1, 0), Move(1, 2)), moves)
+    }
 
+    @Test fun liftedStateRemainsAvailable() {
         compose.setContent {
             NocturneLTheme {
                 PlaylistTrackEntryRow(

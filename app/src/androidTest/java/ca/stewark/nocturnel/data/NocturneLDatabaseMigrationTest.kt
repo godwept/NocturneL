@@ -2,7 +2,6 @@ package ca.stewark.nocturnel.data
 
 import android.content.Context
 import androidx.room.testing.MigrationTestHelper
-import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -19,11 +18,11 @@ class NocturneLDatabaseMigrationTest {
     @get:Rule val helper = MigrationTestHelper(
         InstrumentationRegistry.getInstrumentation(),
         NocturneLDatabase::class.java,
-        emptyList(),
-        FrameworkSQLiteOpenHelperFactory(),
     )
 
-    @After fun deleteDatabase() = context.deleteDatabase(TEST_DB)
+    @After fun deleteDatabase() {
+        context.deleteDatabase(TEST_DB)
+    }
 
     @Test fun migrationPreservesVersionOneDataAndCreatesListeningTables() {
         helper.createDatabase(TEST_DB, 1).apply {

@@ -52,13 +52,14 @@ class TerminalVisualizersTest {
                 TerminalVisualizerScene(mode, frame, effectsEnabled, Modifier.size(200.dp))
             }
         }
-        compose.mainClock.advanceTimeByFrame()
+        advanceUi()
 
         compose.onNodeWithTag("visualizer-radar").assertIsDisplayed().assertHasNoClickAction()
         compose.onNodeWithTag("scanlines").assertIsDisplayed()
 
         compose.runOnIdle { effectsEnabled = false }
         compose.mainClock.advanceTimeBy(550)
+        advanceUi()
         compose.onNodeWithTag("scanlines").assertDoesNotExist()
         compose.onNodeWithTag("visualizer-radar").assertIsDisplayed().assertHasNoClickAction()
 
@@ -67,20 +68,23 @@ class TerminalVisualizersTest {
             mode = VisualizerDisplayMode.BANDS
             frame = activeFrame(2)
         }
-        compose.mainClock.advanceTimeByFrame()
+        advanceUi()
         compose.onNodeWithTag("visualizer-radar").assertDoesNotExist()
         compose.onNodeWithTag("visualizer-bands").assertIsDisplayed().assertHasNoClickAction()
 
         compose.runOnIdle { frame = AudioAnalysisFrame.Unavailable }
+        advanceUi()
         compose.onNodeWithText("SIGNAL UNAVAILABLE").assertIsDisplayed()
         compose.mainClock.advanceTimeBy(550)
         compose.onNodeWithText("SIGNAL UNAVAILABLE").assertIsDisplayed()
 
         compose.runOnIdle { frame = activeFrame(3) }
-        compose.mainClock.advanceTimeByFrame()
+        advanceUi()
         compose.onNodeWithText("SIGNAL UNAVAILABLE").assertDoesNotExist()
         compose.onNodeWithTag("visualizer-bands").assertIsDisplayed().assertHasNoClickAction()
     }
+
+    private fun advanceUi() = repeat(2) { compose.mainClock.advanceTimeByFrame() }
 
     private fun activeFrame(id: Long) = AudioAnalysisFrame(
         waveform = List(128) { 0f },

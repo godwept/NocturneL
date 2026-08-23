@@ -152,7 +152,7 @@ class ListeningScreensTest {
             }
         }
 
-        compose.onNodeWithText("No playable albums yet. Rescan after adding music.").assertIsDisplayed()
+        compose.onNodeWithText(":: No playable albums yet. Rescan after adding music.").assertIsDisplayed()
         compose.onNodeWithText("[ SORT: ARTIST ]").assertDoesNotExist()
         compose.onNodeWithText("[ VIEW: GRID ]").assertDoesNotExist()
     }

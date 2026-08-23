@@ -39,7 +39,7 @@ class PlaylistDocumentServiceTest {
         assertEquals(expected, PlaylistBundleCodec.decode(bundle.inputStream()).playlists)
     }
 
-    private fun cacheFile(name: String): File = File(context.cacheDir, "playlist-service-$name").also {
+    private fun cacheFile(name: String): File = File(context.cacheDir, name).also {
         it.delete()
         it.deleteOnExit()
     }

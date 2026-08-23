@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -32,7 +33,7 @@ class AlbumPlaylistPickerTest {
             }
         }
 
-        compose.onNodeWithText("ADD ALBUM TO PLAYLIST").assertIsDisplayed()
+        compose.onNodeWithText("[ ADD ALBUM TO PLAYLIST ]").assertIsDisplayed()
         compose.onNodeWithText("[ NIGHT RUN ]").assertHasClickAction().performClick()
         compose.onNodeWithText("[ DEEP FOCUS ]").assertHasClickAction()
         assertEquals(playlists.first(), selected)
@@ -62,7 +63,7 @@ class AlbumPlaylistPickerTest {
         }
 
         compose.onNodeWithTag("create-and-add-playlist").assertIsNotEnabled()
-        compose.onNodeWithTag("new-playlist-name").performTextInput(" Night Run ")
+        compose.onNode(hasSetTextAction()).performTextInput(" Night Run ")
         compose.onNodeWithTag("create-and-add-playlist").assertIsEnabled().performClick()
         assertEquals("Night Run", createdName)
     }

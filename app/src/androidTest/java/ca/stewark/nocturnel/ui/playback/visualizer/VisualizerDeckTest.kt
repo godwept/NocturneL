@@ -75,16 +75,17 @@ class VisualizerDeckTest {
         compose.onNodeWithTag("visualizer-sync-controls").assertDoesNotExist()
         compose.mainClock.autoAdvance = false
         compose.onNodeWithTag("visualizer-art").performClick()
-        compose.mainClock.advanceTimeByFrame()
+        advanceUi()
         compose.onNodeWithTag("visualizer-sync-controls").assertIsDisplayed()
         compose.onNodeWithContentDescription("Decrease visualizer sync offset").assertExists()
         compose.onNodeWithContentDescription("Increase visualizer sync offset").assertExists()
         compose.onNodeWithContentDescription("Reset visualizer sync offset, currently +150 ms").assertExists()
         compose.mainClock.advanceTimeBy(3_001)
+        advanceUi()
         compose.onNodeWithTag("visualizer-sync-reset").assertDoesNotExist()
 
         compose.onNodeWithTag("visualizer-sync-decrease").assertIsEnabled().performClick()
-        compose.mainClock.advanceTimeByFrame()
+        advanceUi()
         compose.onNodeWithText("VIS SYNC +125 MS", substring = true).assertIsDisplayed()
         compose.onNodeWithTag("visualizer-radar").assertIsDisplayed()
 
@@ -95,7 +96,7 @@ class VisualizerDeckTest {
         compose.onNodeWithTag("visualizer-radar").assertIsDisplayed()
 
         compose.onNodeWithTag("visualizer-sync-reset").performClick()
-        compose.mainClock.advanceTimeByFrame()
+        advanceUi()
         compose.onNodeWithText("VIS SYNC 0 MS", substring = true).assertIsDisplayed()
         compose.onNodeWithTag("visualizer-radar").assertIsDisplayed()
         assertEquals(1, resets)
@@ -103,22 +104,22 @@ class VisualizerDeckTest {
         assertEquals(1, increases)
 
         compose.runOnIdle { offsetMs = -2_000 }
-        compose.mainClock.advanceTimeByFrame()
+        advanceUi()
         compose.onNodeWithTag("visualizer-sync-decrease").assertIsNotEnabled()
             .performTouchInput { click() }
         compose.onNodeWithTag("visualizer-radar").assertIsDisplayed()
         compose.runOnIdle { offsetMs = 2_000 }
-        compose.mainClock.advanceTimeByFrame()
+        advanceUi()
         compose.onNodeWithTag("visualizer-sync-increase").assertIsNotEnabled()
             .performTouchInput { click() }
         compose.onNodeWithTag("visualizer-radar").assertIsDisplayed()
 
         compose.onNodeWithTag("visualizer-deck").performClick()
-        compose.mainClock.advanceTimeByFrame()
+        advanceUi()
         compose.onNodeWithTag("visualizer-sync-controls").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-bands").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-deck").performClick()
-        compose.mainClock.advanceTimeByFrame()
+        advanceUi()
         compose.onNodeWithTag("visualizer-sync-controls").assertDoesNotExist()
     }
 
@@ -139,7 +140,7 @@ class VisualizerDeckTest {
 
         compose.mainClock.autoAdvance = false
         compose.onNodeWithTag("visualizer-art").performClick()
-        compose.mainClock.advanceTimeByFrame()
+        advanceUi()
 
         val visualizerBounds = compose.onNodeWithTag("visualizer-deck").fetchSemanticsNode().boundsInRoot
         assertEquals(artBounds.left, visualizerBounds.left, 0.5f)
@@ -178,7 +179,7 @@ class VisualizerDeckTest {
 
         compose.mainClock.autoAdvance = false
         compose.onNodeWithTag("visualizer-art").performClick()
-        compose.mainClock.advanceTimeByFrame()
+        advanceUi()
         compose.onNodeWithTag("visualizer-sync-reset").assertIsDisplayed()
         compose.mainClock.advanceTimeBy(2_599)
         compose.onNodeWithTag("visualizer-sync-reset").assertExists()
@@ -186,12 +187,14 @@ class VisualizerDeckTest {
         compose.onNodeWithTag("visualizer-sync-reset").assertDoesNotExist()
 
         compose.onNodeWithTag("visualizer-deck").performClick()
-        compose.mainClock.advanceTimeByFrame()
+        advanceUi()
         compose.onNodeWithTag("visualizer-bands").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-sync-reset").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-deck").performClick()
-        compose.mainClock.advanceTimeByFrame()
+        advanceUi()
         compose.onNodeWithTag("visualizer-art").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-sync-controls").assertDoesNotExist()
     }
+
+    private fun advanceUi() = repeat(2) { compose.mainClock.advanceTimeByFrame() }
 }
