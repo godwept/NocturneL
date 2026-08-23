@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.screenshot)
 }
 
-val releaseVersionCode = 3
+val releaseVersionCode = 4
 val releaseVersionName = "0.1.0"
 
 android {
@@ -78,6 +78,7 @@ dependencies {
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
     screenshotTestImplementation(libs.screenshot.validation.api)
     screenshotTestImplementation(libs.androidx.compose.ui.tooling)

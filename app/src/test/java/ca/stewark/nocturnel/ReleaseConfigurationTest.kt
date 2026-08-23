@@ -13,7 +13,7 @@ class ReleaseConfigurationTest {
         assertTrue("targetSdk = 36" in buildFile)
         assertTrue("versionCode = releaseVersionCode" in buildFile)
         assertTrue("versionName = releaseVersionName" in buildFile)
-        assertTrue("val releaseVersionCode = 3" in buildFile)
+        assertTrue("val releaseVersionCode = 4" in buildFile)
         assertTrue("val releaseVersionName = \"0.1.0\"" in buildFile)
     }
 
@@ -28,5 +28,9 @@ class ReleaseConfigurationTest {
     @Test fun releaseVersionCanBeReadDeterministically() {
         assertTrue("printReleaseVersion" in buildFile)
         assertTrue("println(\"${'$'}releaseVersionName ${'$'}releaseVersionCode\")" in buildFile)
+    }
+
+    @Test fun composeInstrumentedTestsIncludeTheirHostActivity() {
+        assertTrue("debugImplementation(libs.androidx.compose.ui.test.manifest)" in buildFile)
     }
 }

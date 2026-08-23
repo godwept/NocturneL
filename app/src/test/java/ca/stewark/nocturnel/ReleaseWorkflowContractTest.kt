@@ -23,6 +23,7 @@ class ReleaseWorkflowContractTest {
             "Require Play Store assets",
             "validateDebugScreenshotTest", "lintRelease", "assembleDebugAndroidTest",
             "bundleRelease", "api-level: [31, 36]", "connectedDebugAndroidTest",
+            "Enable KVM", "KERNEL==\"kvm\"", "udevadm control --reload-rules",
             "id: instrumented-tests", "continue-on-error: true",
             ".instrumented-tests-completed", ".instrumented-tests-failed",
             "Verify instrumented test result", "adb shell getprop ro.build.version.sdk",
