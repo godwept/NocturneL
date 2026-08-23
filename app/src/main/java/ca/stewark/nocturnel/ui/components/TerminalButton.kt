@@ -1,22 +1,28 @@
 package ca.stewark.nocturnel.ui.components
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 import ca.stewark.nocturnel.ui.theme.TerminalTheme
 
@@ -30,6 +36,7 @@ fun BracketButton(
     contentDescription: String? = null,
     textStyle: TextStyle = MaterialTheme.typography.labelLarge,
     horizontalPadding: Dp = TerminalDimensions.xs,
+    spacedBrackets: Boolean = true,
     contentAlignment: Alignment = Alignment.Center,
 ) {
     val palette = TerminalTheme.palette
@@ -53,7 +60,7 @@ fun BracketButton(
         contentAlignment = contentAlignment,
     ) {
         Text(
-            "[ ${label.uppercase()} ]",
+            if (spacedBrackets) "[ ${label.uppercase()} ]" else "[${label.uppercase()}]",
             color = color,
             style = textStyle,
             maxLines = 1,
@@ -72,4 +79,47 @@ fun BracketIconButton(
     selected: Boolean = false,
 ) {
     BracketButton(glyph, onClick, modifier, enabled, selected, contentDescription)
+}
+
+@Composable
+fun TerminalIconButton(
+    @DrawableRes iconRes: Int,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    selected: Boolean = false,
+) {
+    val palette = TerminalTheme.palette
+    val color = when {
+        !enabled -> palette.textSecondary.copy(alpha = .5f)
+        selected -> palette.selection
+        else -> palette.textPrimary
+    }
+    Box(
+        modifier
+            .semantics {
+                this.contentDescription = contentDescription
+                this.selected = selected
+            }
+            .defaultMinSize(
+                minWidth = TerminalDimensions.minimumTouchTarget,
+                minHeight = TerminalDimensions.minimumTouchTarget,
+            )
+            .clickable(
+                enabled = enabled,
+                role = Role.Button,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(24.dp),
+        )
+    }
 }

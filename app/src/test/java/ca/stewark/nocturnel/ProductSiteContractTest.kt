@@ -133,7 +133,7 @@ class ProductSiteContractTest {
 
     @Test fun manualCollectionIsCompleteAndAccurate() {
         val expected = listOf(
-            ManualContract("getting-started.md", 10, "/manual/getting-started/", listOf("Android 12", "CHOOSE MUSIC FOLDER", "LIB", "SEA", "ART", "PLY", "NOW", "SET")),
+            ManualContract("getting-started.md", 10, "/manual/getting-started/", listOf("Android 12", "CHOOSE MUSIC FOLDER", "five labels", "LIB", "SEA", "ART", "PLY", "NOW", "Settings", "gear")),
             ManualContract("library.md", 20, "/manual/library/", listOf("GRID", "FLOW", "ARTIST", "TITLE", "YEAR", "MOST PLAYED", "SET COVER", "CHANGE MUSIC FOLDER")),
             ManualContract("playback.md", 30, "/manual/playback/", listOf("Play or pause", "Previous", "Next", "Repeat all", "Repeat one", "lock screen", "audio focus", "restore")),
             ManualContract("queue.md", 40, "/manual/queue/", listOf("ADD QUEUE", "UPCOMING", "drag", "UNDO", "CLEAR UPCOMING", "SHUFFLE", "REPEAT ALL", "QUEUE CHANGED")),
@@ -150,6 +150,9 @@ class ProductSiteContractTest {
         expected.forEach(::assertManualPage)
         assertEquals(expected.map { it.order }.toSet().size, expected.size)
         assertEquals(expected.map { it.permalink }.toSet().size, expected.size)
+        val gettingStarted = read("docs/_manual/getting-started.md")
+        assertFalse("Getting started must not describe six navigation labels", "six labels" in gettingStarted)
+        assertFalse("SET must not remain a primary navigation entry", "**SET** —" in gettingStarted)
     }
 
     @Test fun policy404AndMetadataUseTheSharedSite() {

@@ -1,12 +1,9 @@
 package ca.stewark.nocturnel.ui.components
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -19,11 +16,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.material3.MaterialTheme
 import ca.stewark.nocturnel.ui.navigation.NocturneLDestination
-import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 import ca.stewark.nocturnel.ui.theme.TerminalTheme
+
+private val PrimaryDestinations = NocturneLDestination.entries.filterNot { it == NocturneLDestination.SETTINGS }
 
 @Composable
 fun TerminalNavigation(
@@ -33,36 +30,24 @@ fun TerminalNavigation(
     modifier: Modifier = Modifier,
 ) {
     val palette = TerminalTheme.palette
-    val transition = rememberInfiniteTransition(label = "active navigation")
-    val pulse = if (effectsEnabled) {
-        transition.animateFloat(
-            initialValue = .62f,
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
-            label = "active navigation pulse",
-        ).value
-    } else 1f
+    val pulse = rememberActiveNavigationPulse(effectsEnabled)
     Column(modifier.fillMaxWidth().testTag(if (effectsEnabled) "animated-navigation" else "static-navigation")) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = TerminalDimensions.md),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            NocturneLDestination.entries.forEach { destination ->
+            PrimaryDestinations.forEach { destination ->
                 BracketButton(
                     label = destination.label,
                     onClick = { onSelected(destination) },
                     selected = destination == selected,
                     modifier = Modifier
-                        .widthIn(min = TerminalDimensions.minimumTouchTarget)
+                        .weight(1f)
                         .graphicsLayer { alpha = if (destination == selected) pulse else 1f },
-                    textStyle = MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 10.sp,
-                        letterSpacing = 0.sp,
-                    ),
+                    textStyle = MaterialTheme.typography.labelSmall,
                     horizontalPadding = 0.dp,
-                    contentAlignment = Alignment.CenterStart,
+                    spacedBrackets = false,
+                    contentAlignment = Alignment.Center,
                 )
             }
         }
@@ -73,5 +58,20 @@ fun TerminalNavigation(
                 x += 10.dp.toPx()
             }
         }
+    }
+}
+
+@Composable
+internal fun rememberActiveNavigationPulse(effectsEnabled: Boolean): Float {
+    val transition = rememberInfiniteTransition(label = "active navigation")
+    return if (effectsEnabled) {
+        transition.animateFloat(
+            initialValue = .62f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
+            label = "active navigation pulse",
+        ).value
+    } else {
+        1f
     }
 }

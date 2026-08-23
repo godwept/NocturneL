@@ -56,7 +56,6 @@ import ca.stewark.nocturnel.ui.theme.FontPreset
 import ca.stewark.nocturnel.ui.theme.ColorThemePreset
 import ca.stewark.nocturnel.ui.theme.TerminalTheme
 import ca.stewark.nocturnel.ui.components.TerminalScaffold
-import ca.stewark.nocturnel.ui.components.TerminalNavigation
 import ca.stewark.nocturnel.ui.components.Scanlines
 import ca.stewark.nocturnel.ui.navigation.NocturneLDestination
 import com.android.tools.screenshot.PreviewTest
@@ -592,10 +591,39 @@ fun AlbumGridNeonPixelPreview() = TerminalPreview(FontPreset.PIXEL, ColorThemePr
 }
 
 @PreviewTest
-@Preview(name = "Navigation Pixel font 320dp", widthDp = 320, heightDp = 80)
+@Preview(name = "Navigation header Classic 320dp", widthDp = 320, heightDp = 112)
 @Composable
-fun NavigationPixelFontPreview() = TerminalPreview(FontPreset.PIXEL) {
-    TerminalNavigation(NocturneLDestination.LIBRARY, {}, effectsEnabled = false)
+fun NavigationHeaderClassicPreview() = navigationHeaderPreview(FontPreset.CLASSIC)
+
+@PreviewTest
+@Preview(name = "Navigation header Mainframe 320dp", widthDp = 320, heightDp = 112)
+@Composable
+fun NavigationHeaderMainframePreview() = navigationHeaderPreview(FontPreset.MAINFRAME)
+
+@PreviewTest
+@Preview(name = "Navigation header Pixel enlarged 320dp", widthDp = 320, heightDp = 112, fontScale = 1.3f)
+@Composable
+fun NavigationHeaderPixelConstrainedPreview() = navigationHeaderPreview(FontPreset.PIXEL)
+
+@PreviewTest
+@Preview(name = "Navigation header Modern 320dp", widthDp = 320, heightDp = 112)
+@Composable
+fun NavigationHeaderModernPreview() = navigationHeaderPreview(FontPreset.MODERN)
+
+@PreviewTest
+@Preview(name = "Navigation header Settings selected 320dp", widthDp = 320, heightDp = 112)
+@Composable
+fun NavigationHeaderSettingsPreview() = navigationHeaderPreview(
+    FontPreset.CLASSIC,
+    selected = NocturneLDestination.SETTINGS,
+)
+
+@Composable
+private fun navigationHeaderPreview(
+    fontPreset: FontPreset,
+    selected: NocturneLDestination = NocturneLDestination.LIBRARY,
+) = TerminalPreview(fontPreset) {
+    TerminalScaffold(selected, {}, effectsEnabled = false) {}
 }
 
 @Composable

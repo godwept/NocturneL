@@ -18,15 +18,35 @@ class TerminalUiSourceGuardTest {
         assertEquals(1, Regex("TerminalActionRow \\{").findAll(playlist).count())
     }
 
-    @Test fun `main navigation fills the width with heading-aligned equal touch targets`() {
+    @Test fun `main navigation fills the width with equal touch targets`() {
         val source = File("src/main/java/ca/stewark/nocturnel/ui/components/TerminalNavigation.kt").readText()
 
-        assertTrue("Navigation must align with the heading margin", ".padding(horizontal = TerminalDimensions.md)" in source)
-        assertTrue("Navigation tabs must spread across the available width", "Arrangement.SpaceBetween" in source)
-        assertTrue("Navigation tabs must retain minimum touch width", ".widthIn(min = TerminalDimensions.minimumTouchTarget)" in source)
-        assertTrue("Navigation labels must begin at the heading edge", "contentAlignment = Alignment.CenterStart" in source)
-        assertTrue("Navigation must use its compact label style", "MaterialTheme.typography.labelSmall" in source)
+        assertTrue("Navigation must fill the available width", ".fillMaxWidth()" in source)
+        assertFalse("Navigation must not inset constrained labels", ".padding(horizontal" in source)
+        assertTrue("Settings must be excluded from primary navigation", "filterNot { it == NocturneLDestination.SETTINGS }" in source)
+        assertTrue("Navigation tabs must receive equal width", ".weight(1f)" in source)
+        assertTrue("Navigation labels must be centered", "contentAlignment = Alignment.Center" in source)
+        assertTrue("Navigation must use unmodified theme typography", "textStyle = MaterialTheme.typography.labelSmall" in source)
+        assertTrue("Navigation brackets must omit decorative spaces", "spacedBrackets = false" in source)
+        assertFalse("Navigation must not force a font size", ".fontSize" in source)
+        assertFalse("Navigation must not force letter spacing", ".letterSpacing" in source)
+        assertFalse("Navigation tabs must not use minimum widths", ".widthIn" in source)
+        assertFalse("Equal tabs must not use space-between arrangement", "Arrangement.SpaceBetween" in source)
         assertTrue("Navigation should not collapse into a left-anchored scroll row", ".horizontalScroll(" !in source)
+    }
+
+    @Test fun `settings is an accessible icon in the title row`() {
+        val source = File("src/main/java/ca/stewark/nocturnel/ui/components/TerminalScaffold.kt").readText()
+
+        assertTrue("Header must be a full-width row", "Row(Modifier.fillMaxWidth()" in source)
+        assertTrue("Header contents must be vertically centered", "verticalAlignment = Alignment.CenterVertically" in source)
+        assertTrue("Settings must sit opposite the title", "horizontalArrangement = Arrangement.SpaceBetween" in source)
+        assertTrue("Header must retain the title", "\"NOCTURNEL\"" in source)
+        assertTrue("Header must use the local Settings vector", "R.drawable.ic_settings" in source)
+        assertTrue("Settings must have an accessible label", "\"Settings\"" in source)
+        assertTrue("Settings must use the terminal icon control", "TerminalIconButton(" in source)
+        assertTrue("Settings selection must follow the destination", "selected == NocturneLDestination.SETTINGS" in source)
+        assertTrue("Settings must reuse the navigation pulse", "rememberActiveNavigationPulse" in source)
     }
 
     @Test fun `production ui uses semantic theme colors`() {

@@ -31,13 +31,14 @@ After scanning, playable albums appear in the library. An empty result usually m
 
 ## Learn the main navigation
 
-The compact bottom navigation uses six labels:
+The primary navigation below the header uses five labels:
 
 - **LIB** — album library
 - **SEA** — local search
 - **ART** — artists
 - **PLY** — playlists
 - **NOW** — current playback and queue
-- **SET** — settings, rescanning, and privacy
+
+Use the **Settings** gear at the top right for rescanning, appearance, privacy, and related preferences.
 
 Selecting a destination closes any open album, artist, playlist picker, or queue editor and returns to that destination's top level.
