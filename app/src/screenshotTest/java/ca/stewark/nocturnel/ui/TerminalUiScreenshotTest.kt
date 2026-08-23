@@ -240,6 +240,20 @@ fun SearchPreview() = TerminalPreview {
 }
 
 @PreviewTest
+@Preview(name = "Album detail Pixel constrained", widthDp = 320, heightDp = 915)
+@Composable
+fun AlbumDetailPixelConstrainedPreview() = TerminalPreview(FontPreset.PIXEL) {
+    AlbumDetailScreen(
+        album = previewAlbums.first(),
+        tracks = previewTracks.take(2),
+        onBack = {},
+        onPlay = {},
+        onPlayAlbum = {},
+        onChooseArtwork = {},
+    )
+}
+
+@PreviewTest
 @Preview(name = "Playlist detail", widthDp = 412, heightDp = 915)
 @Composable
 fun PlaylistDetailPreview() = TerminalPreview {
@@ -251,6 +265,19 @@ fun PlaylistDetailPreview() = TerminalPreview {
     }
     PlaylistDetailScreen(
         playlistDetailState(PlaylistEntity(1, "Night Run", 1), rows, tracks),
+        {}, {}, {}, {}, {}, { _, _ -> },
+    )
+}
+
+@PreviewTest
+@Preview(name = "Playlist detail Pixel constrained", widthDp = 320, heightDp = 915)
+@Composable
+fun PlaylistDetailPixelConstrainedPreview() = TerminalPreview(FontPreset.PIXEL) {
+    val rows = previewTracks.take(2).mapIndexed { index, track ->
+        PlaylistEntryRow(index, track.relativePath, track.title, track.artist, track.durationMs, track.status)
+    }
+    PlaylistDetailScreen(
+        playlistDetailState(PlaylistEntity(1, "Night Run", 1), rows, previewTracks),
         {}, {}, {}, {}, {}, { _, _ -> },
     )
 }

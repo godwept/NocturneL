@@ -1,11 +1,23 @@
 package ca.stewark.nocturnel.ui
 
 import java.io.File
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class TerminalUiSourceGuardTest {
+    @Test fun `font-sensitive action groups wrap instead of clipping`() {
+        val component = File("src/main/java/ca/stewark/nocturnel/ui/components/TerminalActionRow.kt")
+        assertTrue("A shared wrapping action row must exist", component.isFile)
+
+        val album = File("src/main/java/ca/stewark/nocturnel/ui/library/AlbumDetailScreen.kt").readText()
+        val playlist = File("src/main/java/ca/stewark/nocturnel/ui/playlist/PlaylistDetailScreen.kt").readText()
+        assertTrue("Action rows must wrap controls that exceed the available width", "FlowRow(" in component.readText())
+        assertEquals(2, Regex("TerminalActionRow \\{").findAll(album).count())
+        assertEquals(1, Regex("TerminalActionRow \\{").findAll(playlist).count())
+    }
+
     @Test fun `main navigation fills the width with heading-aligned equal touch targets`() {
         val source = File("src/main/java/ca/stewark/nocturnel/ui/components/TerminalNavigation.kt").readText()
 

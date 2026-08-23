@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
@@ -22,6 +23,7 @@ import ca.stewark.nocturnel.ui.sampleAlbum
 import ca.stewark.nocturnel.ui.sampleTracks
 import ca.stewark.nocturnel.ui.playlist.AlbumPlaylistUiState
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
+import ca.stewark.nocturnel.ui.theme.FontPreset
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -170,6 +172,32 @@ class AlbumDetailScreenTest {
         assertEquals(1, favoriteToggles)
         assertEquals(1, coverSelections)
         assertEquals(1, playlistToggles)
+    }
+
+    @Test fun albumActionRowsDoNotClipWithPixelFontAt320Dp() {
+        compose.setContent {
+            NocturneLTheme(fontPreset = FontPreset.PIXEL) {
+                Box(Modifier.width(320.dp)) {
+                    AlbumDetailScreen(sampleAlbum, sampleTracks, {}, {}, {}, {})
+                }
+            }
+        }
+
+        val rootRight = compose.onRoot().fetchSemanticsNode().boundsInRoot.right
+        val actions = listOf(
+            compose.onNodeWithText("[ BACK ]", useUnmergedTree = true),
+            compose.onNodeWithText("[ PLAY ]", useUnmergedTree = true),
+            compose.onNodeWithText("[ SHUFFLE ]", useUnmergedTree = true),
+            compose.onNodeWithText("[ ADD QUEUE ]", useUnmergedTree = true),
+            compose.onAllNodesWithText("[ FAV ]", useUnmergedTree = true).onFirst(),
+            compose.onNodeWithText("[ SET COVER ]", useUnmergedTree = true),
+            compose.onNodeWithText("[ ADD TO PLAYLIST ]", useUnmergedTree = true),
+        )
+        actions.forEach { action ->
+            action.assertIsDisplayed()
+            assertFalse(action.textLayoutResult().hasVisualOverflow)
+            assertTrue(action.fetchSemanticsNode().boundsInRoot.right <= rootRight + 1f)
+        }
     }
 
     private fun SemanticsNodeInteraction.textLayoutResult(): TextLayoutResult {

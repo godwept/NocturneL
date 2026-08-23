@@ -14,6 +14,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
@@ -23,6 +24,8 @@ import ca.stewark.nocturnel.data.model.PlaylistEntryRow
 import ca.stewark.nocturnel.ui.samplePlaylist
 import ca.stewark.nocturnel.ui.sampleTracks
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
+import ca.stewark.nocturnel.ui.theme.FontPreset
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -110,6 +113,24 @@ class PlaylistDetailScreenTest {
         assertEquals(1, titleLayout.lineCount)
         assertTrue(artistLayout.hasVisualOverflow)
         assertTrue(titleLayout.hasVisualOverflow)
+    }
+
+    @Test fun playlistActionsDoNotClipWithPixelFontAt320Dp() {
+        compose.setContent {
+            NocturneLTheme(fontPreset = FontPreset.PIXEL) {
+                androidx.compose.foundation.layout.Box(Modifier.width(320.dp)) {
+                    PlaylistDetailScreen(state(listOf("first")), {}, {}, {}, {}, {}, { _, _ -> })
+                }
+            }
+        }
+
+        val rootRight = compose.onRoot().fetchSemanticsNode().boundsInRoot.right
+        listOf("[ PLAY ]", "[ RENAME ]", "[ ADD TRACK ]", "[ ADD QUEUE ]").forEach { label ->
+            val action = compose.onNodeWithText(label, useUnmergedTree = true)
+            action.assertIsDisplayed()
+            assertFalse(action.textLayoutResult().hasVisualOverflow)
+            assertTrue(action.fetchSemanticsNode().boundsInRoot.right <= rootRight + 1f)
+        }
     }
 
     @Test fun dragAcrossMultipleRowsCommitsOnceInBothDirections() {

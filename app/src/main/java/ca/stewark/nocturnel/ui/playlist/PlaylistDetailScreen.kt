@@ -22,6 +22,7 @@ import ca.stewark.nocturnel.ui.components.BracketButton
 import ca.stewark.nocturnel.ui.components.BracketIconButton
 import ca.stewark.nocturnel.ui.components.DragReorderHandle
 import ca.stewark.nocturnel.ui.components.TerminalTextField
+import ca.stewark.nocturnel.ui.components.TerminalActionRow
 import ca.stewark.nocturnel.data.entity.TrackEntity
 import ca.stewark.nocturnel.ui.components.dragReorderRow
 import ca.stewark.nocturnel.ui.components.rememberDragReorderLazyListState
@@ -53,7 +54,7 @@ fun PlaylistDetailScreen(
         Row { BracketButton("BACK", onBack) }
         AsciiFrame(state.playlist.name) {
             TerminalTextField(name, { name = it }, "PLAYLIST NAME")
-            Row {
+            TerminalActionRow {
                 val actionStyle = MaterialTheme.typography.labelMedium
                 BracketButton("PLAY", onPlay, enabled = state.entries.any { it.available }, textStyle = actionStyle)
                 BracketButton("RENAME", { onRename(name) }, enabled = name.isNotBlank() && name != state.playlist.name, textStyle = actionStyle)

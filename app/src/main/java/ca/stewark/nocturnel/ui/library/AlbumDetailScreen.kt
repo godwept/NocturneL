@@ -24,6 +24,7 @@ import ca.stewark.nocturnel.ui.components.AsciiFrame
 import ca.stewark.nocturnel.ui.components.BracketButton
 import ca.stewark.nocturnel.ui.components.QueueTrackActions
 import ca.stewark.nocturnel.ui.components.FavoriteToggle
+import ca.stewark.nocturnel.ui.components.TerminalActionRow
 import ca.stewark.nocturnel.ui.playlist.AlbumPlaylistUiState
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 
@@ -53,7 +54,7 @@ fun AlbumDetailScreen(
 ) {
     val playableTracks = tracks.filter { it.status == "PLAYABLE" }
     Column(Modifier.fillMaxSize().padding(TerminalDimensions.sm)) {
-        Row {
+        TerminalActionRow {
             BracketButton("BACK", onBack)
             BracketButton("PLAY", { onPlayAlbum(tracks) }, enabled = tracks.isNotEmpty())
             BracketButton("SHUFFLE", { onShuffleAlbum(tracks) }, enabled = tracks.isNotEmpty())
@@ -66,7 +67,7 @@ fun AlbumDetailScreen(
                     Text(album.artist, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.padding(top = TerminalDimensions.xs))
                     album.year?.let { Text(it, color = MaterialTheme.colorScheme.secondary) }
                     Text("$albumPlayCount PLAY(S)", color = MaterialTheme.colorScheme.secondary)
-                    Row {
+                    TerminalActionRow {
                         FavoriteToggle(album.title, albumFavorite, { onToggleAlbumFavorite(album) })
                         BracketButton("SET COVER", onChooseArtwork)
                         BracketButton(
