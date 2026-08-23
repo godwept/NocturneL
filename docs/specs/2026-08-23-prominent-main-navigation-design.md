@@ -10,7 +10,7 @@ Make NocturneL's five primary destinations more prominent by moving Settings out
 ## Success Criteria
 
 - [ ] `LIB`, `SEA`, `ART`, `PLY`, and `NOW` each occupy one-fifth of the usable navigation width.
-- [ ] Primary tabs use the active theme's unmodified `labelSmall` typography without a forced 10sp font size.
+- [ ] Primary tabs use the active theme's prominent 14sp `labelLarge` typography without affecting other app text.
 - [ ] All five tabs remain visible and usable at 320dp width, enlarged Android font scale, and with every bundled font preset.
 - [ ] A Settings gear appears at the far right of the `NOCTURNEL` header with an accessible label and minimum touch target.
 - [ ] When Settings is open, the gear receives the selected treatment and no primary tab appears selected.
@@ -48,7 +48,7 @@ The main tab collection excludes Settings. Selecting the header gear navigates t
 
 `TerminalScaffold` retains its selected destination, destination callback, and effects inputs. Its header becomes a full-width row containing `NOCTURNEL` on the left and the Settings icon button on the right.
 
-`TerminalNavigation` renders only the five primary destinations. Each button receives equal weight, centered content, the existing bracketed terminal treatment, and unmodified `MaterialTheme.typography.labelSmall`.
+`TerminalNavigation` renders only the five primary destinations. Each button receives equal weight, centered content, the existing bracketed terminal treatment, and unmodified `MaterialTheme.typography.labelLarge` so the primary navigation is visibly prominent.
 
 The Settings control is a terminal-styled gear icon button with:
 

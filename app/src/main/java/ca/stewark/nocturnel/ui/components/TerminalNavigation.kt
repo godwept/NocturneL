@@ -44,7 +44,7 @@ fun TerminalNavigation(
                     modifier = Modifier
                         .weight(1f)
                         .graphicsLayer { alpha = if (destination == selected) pulse else 1f },
-                    textStyle = MaterialTheme.typography.labelSmall,
+                    textStyle = MaterialTheme.typography.labelLarge,
                     horizontalPadding = 0.dp,
                     spacedBrackets = false,
                     contentAlignment = Alignment.Center,

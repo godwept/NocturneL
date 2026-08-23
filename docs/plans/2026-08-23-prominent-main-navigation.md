@@ -6,7 +6,7 @@
 
 ## Overview
 
-Move Settings from the six-item text navigation into an accessible gear button at the right edge of the `NOCTURNEL` header. Render the remaining `LIB`, `SEA`, `ART`, `PLY`, and `NOW` tabs as equal-width targets using the active theme's unmodified `labelSmall` typography, preserve destination and animation behavior, cover constrained layouts and all font presets, update the manual, and commit and sync the verified change to `origin/main`.
+Move Settings from the six-item text navigation into an accessible gear button at the right edge of the `NOCTURNEL` header. Render the remaining `LIB`, `SEA`, `ART`, `PLY`, and `NOW` tabs as equal-width targets using the active theme's prominent 14sp `labelLarge` typography, preserve destination and animation behavior, cover constrained layouts and all font presets, update the manual, and commit and sync the verified change to `origin/main`.
 
 ## Tasks
 
@@ -18,13 +18,13 @@ Move Settings from the six-item text navigation into an accessible gear button a
 
 - Replace `pixelFontKeepsEveryMainNavigationTabVisibleAt320Dp` with a small helper plus four tests, one for each `FontPreset`, that render `TerminalNavigation` inside a 320dp-wide box. For every preset, assert that `[LIB]`, `[SEA]`, `[ART]`, `[PLY]`, and `[NOW]` are displayed and clickable, and assert that `[ SET ]` does not exist.
 - Add a constrained Pixel test using `CompositionLocalProvider(LocalDensity provides Density(currentDensity.density, 1.3f))`; render the same 320dp navigation and assert all five primary labels remain displayed.
-- Update the source-guard test to require a primary-destination collection excluding `NocturneLDestination.SETTINGS`, a full-width non-inset row, `Modifier.weight(1f)` on every tab, centered tab content, compact brackets, and the exact unmodified `MaterialTheme.typography.labelSmall`. Require that `.fontSize`, `.letterSpacing`, `.widthIn`, `Arrangement.SpaceBetween`, and `.horizontalScroll(` are absent from the navigation tab implementation.
+- Update the source-guard test to require a primary-destination collection excluding `NocturneLDestination.SETTINGS`, a full-width non-inset row, `Modifier.weight(1f)` on every tab, centered tab content, compact brackets, and the exact unmodified `MaterialTheme.typography.labelLarge`. Require that `.fontSize`, `.letterSpacing`, `.widthIn`, `Arrangement.SpaceBetween`, and `.horizontalScroll(` are absent from the navigation tab implementation.
 - Run the focused JVM source guard and `assembleDebugAndroidTest`. Confirm the new assertions fail against the six-tab, forced-10sp implementation before changing production code.
 
 **Implementation:**
 
 - In `TerminalNavigation.kt`, define a private ordered primary-destination list by filtering `NocturneLDestination.entries` to exclude `SETTINGS`; do not change the enum or its persisted names.
-- Render only that list. Let the row use the full width so enlarged Pixel labels fit, give each `BracketButton` `Modifier.weight(1f)`, center its content, use compact `[LIB]`-style brackets without decorative internal spaces, retain the minimum 48dp height supplied by `BracketButton`, and pass `MaterialTheme.typography.labelSmall` directly.
+- Render only that list. Let the row use the full width so enlarged Pixel labels fit, give each `BracketButton` `Modifier.weight(1f)`, center its content, use compact `[LIB]`-style brackets without decorative internal spaces, retain the minimum 48dp height supplied by `BracketButton`, and pass `MaterialTheme.typography.labelLarge` directly.
 - Remove the fixed 10sp size, fixed zero letter spacing, minimum-width override, start alignment, and `Arrangement.SpaceBetween`. Preserve the dashed divider, selected color, destination callback, effects flag, and active-tab alpha pulse.
 - Extract the existing 0.62-to-1.0, 700ms reversing active-navigation pulse into an `internal @Composable` helper in this file so the header Settings control can reuse exactly the same behavior in Task 3.
 
@@ -169,7 +169,7 @@ If `adb devices` shows an available device/emulator, also run `./gradlew.bat con
 
 - [ ] All tasks completed in order with tests written before their corresponding production/documentation changes
 - [ ] `LIB`, `SEA`, `ART`, `PLY`, and `NOW` are the only main tabs and each receives equal width
-- [ ] Tabs use unmodified theme `labelSmall` typography and fit every font preset at 320dp, including the 1.3x constrained case
+- [ ] Tabs use prominent 14sp theme `labelLarge` typography and fit every font preset at 320dp, including the 1.3x constrained case
 - [ ] The top-right Settings gear has a 48dp target, correct semantics, navigation behavior, theme colors, and selected pulse/static treatment
 - [ ] Existing navigation state, nested-state clearing, content, themes, and effects behavior remain unchanged
 - [ ] Getting-started documentation describes the five tabs and Settings gear accurately
