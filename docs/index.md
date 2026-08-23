@@ -78,20 +78,24 @@ NocturneL is an **offline, terminal-themed Android music player** built for the 
   </header>
   <div class="screenshot-grid">
     <figure class="screenshot-card terminal-panel">
-      <img src="{{ '/play-store/listing/graphics/phone/01-library.png' | relative_url }}" width="1080" height="1920" loading="lazy" alt="NocturneL album library in a phosphor-green grid">
+      <img src="{{ '/play-store/listing/graphics/phone/01-library.png' | relative_url }}" width="1080" height="1920" loading="lazy" alt="NocturneL album library in a phosphor-green terminal grid">
       <figcaption>01 / Library</figcaption>
     </figure>
     <figure class="screenshot-card terminal-panel">
-      <img src="{{ '/play-store/listing/graphics/phone/02-album.png' | relative_url }}" width="1080" height="1920" loading="lazy" alt="NocturneL album detail with local track controls">
+      <img src="{{ '/play-store/listing/graphics/phone/02-album.png' | relative_url }}" width="1080" height="1920" loading="lazy" alt="NocturneL album detail with track list and local playback actions">
       <figcaption>02 / Album detail</figcaption>
     </figure>
     <figure class="screenshot-card terminal-panel">
-      <img src="{{ '/play-store/listing/graphics/phone/03-now-playing.png' | relative_url }}" width="1080" height="1920" loading="lazy" alt="NocturneL Now Playing screen and terminal spectrum visualizer">
-      <figcaption>03 / Now playing</figcaption>
+      <img src="{{ '/play-store/listing/graphics/phone/03-vis1.png' | relative_url }}" width="1080" height="1920" loading="lazy" alt="NocturneL Now Playing with a green terminal spectrum-band visualizer">
+      <figcaption>03 / Spectrum bands</figcaption>
     </figure>
     <figure class="screenshot-card terminal-panel">
-      <img src="{{ '/play-store/listing/graphics/phone/04-queue.png' | relative_url }}" width="1080" height="1920" loading="lazy" alt="NocturneL editable upcoming playback queue">
-      <figcaption>04 / Queue</figcaption>
+      <img src="{{ '/play-store/listing/graphics/phone/04-vis2.png' | relative_url }}" width="1080" height="1920" loading="lazy" alt="NocturneL Now Playing with a neon circular radar visualizer">
+      <figcaption>04 / Radar visualizer</figcaption>
+    </figure>
+    <figure class="screenshot-card terminal-panel">
+      <img src="{{ '/play-store/listing/graphics/phone/05-now-playing-album.png' | relative_url }}" width="1080" height="1920" loading="lazy" alt="NocturneL Now Playing with album artwork and playback controls">
+      <figcaption>05 / Album artwork</figcaption>
     </figure>
   </div>
 </section>

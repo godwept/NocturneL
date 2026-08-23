@@ -130,7 +130,7 @@ img { display: block; max-width: 100%; height: auto; }
 .privacy-band::before { content: "+--[ OFFLINE / PRIVATE ]"; grid-column: 1 / -1; margin: calc(clamp(1.5rem, 5vw, 3rem) * -1) calc(clamp(1.5rem, 5vw, 3rem) * -1) 0; }
 .privacy-band h2 { margin: 0; font: 700 clamp(1.7rem, 4vw, 2.6rem)/1.1 var(--mono); }
 .privacy-band p { color: var(--muted); }
-.screenshot-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); }
+.screenshot-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); }
 .screenshot-card { margin: 0; padding: var(--space-2); }
 .screenshot-card::before { content: "+--[ CAPTURE ]"; }
 .screenshot-card img { width: 100%; border-radius: 7px; background: #000; }

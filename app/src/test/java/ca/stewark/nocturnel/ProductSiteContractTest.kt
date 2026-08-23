@@ -83,6 +83,7 @@ class ProductSiteContractTest {
             "prefers-reduced-motion: reduce", "prefers-contrast: more", ".js .site-nav",
             ".manual-pager a { display: block; height: 100%;",
             ".feature-card h3 { margin: var(--space-3) 0 var(--space-2);",
+            ".screenshot-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));",
         )
         assertFalse("Remote fonts are outside the approved design", "@import url(" in css)
     }
@@ -107,14 +108,80 @@ class ProductSiteContractTest {
             "site.release_status", "Read the manual", "'/manual/' | relative_url", "id=\"features\"",
             "selected folder", "Albums, artists, and search", "background", "editable queue", "visualizers",
             "portable playlists", "No accounts", "No ads", "No analytics", "No telemetry", "internet permission",
-            "id=\"screenshots\"", "01-library.png", "02-album.png", "03-now-playing.png", "04-queue.png",
+            "id=\"screenshots\"", "01-library.png", "02-album.png", "03-vis1.png", "04-vis2.png",
+            "05-now-playing-album.png", "01 / Library", "02 / Album detail", "03 / Spectrum bands",
+            "04 / Radar visualizer", "05 / Album artwork",
             "Android 12+", "MP3", "M4A", "AAC", "OGG", "Opus", "WAV", "FLAC",
             "device's Android media codecs", "nocturnelapp@gmail.com", "site.github_url",
         )
         assertEquals(1, Regex("(?m)^# ").findAll(landing).count())
         assertFalse("Do not publish a placeholder Play Store link", "play.google.com" in landing)
-        listOf("01-library.png", "02-album.png", "03-now-playing.png", "04-queue.png").forEach {
-            assertTrue(repoFile("docs/play-store/listing/graphics/phone/$it").isFile)
+        val screenshots = listOf(
+            "01-library.png" to "01 / Library",
+            "02-album.png" to "02 / Album detail",
+            "03-vis1.png" to "03 / Spectrum bands",
+            "04-vis2.png" to "04 / Radar visualizer",
+            "05-now-playing-album.png" to "05 / Album artwork",
+        )
+        val screenshotPositions = screenshots.map { (path, caption) ->
+            assertTrue(repoFile("docs/play-store/listing/graphics/phone/$path").isFile)
+            val pathPosition = landing.indexOf(path)
+            assertTrue("Missing screenshot path: $path", pathPosition >= 0)
+            assertTrue("Missing screenshot caption: $caption", caption in landing)
+            pathPosition
+        }
+        assertTrue("Screenshot paths are not in approved order", screenshotPositions.zipWithNext().all { (first, second) -> first < second })
+        assertFalse("Retired phone Now Playing reference remains", "03-now-playing.png" in landing)
+        assertFalse("Retired phone Queue reference remains", "04-queue.png" in landing)
+        val screenshotSection = landing.substringAfter("id=\"screenshots\"")
+            .substringBefore("<section class=\"site-section\" aria-labelledby=\"requirements-title\">")
+        assertEquals(5, Regex("class=\"screenshot-card terminal-panel\"").findAll(screenshotSection).count())
+        val altTexts = Regex("<img[^>]+alt=\"([^\"]+)\"")
+            .findAll(screenshotSection)
+            .map { it.groupValues[1] }
+            .toList()
+        assertEquals(5, altTexts.size)
+        assertEquals(5, altTexts.toSet().size)
+        altTexts.forEach { altText ->
+            assertTrue("Screenshot alt text must not be blank", altText.isNotBlank())
+            assertTrue("Screenshot alt text exceeds 140 characters: $altText", altText.length <= 140)
+        }
+    }
+
+    @Test fun githubLandingPageShowsApprovedScreenshotSequence() {
+        val screenshots = read("README.md")
+            .substringAfter("## Screenshots")
+            .substringBefore("## Highlights")
+        val tableRows = screenshots.lineSequence().filter { it.startsWith("|") }.toList()
+        assertEquals(
+            listOf("Library", "Album", "Spectrum bands", "Radar visualizer", "Album artwork"),
+            tableRows.first().trim('|').split('|').map(String::trim),
+        )
+        val expectedPaths = listOf(
+            "01-library.png",
+            "02-album.png",
+            "03-vis1.png",
+            "04-vis2.png",
+            "05-now-playing-album.png",
+        )
+        val positions = expectedPaths.map { path ->
+            screenshots.indexOf(path).also { position ->
+                assertTrue("Missing README screenshot path: $path", position >= 0)
+            }
+        }
+        assertTrue("README screenshots are not in approved order", positions.zipWithNext().all { (first, second) -> first < second })
+        assertFalse("Retired phone Now Playing reference remains", "03-now-playing.png" in screenshots)
+        assertFalse("Retired phone Queue reference remains", "04-queue.png" in screenshots)
+        val imageTags = Regex("<img[^>]+>").findAll(screenshots).map { it.value }.toList()
+        assertEquals(5, imageTags.size)
+        imageTags.forEach { tag -> assertTrue("README screenshot width must be 180: $tag", "width=\"180\"" in tag) }
+        val altTexts = imageTags.map { tag ->
+            Regex("alt=\"([^\"]+)\"").find(tag)?.groupValues?.get(1).orEmpty()
+        }
+        assertEquals(5, altTexts.toSet().size)
+        altTexts.forEach { altText ->
+            assertTrue("README screenshot alt text must not be blank", altText.isNotBlank())
+            assertTrue("README screenshot alt text exceeds 140 characters: $altText", altText.length <= 140)
         }
     }
 

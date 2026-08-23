@@ -19,9 +19,9 @@ NocturneL turns a folder of local audio files into a focused, phosphor-green lis
 
 ## Screenshots
 
-| Library | Album | Now playing | Queue |
-|:---:|:---:|:---:|:---:|
-| <img src="docs/play-store/listing/graphics/phone/01-library.png" alt="Local album library in NocturneL's terminal interface" width="220"> | <img src="docs/play-store/listing/graphics/phone/02-album.png" alt="Album tracks and playlist controls in NocturneL" width="220"> | <img src="docs/play-store/listing/graphics/phone/03-now-playing.png" alt="Local track playback and terminal visualizer" width="220"> | <img src="docs/play-store/listing/graphics/phone/04-queue.png" alt="Current and upcoming tracks in the editable queue" width="220"> |
+| Library | Album | Spectrum bands | Radar visualizer | Album artwork |
+|:---:|:---:|:---:|:---:|:---:|
+| <img src="docs/play-store/listing/graphics/phone/01-library.png" alt="NocturneL album library in a phosphor-green terminal grid" width="180"> | <img src="docs/play-store/listing/graphics/phone/02-album.png" alt="NocturneL album detail with track list and local playback actions" width="180"> | <img src="docs/play-store/listing/graphics/phone/03-vis1.png" alt="NocturneL Now Playing with a green terminal spectrum-band visualizer" width="180"> | <img src="docs/play-store/listing/graphics/phone/04-vis2.png" alt="NocturneL Now Playing with a neon circular radar visualizer" width="180"> | <img src="docs/play-store/listing/graphics/phone/05-now-playing-album.png" alt="NocturneL Now Playing with album artwork and playback controls" width="180"> |
 
 ## Highlights
 

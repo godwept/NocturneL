@@ -31,10 +31,14 @@ class ReleaseWorkflowContractTest {
             "NOCTURNEL_UPLOAD_STORE_PASSWORD", "NOCTURNEL_UPLOAD_KEY_PASSWORD",
             "jarsigner", "-storepass:env", "-keypass:env", "-verify", "-strict",
             "sha256sum", "mapping.txt", "retention-days: 30", "if: always()",
-            "phone/01-library.png", "phone/02-album.png", "phone/03-now-playing.png",
-            "phone/04-queue.png", "tablet/01-library.png", "tablet/02-album.png",
-            "tablet/03-now-playing.png", "tablet/04-queue.png",
+            "phone/01-library.png", "phone/02-album.png", "phone/03-vis1.png",
+            "phone/04-vis2.png", "phone/05-now-playing-album.png", "tablet/01-library.png",
+            "tablet/02-album.png", "tablet/03-now-playing.png", "tablet/04-queue.png",
         ).forEach { expected -> assertTrue("Missing workflow contract: $expected", expected in release) }
+        val retiredNowPlaying = listOf("phone", "03-now-playing.png").joinToString("/")
+        val retiredQueue = listOf("phone", "04-queue.png").joinToString("/")
+        assertFalse("Retired phone Now Playing asset remains required", retiredNowPlaying in release)
+        assertFalse("Retired phone Queue asset remains required", retiredQueue in release)
         assertTrue("needs: [quality, device-tests]" in release)
         assertFalse("NOCTURNEL_UPLOAD_" in release.substringBefore("\n  package:"))
         assertTrue(Regex("(?m)^    environment: play-release\\r?$").findAll(release).count() == 1)
