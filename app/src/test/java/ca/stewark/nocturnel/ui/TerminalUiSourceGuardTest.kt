@@ -6,6 +6,17 @@ import org.junit.Assert.assertFalse
 import org.junit.Test
 
 class TerminalUiSourceGuardTest {
+    @Test fun `main navigation fills the width with heading-aligned equal touch targets`() {
+        val source = File("src/main/java/ca/stewark/nocturnel/ui/components/TerminalNavigation.kt").readText()
+
+        assertTrue("Navigation must align with the heading margin", ".padding(horizontal = TerminalDimensions.md)" in source)
+        assertTrue("Navigation tabs must spread across the available width", "Arrangement.SpaceBetween" in source)
+        assertTrue("Navigation tabs must retain minimum touch width", ".widthIn(min = TerminalDimensions.minimumTouchTarget)" in source)
+        assertTrue("Navigation labels must begin at the heading edge", "contentAlignment = Alignment.CenterStart" in source)
+        assertTrue("Navigation must use its compact label style", "MaterialTheme.typography.labelSmall" in source)
+        assertTrue("Navigation should not collapse into a left-anchored scroll row", ".horizontalScroll(" !in source)
+    }
+
     @Test fun `production ui uses semantic theme colors`() {
         val root = File("src/main/java/ca/stewark/nocturnel/ui")
         val forbidden = listOf(

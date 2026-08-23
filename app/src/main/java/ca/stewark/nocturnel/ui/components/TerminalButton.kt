@@ -30,6 +30,7 @@ fun BracketButton(
     contentDescription: String? = null,
     textStyle: TextStyle = MaterialTheme.typography.labelLarge,
     horizontalPadding: Dp = TerminalDimensions.xs,
+    contentAlignment: Alignment = Alignment.Center,
 ) {
     val palette = TerminalTheme.palette
     val color = when {
@@ -49,7 +50,7 @@ fun BracketButton(
                 onClick = onClick,
             )
             .padding(horizontal = horizontalPadding),
-        contentAlignment = Alignment.Center,
+        contentAlignment = contentAlignment,
     ) {
         Text(
             "[ ${label.uppercase()} ]",

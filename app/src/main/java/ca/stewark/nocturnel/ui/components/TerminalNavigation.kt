@@ -1,11 +1,12 @@
 package ca.stewark.nocturnel.ui.components
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -13,12 +14,15 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.material3.MaterialTheme
 import ca.stewark.nocturnel.ui.navigation.NocturneLDestination
+import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 import ca.stewark.nocturnel.ui.theme.TerminalTheme
 
 @Composable
@@ -39,15 +43,26 @@ fun TerminalNavigation(
         ).value
     } else 1f
     Column(modifier.fillMaxWidth().testTag(if (effectsEnabled) "animated-navigation" else "static-navigation")) {
-        Row(Modifier.horizontalScroll(rememberScrollState())) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = TerminalDimensions.md),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
             NocturneLDestination.entries.forEach { destination ->
                 BracketButton(
                     label = destination.label,
                     onClick = { onSelected(destination) },
                     selected = destination == selected,
-                    modifier = Modifier.graphicsLayer { alpha = if (destination == selected) pulse else 1f },
-                    textStyle = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier
+                        .widthIn(min = TerminalDimensions.minimumTouchTarget)
+                        .graphicsLayer { alpha = if (destination == selected) pulse else 1f },
+                    textStyle = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 10.sp,
+                        letterSpacing = 0.sp,
+                    ),
                     horizontalPadding = 0.dp,
+                    contentAlignment = Alignment.CenterStart,
                 )
             }
         }
