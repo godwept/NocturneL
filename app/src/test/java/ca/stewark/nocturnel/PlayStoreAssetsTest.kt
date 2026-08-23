@@ -3,7 +3,6 @@ package ca.stewark.nocturnel
 import java.awt.image.BufferedImage
 import java.io.File
 import javax.imageio.ImageIO
-import org.junit.Assume.assumeTrue
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -19,18 +18,12 @@ class PlayStoreAssetsTest {
     @Test fun phoneSpectrumBands() = assertRequiredScreenshot("phone/03-vis1.png")
     @Test fun phoneRadarVisualizer() = assertRequiredScreenshot("phone/04-vis2.png")
     @Test fun phoneNowPlayingAlbum() = assertRequiredScreenshot("phone/05-now-playing-album.png")
-    @Test fun tabletLibrary() = assertPendingScreenshot("tablet/01-library.png", 1920, 1080)
-    @Test fun tabletAlbum() = assertPendingScreenshot("tablet/02-album.png", 1920, 1080)
-    @Test fun tabletNowPlaying() = assertPendingScreenshot("tablet/03-now-playing.png", 1920, 1080)
-    @Test fun tabletQueue() = assertPendingScreenshot("tablet/04-queue.png", 1920, 1080)
 
     @Test fun assetManifestDocumentsEveryImage() {
         val manifest = File(graphics, "README.md").readText()
         listOf(
             "icon.png", "feature-graphic.png", "phone/01-library.png", "phone/02-album.png",
             "phone/03-vis1.png", "phone/04-vis2.png", "phone/05-now-playing-album.png",
-            "tablet/01-library.png", "tablet/02-album.png", "tablet/03-now-playing.png",
-            "tablet/04-queue.png",
         ).forEach { assertTrue("Missing asset documentation: $it", it in manifest) }
     }
 
@@ -70,12 +63,6 @@ class PlayStoreAssetsTest {
         if (alpha) assertTrue("Expected alpha: $relativePath", image.colorModel.hasAlpha())
         else assertFalse("Unexpected alpha: $relativePath", image.colorModel.hasAlpha())
         maxBytes?.let { assertTrue("Asset too large: $relativePath", file.length() <= it) }
-    }
-
-    private fun assertPendingScreenshot(relativePath: String, width: Int, height: Int) {
-        val file = File(graphics, relativePath)
-        assumeTrue("Pending real Play Store screenshot: ${file.path}", file.isFile)
-        assertImage(relativePath, width, height, alpha = false)
     }
 
     private fun assertRequiredScreenshot(relativePath: String) {

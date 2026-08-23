@@ -11,9 +11,5 @@ All screenshots must show the current app, use rights-cleared music metadata and
 | phone/03-vis1.png | 1080x1920 | Spectrum bands | NocturneL Now Playing with a green terminal spectrum-band visualizer |
 | phone/04-vis2.png | 1080x1920 | Radar visualizer | NocturneL Now Playing with a neon circular radar visualizer |
 | phone/05-now-playing-album.png | 1080x1920 | Now Playing album art | NocturneL Now Playing with album artwork and playback controls |
-| tablet/01-library.png | 1920x1080 | Populated tablet library | Local album library on a tablet display |
-| tablet/02-album.png | 1920x1080 | Tablet album detail | Album tracks and playlist controls on a tablet |
-| tablet/03-now-playing.png | 1920x1080 | Tablet Now Playing | Local playback and terminal visualizer on a tablet |
-| tablet/04-queue.png | 1920x1080 | Tablet editable queue | Editable playback queue on a tablet display |
 
 PNG screenshots and the feature graphic must be opaque 24-bit images. The icon must be a 32-bit PNG with alpha and no larger than 1,024 KB.

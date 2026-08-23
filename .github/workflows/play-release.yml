@@ -45,10 +45,6 @@ jobs:
             "phone/03-vis1.png"
             "phone/04-vis2.png"
             "phone/05-now-playing-album.png"
-            "tablet/01-library.png"
-            "tablet/02-album.png"
-            "tablet/03-now-playing.png"
-            "tablet/04-queue.png"
           )
           for RELATIVE_PATH in "${REQUIRED_ASSETS[@]}"; do
             if [[ ! -f "$ASSET_ROOT/$RELATIVE_PATH" ]]; then
