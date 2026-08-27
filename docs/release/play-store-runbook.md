@@ -2,6 +2,8 @@
 
 Never record identity documents, legal address, phone number, tax details, banking information, tester email addresses, keystores, or passwords in this repository.
 
+Automation agents must also read [`closed-test-agent-guide.md`](closed-test-agent-guide.md) for version/tag sequencing, GitHub artifact retrieval, and the known local Windows testing blockers.
+
 ## Account setup evidence
 
 - [ ] Personal developer account created

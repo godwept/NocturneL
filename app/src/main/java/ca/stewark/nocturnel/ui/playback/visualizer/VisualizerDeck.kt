@@ -2,13 +2,14 @@ package ca.stewark.nocturnel.ui.playback.visualizer
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.MutatorMutex
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,7 +33,10 @@ import ca.stewark.nocturnel.ui.components.BracketButton
 import ca.stewark.nocturnel.ui.components.BracketIconButton
 import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
 import ca.stewark.nocturnel.visualizer.VisualizerSyncOffset
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun VisualizerDeck(
@@ -146,6 +151,7 @@ internal fun VisualizerSyncControls(
     labelAlpha: Float = 1f,
 ) {
     val offsetMs = VisualizerSyncOffset.clamp(syncOffsetMs)
+    val repeatMutator = remember { MutatorMutex() }
     Box(modifier.testTag("visualizer-sync-controls")) {
         SyncCornerButton(
             glyph = "-",
@@ -154,6 +160,7 @@ internal fun VisualizerSyncControls(
             modifier = Modifier.align(Alignment.TopStart),
             testTag = "visualizer-sync-decrease",
             enabled = offsetMs > VisualizerSyncOffset.MIN_MS,
+            repeatMutator = repeatMutator,
         )
         if (labelVisible) {
             BracketButton(
@@ -173,6 +180,7 @@ internal fun VisualizerSyncControls(
             modifier = Modifier.align(Alignment.TopEnd),
             testTag = "visualizer-sync-increase",
             enabled = offsetMs < VisualizerSyncOffset.MAX_MS,
+            repeatMutator = repeatMutator,
         )
     }
 }
@@ -184,15 +192,11 @@ private fun SyncCornerButton(
     onClick: () -> Unit,
     testTag: String,
     enabled: Boolean,
+    repeatMutator: MutatorMutex,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier.then(
-            if (enabled) Modifier else Modifier.pointerInput(Unit) {
-                detectTapGestures(onTap = {})
-            },
-        ),
-    ) {
+    val currentOnClick by rememberUpdatedState(onClick)
+    Box(modifier) {
         BracketIconButton(
             glyph = glyph,
             contentDescription = contentDescription,
@@ -200,8 +204,51 @@ private fun SyncCornerButton(
             modifier = Modifier.testTag(testTag),
             enabled = enabled,
         )
+        Box(
+            Modifier
+                .matchParentSize()
+                .pointerInput(enabled, repeatMutator) {
+                    if (!enabled) {
+                        detectTapGestures(onTap = {})
+                        return@pointerInput
+                    }
+                    detectTapGestures(
+                        onPress = {
+                            repeatMutator.mutate {
+                                currentOnClick()
+                                coroutineScope {
+                                    val repeatJob = launch {
+                                        delay(SYNC_REPEAT_INITIAL_DELAY_MS)
+                                        var elapsedMs = SYNC_REPEAT_INITIAL_DELAY_MS
+                                        while (isActive) {
+                                            currentOnClick()
+                                            val intervalMs = if (elapsedMs >= SYNC_REPEAT_ACCELERATION_THRESHOLD_MS) {
+                                                SYNC_REPEAT_ACCELERATED_INTERVAL_MS
+                                            } else {
+                                                SYNC_REPEAT_INTERVAL_MS
+                                            }
+                                            delay(intervalMs)
+                                            elapsedMs += intervalMs
+                                        }
+                                    }
+                                    try {
+                                        tryAwaitRelease()
+                                    } finally {
+                                        repeatJob.cancel()
+                                    }
+                                }
+                            }
+                        },
+                        onTap = {},
+                    )
+                },
+        )
     }
 }
 
 private const val SYNC_LABEL_HOLD_MS = 2_600L
 private const val SYNC_LABEL_FADE_MS = 400
+private const val SYNC_REPEAT_INITIAL_DELAY_MS = 400L
+private const val SYNC_REPEAT_INTERVAL_MS = 100L
+private const val SYNC_REPEAT_ACCELERATION_THRESHOLD_MS = 1_500L
+private const val SYNC_REPEAT_ACCELERATED_INTERVAL_MS = 50L

@@ -9,6 +9,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
 import ca.stewark.nocturnel.playback.PlaybackUiState
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
 import org.junit.Assert.assertEquals
@@ -69,19 +70,32 @@ class NowPlayingVisualizerTest {
         }
         compose.onNodeWithTag("visualizer-sync-controls").assertDoesNotExist()
         val artBounds = compose.onNodeWithTag("visualizer-art").fetchSemanticsNode().boundsInRoot
+        compose.mainClock.autoAdvance = false
         compose.onNodeWithTag("visualizer-art").performClick()
+        repeat(2) { compose.mainClock.advanceTimeByFrame() }
         val visualizerBounds = compose.onNodeWithTag("visualizer-deck").fetchSemanticsNode().boundsInRoot
         assertEquals(artBounds.left, visualizerBounds.left, 0.5f)
         assertEquals(artBounds.top, visualizerBounds.top, 0.5f)
         assertEquals(artBounds.right, visualizerBounds.right, 0.5f)
         assertEquals(artBounds.bottom, visualizerBounds.bottom, 0.5f)
         compose.onNodeWithText("VIS SYNC +75 MS", substring = true).assertIsDisplayed()
+        val increase = compose.onNodeWithTag("visualizer-sync-increase")
+        increase.performTouchInput { down(center) }
+        compose.runOnIdle {
+            assertEquals(1, increases)
+            assertEquals(100, offsetMs)
+        }
+        increase.performTouchInput { up() }
+        compose.runOnIdle {
+            assertEquals(1, increases)
+            assertEquals(100, offsetMs)
+        }
         compose.onNodeWithTag("visualizer-sync-decrease").performClick()
         compose.onNodeWithTag("visualizer-sync-increase").performClick()
         compose.onNodeWithTag("visualizer-sync-reset").performClick()
         compose.onNodeWithTag("visualizer-radar").assertIsDisplayed()
         assertEquals(1, decreases)
-        assertEquals(1, increases)
+        assertEquals(2, increases)
         assertEquals(1, resets)
         compose.onNodeWithTag("visualizer-deck").performClick()
         compose.onNodeWithTag("visualizer-bands").assertIsDisplayed()

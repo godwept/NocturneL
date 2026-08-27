@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -14,6 +15,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
@@ -194,6 +196,202 @@ class VisualizerDeckTest {
         advanceUi()
         compose.onNodeWithTag("visualizer-art").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-sync-controls").assertDoesNotExist()
+    }
+
+    @Test fun syncTouchAdjustsOnDownWithoutASecondReleaseAdjustment() {
+        var offsetMs by mutableIntStateOf(150)
+        var increases = 0
+        compose.setContent {
+            NocturneLTheme {
+                VisualizerDeck(
+                    frame = AudioAnalysisFrame.Idle,
+                    effectsEnabled = true,
+                    onVisualizerActiveChanged = {},
+                    modifier = Modifier.width(240.dp),
+                    syncOffsetMs = offsetMs,
+                    onIncreaseSyncOffset = {
+                        increases++
+                        offsetMs = VisualizerSyncOffset.increase(offsetMs)
+                    },
+                ) { Text("ARTWORK") }
+            }
+        }
+
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithTag("visualizer-art").performClick()
+        advanceUi()
+        val increase = compose.onNodeWithTag("visualizer-sync-increase")
+        increase.performTouchInput { down(center) }
+        compose.runOnIdle {
+            assertEquals(175, offsetMs)
+            assertEquals(1, increases)
+        }
+
+        increase.performTouchInput { up() }
+        compose.runOnIdle {
+            assertEquals(175, offsetMs)
+            assertEquals(1, increases)
+        }
+        compose.onNodeWithTag("visualizer-radar").assertIsDisplayed()
+
+        increase.performClick()
+        advanceUi()
+        assertEquals(200, offsetMs)
+        assertEquals(2, increases)
+    }
+
+    @Test fun syncHoldRepeatsAfterDelayAndAccelerates() {
+        var offsetMs by mutableIntStateOf(0)
+        var increases = 0
+        compose.setContent {
+            NocturneLTheme {
+                VisualizerDeck(
+                    frame = AudioAnalysisFrame.Idle,
+                    effectsEnabled = true,
+                    onVisualizerActiveChanged = {},
+                    modifier = Modifier.width(240.dp),
+                    syncOffsetMs = offsetMs,
+                    onIncreaseSyncOffset = {
+                        increases++
+                        offsetMs = VisualizerSyncOffset.increase(offsetMs)
+                    },
+                ) { Text("ARTWORK") }
+            }
+        }
+
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithTag("visualizer-art").performClick()
+        advanceUi()
+        val increase = compose.onNodeWithTag("visualizer-sync-increase")
+        increase.performTouchInput { down(center) }
+        compose.runOnIdle { assertEquals(1, increases) }
+
+        compose.mainClock.advanceTimeBy(399, ignoreFrameDuration = true)
+        compose.runOnIdle { assertEquals(1, increases) }
+        compose.mainClock.advanceTimeBy(1, ignoreFrameDuration = true)
+        compose.runOnIdle { assertEquals(2, increases) }
+        compose.mainClock.advanceTimeBy(100, ignoreFrameDuration = true)
+        compose.runOnIdle { assertEquals(3, increases) }
+
+        compose.mainClock.advanceTimeBy(999, ignoreFrameDuration = true)
+        val beforeAccelerationThreshold = increases
+        compose.mainClock.advanceTimeBy(1, ignoreFrameDuration = true)
+        compose.runOnIdle { assertEquals(beforeAccelerationThreshold + 1, increases) }
+        val atAccelerationThreshold = increases
+        compose.mainClock.advanceTimeBy(49, ignoreFrameDuration = true)
+        compose.runOnIdle { assertEquals(atAccelerationThreshold, increases) }
+        compose.mainClock.advanceTimeBy(1, ignoreFrameDuration = true)
+        compose.runOnIdle { assertEquals(atAccelerationThreshold + 1, increases) }
+
+        increase.performTouchInput { up() }
+        val atRelease = increases
+        compose.mainClock.advanceTimeBy(500, ignoreFrameDuration = true)
+        compose.runOnIdle {
+            assertEquals(atRelease, increases)
+            assertEquals(increases * VisualizerSyncOffset.STEP_MS, offsetMs)
+        }
+    }
+
+    @Test fun syncHoldStopsOnCancellationMovementAndLimit() {
+        var offsetMs by mutableIntStateOf(0)
+        var increases = 0
+        compose.setContent {
+            NocturneLTheme {
+                VisualizerDeck(
+                    frame = AudioAnalysisFrame.Idle,
+                    effectsEnabled = true,
+                    onVisualizerActiveChanged = {},
+                    modifier = Modifier.width(240.dp),
+                    syncOffsetMs = offsetMs,
+                    onIncreaseSyncOffset = {
+                        increases++
+                        offsetMs = VisualizerSyncOffset.increase(offsetMs)
+                    },
+                ) { Text("ARTWORK") }
+            }
+        }
+
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithTag("visualizer-art").performClick()
+        advanceUi()
+        val increase = compose.onNodeWithTag("visualizer-sync-increase")
+
+        increase.performTouchInput { down(center) }
+        compose.mainClock.advanceTimeBy(400, ignoreFrameDuration = true)
+        increase.performTouchInput { cancel() }
+        val afterCancel = increases
+        compose.mainClock.advanceTimeBy(500, ignoreFrameDuration = true)
+        compose.runOnIdle { assertEquals(afterCancel, increases) }
+
+        increase.performTouchInput { down(center) }
+        compose.mainClock.advanceTimeBy(400, ignoreFrameDuration = true)
+        increase.performTouchInput { moveTo(Offset(-1f, center.y)) }
+        val afterMoveOutside = increases
+        compose.mainClock.advanceTimeBy(500, ignoreFrameDuration = true)
+        compose.runOnIdle { assertEquals(afterMoveOutside, increases) }
+        increase.performTouchInput { up() }
+
+        compose.runOnIdle { offsetMs = VisualizerSyncOffset.MAX_MS - 50 }
+        advanceUi()
+        increase.performTouchInput { down(center) }
+        compose.mainClock.advanceTimeBy(1_000, ignoreFrameDuration = true)
+        assertEquals(VisualizerSyncOffset.MAX_MS, offsetMs)
+        val atLimit = increases
+        compose.mainClock.advanceTimeBy(500, ignoreFrameDuration = true)
+        compose.runOnIdle { assertEquals(atLimit, increases) }
+        compose.onNodeWithTag("visualizer-sync-increase").assertIsNotEnabled()
+        compose.onNodeWithTag("visualizer-radar").assertIsDisplayed()
+    }
+
+    @Test fun newSyncPressCancelsTheOppositeActiveHold() {
+        var offsetMs by mutableIntStateOf(0)
+        var decreases = 0
+        var increases = 0
+        compose.setContent {
+            NocturneLTheme {
+                VisualizerDeck(
+                    frame = AudioAnalysisFrame.Idle,
+                    effectsEnabled = true,
+                    onVisualizerActiveChanged = {},
+                    modifier = Modifier.width(240.dp),
+                    syncOffsetMs = offsetMs,
+                    onDecreaseSyncOffset = {
+                        decreases++
+                        offsetMs = VisualizerSyncOffset.decrease(offsetMs)
+                    },
+                    onIncreaseSyncOffset = {
+                        increases++
+                        offsetMs = VisualizerSyncOffset.increase(offsetMs)
+                    },
+                ) { Text("ARTWORK") }
+            }
+        }
+
+        compose.mainClock.autoAdvance = false
+        compose.onNodeWithTag("visualizer-art").performClick()
+        advanceUi()
+        val decreaseCenter = compose.onNodeWithTag("visualizer-sync-decrease")
+            .fetchSemanticsNode().boundsInRoot.center
+        val increaseCenter = compose.onNodeWithTag("visualizer-sync-increase")
+            .fetchSemanticsNode().boundsInRoot.center
+        val root = compose.onRoot()
+
+        root.performTouchInput { down(0, decreaseCenter) }
+        compose.mainClock.advanceTimeBy(400)
+        advanceUi()
+        root.performTouchInput { down(1, increaseCenter) }
+        advanceUi()
+        val decreasesAfterOppositePress = decreases
+        compose.mainClock.advanceTimeBy(500)
+        advanceUi()
+        assertEquals(decreasesAfterOppositePress, decreases)
+        assertTrue(increases > 1)
+
+        root.performTouchInput { up(1); up(0) }
+        val increasesAfterRelease = increases
+        compose.mainClock.advanceTimeBy(500)
+        advanceUi()
+        assertEquals(increasesAfterRelease, increases)
     }
 
     private fun advanceUi() = repeat(2) { compose.mainClock.advanceTimeByFrame() }

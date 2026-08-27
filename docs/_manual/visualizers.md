@@ -27,6 +27,7 @@ Radar and Spectrum modes show sync controls in the upper corners:
 
 - Select **−** to decrease the offset by **25 ms**.
 - Select **+** to increase the offset by **25 ms**.
+- Hold **−** or **+** to repeat the **25 ms** adjustment and accelerate during a continued hold.
 - Select the **VIS SYNC** label to reset to `0 ms`.
 
 The supported range is **-2000 ms** through **+2000 ms**. Adjust by observation until visual changes align with what you hear. Device audio pipelines differ, so one offset is not guaranteed to fit every phone, output device, or Bluetooth route.
