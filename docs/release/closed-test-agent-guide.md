@@ -97,11 +97,12 @@ These facts were verified on 2026-08-26 and may change. Recheck them briefly ins
   C:\Program Files (x86)\Android\android-sdk\emulator\emulator.exe
   ```
 
-- No Android device is attached and no local AVD is configured.
+- No Android device is normally attached and no persistent local AVD is configured. The installed API 36 image can be used to create a temporary AVD for release debugging; delete it when the session ends.
 - The API 31 platform/system image needed to mirror the workflow's minimum-SDK emulator job is not installed locally.
 - Launching the Windows emulator from a restricted coding-agent sandbox can fail on named-pipe permissions. Use an approved unsandboxed command or rely on GitHub Actions rather than repeatedly retrying the same sandboxed launch.
 - Gradle needs access to the user Gradle cache under `C:\Users\stewark2\.gradle`; restricted agents may need approval to run Gradle outside the workspace sandbox.
 - `assembleDebugAndroidTest` only compiles/packages instrumented tests. It does not execute them. Use `connectedDebugAndroidTest` only when `adb devices` shows a usable target.
+- If a Compose instrumented test sets `mainClock.autoAdvance = false`, explicitly advance frames after later clicks before asserting recomposed UI. Candidate 6 exposed this harness issue on both CI emulator jobs; the full API 36 suite passed after the test clock was advanced.
 - A successful local `bundleRelease` produces an unsigned AAB. This is expected; the protected GitHub `package` job signs and verifies the upload artifact.
 - If a temporary JDK starts a Gradle daemon, run `gradlew --stop` before deleting that JDK so Windows does not retain locks on its DLLs and module files.
 

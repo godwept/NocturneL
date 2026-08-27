@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.screenshot)
 }
 
-val releaseVersionCode = 6
+val releaseVersionCode = 7
 val releaseVersionName = "0.1.0"
 
 android {

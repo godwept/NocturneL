@@ -98,9 +98,11 @@ class NowPlayingVisualizerTest {
         assertEquals(2, increases)
         assertEquals(1, resets)
         compose.onNodeWithTag("visualizer-deck").performClick()
+        repeat(2) { compose.mainClock.advanceTimeByFrame() }
         compose.onNodeWithTag("visualizer-bands").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-sync-controls").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-deck").performClick()
+        repeat(2) { compose.mainClock.advanceTimeByFrame() }
         compose.onNodeWithTag("visualizer-art").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-sync-controls").assertDoesNotExist()
     }
