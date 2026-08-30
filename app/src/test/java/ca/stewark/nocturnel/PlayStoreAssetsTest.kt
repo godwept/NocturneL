@@ -11,7 +11,20 @@ import org.junit.Test
 class PlayStoreAssetsTest {
     private val graphics = File("../docs/play-store/listing/graphics")
 
-    @Test fun storeIcon() = assertImage("icon.png", 512, 512, alpha = true, maxBytes = 1_024 * 1_024)
+    @Test fun storeIcon() {
+        assertImage("icon.png", 512, 512, alpha = true, maxBytes = 1_024 * 1_024)
+
+        val image = ImageIO.read(File(graphics, "icon.png"))
+        val expectedBackground = 0xff000000.toInt()
+        listOf(
+            0 to 0,
+            image.width - 1 to 0,
+            0 to image.height - 1,
+            image.width - 1 to image.height - 1,
+        ).forEach { (x, y) ->
+            assertEquals("Store icon background at ($x, $y)", expectedBackground, image.getRGB(x, y))
+        }
+    }
     @Test fun featureGraphic() = assertImage("feature-graphic.png", 1024, 500, alpha = false)
     @Test fun phoneLibrary() = assertRequiredScreenshot("phone/01-library.png")
     @Test fun phoneAlbum() = assertRequiredScreenshot("phone/02-album.png")

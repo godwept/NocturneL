@@ -4,7 +4,7 @@ All screenshots must show the current app, use rights-cleared music metadata and
 
 | File | Size | Subject | Alt text |
 |---|---:|---|---|
-| icon.png | 512x512 | NocturneL store icon | NocturneL green terminal and amber N on a magenta field |
+| icon.png | 512x512 | NocturneL store icon | NocturneL green terminal and amber N on a terminal-black field |
 | feature-graphic.png | 1024x500 | Terminal-themed brand graphic | NocturneL terminal music visualizer in green on a dark field |
 | phone/01-library.png | 1080x1920 | Populated library | NocturneL album library in a phosphor-green terminal grid |
 | phone/02-album.png | 1080x1920 | Album detail | NocturneL album detail with track list and local playback actions |
