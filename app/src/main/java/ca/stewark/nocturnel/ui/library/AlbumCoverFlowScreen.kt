@@ -1,6 +1,7 @@
 package ca.stewark.nocturnel.ui.library
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
@@ -21,18 +22,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import ca.stewark.nocturnel.data.entity.AlbumEntity
 import ca.stewark.nocturnel.ui.artwork.RetroArtwork
 import ca.stewark.nocturnel.ui.components.FavoriteToggle
@@ -94,57 +99,91 @@ fun AlbumCoverFlowScreen(
             .testTag(if (effectsEnabled) "animated-cover-flow" else "static-cover-flow"),
     ) {
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
-            val coverSize = minOf(maxWidth * 0.62f, 240.dp)
+            val coverSize = coverFlowCoverSize(maxWidth.value, maxHeight.value).dp
             val sidePadding = ((maxWidth - coverSize) / 2).coerceAtLeast(0.dp)
+            val itemSpacing = coverFlowItemSpacing(coverSize.value).dp
+            val itemStridePx = with(LocalDensity.current) {
+                coverFlowItemStride(coverSize.value).dp.toPx()
+            }
             LazyRow(
                 state = state,
                 modifier = Modifier.fillMaxSize().testTag("cover-flow-reel"),
                 contentPadding = PaddingValues(horizontal = sidePadding),
-                horizontalArrangement = Arrangement.spacedBy(TerminalDimensions.sm),
+                horizontalArrangement = Arrangement.spacedBy(itemSpacing),
                 verticalAlignment = Alignment.CenterVertically,
                 flingBehavior = rememberSnapFlingBehavior(lazyListState = state),
             ) {
                 itemsIndexed(albums, key = { _, album -> album.id }) { index, album ->
                     val selected = album.id == selectedAlbum.id
-                    val targetScale = if (selected) 1f else 0.72f
-                    val targetAlpha = if (selected) 1f else 0.5f
+                    val visualState by remember(state, index, selectedIndex, itemStridePx) {
+                        derivedStateOf {
+                            val layout = state.layoutInfo
+                            val item = layout.visibleItemsInfo.firstOrNull { it.index == index }
+                            val distance = item?.let {
+                                coverFlowDistanceFromCenter(
+                                    viewportStart = layout.viewportStartOffset,
+                                    viewportEnd = layout.viewportEndOffset,
+                                    itemOffset = it.offset,
+                                    itemSize = it.size,
+                                    itemStride = itemStridePx,
+                                )
+                            } ?: (index - selectedIndex).toFloat()
+                            coverFlowVisualState(distance)
+                        }
+                    }
                     val scale = if (effectsEnabled) {
-                        animateFloatAsState(targetScale, label = "cover scale").value
+                        animateFloatAsState(visualState.scale, label = "cover scale").value
                     } else {
-                        targetScale
+                        visualState.scale
                     }
                     val alpha = if (effectsEnabled) {
-                        animateFloatAsState(targetAlpha, label = "cover alpha").value
+                        animateFloatAsState(visualState.alpha, label = "cover alpha").value
                     } else {
-                        targetAlpha
+                        visualState.alpha
                     }
                     val description = buildString {
                         if (selected) append("Selected ")
                         append(album.title)
                         append(", ${index + 1} of ${albums.size}")
                     }
+                    val activateCover: () -> Unit = {
+                        if (selected) {
+                            onAlbumSelected(album)
+                        } else {
+                            scope.launch {
+                                if (effectsEnabled) state.animateScrollToItem(index)
+                                else state.scrollToItem(index)
+                            }
+                        }
+                        Unit
+                    }
                     Box(
                         Modifier
                             .size(coverSize)
-                            .graphicsLayer { scaleX = scale; scaleY = scale }
-                            .alpha(alpha)
+                            .zIndex(visualState.stackingOrder)
+                            .graphicsLayer {
+                                scaleX = scale
+                                scaleY = scale
+                                this.alpha = alpha
+                            }
+                            .background(MaterialTheme.colorScheme.background)
                             .terminalBorder(
                                 width = if (selected) 2.dp else TerminalDimensions.border,
                                 color = if (selected) palette.selection else palette.border,
                                 emphasized = selected,
                             )
-                            .semantics { contentDescription = description }
-                            .testTag("cover-flow-cover-${album.id}")
-                            .clickable {
-                                if (selected) {
-                                    onAlbumSelected(album)
+                            .then(
+                                if (visualState.interactive) {
+                                    Modifier
+                                        .semantics { contentDescription = description }
+                                        .testTag("cover-flow-cover-${album.id}")
+                                        .clickable(onClick = activateCover)
                                 } else {
-                                    scope.launch {
-                                        if (effectsEnabled) state.animateScrollToItem(index)
-                                        else state.scrollToItem(index)
-                                    }
-                                }
-                            }
+                                    Modifier
+                                        .clearAndSetSemantics { }
+                                        .testTag("cover-flow-cover-${album.id}")
+                                },
+                            )
                             .padding(TerminalDimensions.xs),
                     ) {
                         RetroArtwork(album, Modifier.fillMaxWidth().aspectRatio(1f))

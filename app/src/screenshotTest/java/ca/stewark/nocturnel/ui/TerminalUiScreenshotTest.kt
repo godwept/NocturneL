@@ -157,8 +157,18 @@ fun CoverFlowPreview() = coverFlowPreview(effectsEnabled = true)
 @Composable
 fun CoverFlowEffectsOffPreview() = coverFlowPreview(effectsEnabled = false)
 
+@PreviewTest
+@Preview(name = "Cover flow endpoint", widthDp = 412, heightDp = 915)
 @Composable
-private fun coverFlowPreview(effectsEnabled: Boolean) = TerminalPreview {
+fun CoverFlowEndpointPreview() = coverFlowPreview(effectsEnabled = true, initialIndex = 0)
+
+@PreviewTest
+@Preview(name = "Cover flow compact endpoint", widthDp = 320, heightDp = 640)
+@Composable
+fun CoverFlowCompactEndpointPreview() = coverFlowPreview(effectsEnabled = false, initialIndex = 2)
+
+@Composable
+private fun coverFlowPreview(effectsEnabled: Boolean, initialIndex: Int = 1) = TerminalPreview {
     TerminalScaffold(NocturneLDestination.LIBRARY, {}, effectsEnabled = effectsEnabled, status = "LIBRARY READY") {
         LibraryLandingScreen(
             albums = previewAlbums,
@@ -167,7 +177,7 @@ private fun coverFlowPreview(effectsEnabled: Boolean) = TerminalPreview {
             sortMode = LibrarySortMode.ARTIST,
             viewMode = LibraryViewMode.FLOW,
             state = rememberLazyGridState(),
-            flowState = rememberLazyListState(initialFirstVisibleItemIndex = 1),
+            flowState = rememberLazyListState(initialFirstVisibleItemIndex = initialIndex),
             effectsEnabled = effectsEnabled,
             onAlbumSelected = {},
             onFavoriteAlbum = {},
