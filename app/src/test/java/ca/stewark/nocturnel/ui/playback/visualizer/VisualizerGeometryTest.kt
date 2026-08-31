@@ -82,4 +82,65 @@ class VisualizerGeometryTest {
             assertTrue(bar.top <= bar.bottom)
         }
     }
+
+    @Test fun frequencyGridIsDenseSquareCenteredAndDeterministic() {
+        val first = frequencyGridGeometry(List(32) { 0f }, emptyList(), 320f, 200f)
+        val second = frequencyGridGeometry(List(32) { 0f }, emptyList(), 320f, 200f)
+
+        assertEquals(900, first.size)
+        assertEquals(first, second)
+        assertTrue(first.all { cell ->
+            cell.size > 0f && listOf(cell.left, cell.top, cell.size).all(Float::isFinite) &&
+                cell.left >= 0f && cell.top >= 0f &&
+                cell.left + cell.size <= 320f && cell.top + cell.size <= 200f
+        })
+        assertTrue(first.all { it.size == first.first().size })
+        assertTrue(first.zipWithNext().take(29).all { (a, b) -> b.left > a.left && b.top == a.top })
+        assertTrue(first[30].top > first[0].top)
+        assertEquals(160f, (first.first().left + first[29].left + first[29].size) / 2f, .001f)
+        assertEquals(100f, (first.first().top + first.last().top + first.last().size) / 2f, .001f)
+    }
+
+    @Test fun frequencyAnchorsAreFixedUniqueInsetAndDistributed() {
+        val peaks = List(32) { activeBand ->
+            val levels = List(32) { if (it == activeBand) 1f else 0f }
+            frequencyGridGeometry(levels, emptyList(), 300f, 300f).maxBy { it.liveIntensity }
+        }
+
+        assertEquals(32, peaks.map { it.left to it.top }.toSet().size)
+        assertTrue(peaks.all { it.left > 0f && it.top > 0f && it.left + it.size < 300f && it.top + it.size < 300f })
+        assertTrue(peaks.any { it.left < 150f && it.top < 150f })
+        assertTrue(peaks.any { it.left >= 150f && it.top < 150f })
+        assertTrue(peaks.any { it.left < 150f && it.top >= 150f })
+        assertTrue(peaks.any { it.left >= 150f && it.top >= 150f })
+    }
+
+    @Test fun frequencyHotspotsFallOffBlendClampAndGhost() {
+        val first = frequencyGridGeometry(List(32) { if (it == 0) 1f else 0f }, emptyList(), 300f, 300f)
+        val second = frequencyGridGeometry(List(32) { if (it == 1) 1f else 0f }, emptyList(), 300f, 300f)
+        val both = frequencyGridGeometry(List(32) { if (it <= 1) 1f else 0f }, emptyList(), 300f, 300f)
+        val peak = first.maxBy { it.liveIntensity }
+
+        assertTrue(peak.liveIntensity > first.minOf { it.liveIntensity })
+        assertTrue(both.indices.any { both[it].liveIntensity > maxOf(first[it].liveIntensity, second[it].liveIntensity) })
+        assertTrue(both.all { it.liveIntensity in 0f..1f })
+
+        val malformed = frequencyGridGeometry(
+            listOf(Float.NaN, Float.POSITIVE_INFINITY, -1f, 2f),
+            listOf(BandAfterglow(1f, 1f, 1L)),
+            120f,
+            80f,
+        )
+        assertTrue(malformed.all { it.liveIntensity.isFinite() && it.liveIntensity in 0f..1f && it.ghostIntensity == 0f })
+
+        val ghost = frequencyGridGeometry(
+            listOf(0f),
+            listOf(BandAfterglow(1f, 1f, 1L)),
+            120f,
+            120f,
+        )
+        assertTrue(ghost.any { it.ghostIntensity > 0f })
+        assertTrue(frequencyGridGeometry(emptyList(), emptyList(), 0f, 0f).isEmpty())
+        assertTrue(frequencyGridGeometry(listOf(1f), emptyList(), -1f, 20f).isEmpty())
+    }
 }

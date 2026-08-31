@@ -9,11 +9,12 @@ permalink: /manual/visualizers/
 
 ## Cycle display modes
 
-Tap the square display on **NOW** to cycle through three modes:
+Tap the square display on **NOW** to cycle through four modes:
 
 1. **Album art**
 2. **Circular radar**
 3. **Spectrum bars**
+4. **Frequency grid**
 
 The current mode label appears briefly after each tap. Live audio analysis runs only while a visualizer is visible. **SIGNAL UNAVAILABLE** means the active playback path is not currently providing analyzable audio; playback itself may continue normally.
 
@@ -23,7 +24,7 @@ Visualizer afterglow, scanline treatment, cover movement, and related terminal e
 
 ## Adjust visualizer sync
 
-Radar and Spectrum modes show sync controls in the upper corners:
+Radar, Spectrum, and Frequency Grid modes show sync controls in the upper corners:
 
 - Select **−** to decrease the offset by **25 ms**.
 - Select **+** to increase the offset by **25 ms**.

@@ -27,4 +27,16 @@ class VisualizerRenderingStyleTest {
         assertTrue(RADAR_SWEEP_BLOOM_ALPHA < .90f)
         assertTrue(RADAR_AFTERGLOW_MAX_ALPHA * RADAR_TRAIL_BLOOM_ALPHA_SCALE < RADAR_AFTERGLOW_MAX_ALPHA)
     }
+
+    @Test fun frequencyGridUsesLayeredPhosphorOpacity() {
+        assertTrue(GRID_BASE_ALPHA < GRID_GHOST_MAX_ALPHA)
+        assertTrue(GRID_GHOST_MAX_ALPHA < GRID_LIVE_MAX_ALPHA)
+        assertTrue(GRID_LIVE_MAX_ALPHA < GRID_PEAK_ALPHA)
+        assertEquals(.60f, GRID_PEAK_THRESHOLD, 0f)
+        assertEquals(0f, frequencyGridDisplayIntensity(0f), 0f)
+        assertTrue(frequencyGridDisplayIntensity(.25f) < .25f)
+        assertTrue(frequencyGridDisplayIntensity(.75f) > .75f)
+        assertEquals(1f, frequencyGridDisplayIntensity(1f), 0f)
+        assertEquals(0f, frequencyGridDisplayIntensity(Float.NaN), 0f)
+    }
 }

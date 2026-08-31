@@ -63,11 +63,27 @@ class VisualizerSourceGuardTest {
         ).readText()
         val bandsBranch = source
             .substringAfter("VisualizerDisplayMode.BANDS -> {")
-            .substringBefore("VisualizerDisplayMode.ART ->")
+            .substringBefore("VisualizerDisplayMode.GRID ->")
 
         assertTrue(bandsBranch.indexOf("spectrumGhostGeometry(") < bandsBranch.indexOf("spectrumGeometry("))
         assertTrue("palette.visualizerPrimary.copy(alpha = afterglow.bands[ghost.bandIndex].alpha)" in bandsBranch)
         assertFalse("palette.textSecondary.copy(alpha = afterglow.bands" in bandsBranch)
         assertTrue(bandsBranch.lastIndexOf("palette.visualizerPeak") > bandsBranch.indexOf("spectrumGhostGeometry("))
+    }
+
+    @Test fun frequencyGridDrawsGhostBeforeLiveWithoutPlatformBlur() {
+        val source = File(
+            "src/main/java/ca/stewark/nocturnel/ui/playback/visualizer/TerminalVisualizers.kt",
+        ).readText()
+        val gridBranch = source
+            .substringAfter("VisualizerDisplayMode.GRID -> {")
+            .substringBefore("VisualizerDisplayMode.ART ->")
+
+        assertTrue("visualizer-grid" in source)
+        assertTrue("frequencyGridGeometry(" in gridBranch)
+        assertTrue(gridBranch.indexOf("ghostIntensity") < gridBranch.indexOf("liveIntensity"))
+        assertTrue("palette.visualizerPeak" in gridBranch)
+        assertFalse("RenderEffect" in source)
+        assertFalse("BlurEffect" in source)
     }
 }

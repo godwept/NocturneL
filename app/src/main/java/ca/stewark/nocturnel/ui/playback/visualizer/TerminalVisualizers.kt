@@ -41,6 +41,16 @@ internal const val RADAR_TRAIL_BLOOM_ALPHA_SCALE = .45f
 internal const val RADAR_TRAIL_BLOOM_WIDTH = 5f
 internal const val RADAR_SWEEP_BLOOM_ALPHA = .36f
 internal const val RADAR_SWEEP_BLOOM_WIDTH = 7f
+internal const val GRID_BASE_ALPHA = .12f
+internal const val GRID_GHOST_MAX_ALPHA = .64f
+internal const val GRID_LIVE_MAX_ALPHA = .92f
+internal const val GRID_PEAK_ALPHA = .98f
+internal const val GRID_PEAK_THRESHOLD = .60f
+
+internal fun frequencyGridDisplayIntensity(intensity: Float): Float {
+    val level = if (intensity.isFinite()) intensity.coerceIn(0f, 1f) else 0f
+    return level * level * (3f - 2f * level)
+}
 
 @Composable
 internal fun TerminalVisualizerScene(
@@ -111,6 +121,7 @@ internal fun TerminalVisualizerFrame(
     val tag = when (mode) {
         VisualizerDisplayMode.RADAR -> "visualizer-radar"
         VisualizerDisplayMode.BANDS -> "visualizer-bands"
+        VisualizerDisplayMode.GRID -> "visualizer-grid"
         VisualizerDisplayMode.ART -> "visualizer-art"
     }
     Box(
@@ -159,6 +170,49 @@ internal fun TerminalVisualizerFrame(
                                 )
                             }
                             drawLine(palette.visualizerPeak.copy(alpha = .75f), Offset(bar.left, bar.peakY), Offset(bar.right, bar.peakY), 1f)
+                        }
+                    }
+                    VisualizerDisplayMode.GRID -> {
+                        val cells = frequencyGridGeometry(
+                            liveLevels = frame.bands,
+                            afterglow = afterglow.bands,
+                            width = size.width,
+                            height = size.height,
+                        )
+                        cells.forEach { cell ->
+                            drawRect(
+                                palette.visualizerSecondary.copy(alpha = GRID_BASE_ALPHA),
+                                topLeft = Offset(cell.left, cell.top),
+                                size = Size(cell.size, cell.size),
+                            )
+                        }
+                        cells.forEach { cell ->
+                            if (cell.ghostIntensity > 0f) {
+                                val ghostIntensity = frequencyGridDisplayIntensity(cell.ghostIntensity)
+                                drawRect(
+                                    palette.visualizerPrimary.copy(alpha = ghostIntensity * GRID_GHOST_MAX_ALPHA),
+                                    topLeft = Offset(cell.left, cell.top),
+                                    size = Size(cell.size, cell.size),
+                                )
+                            }
+                        }
+                        cells.forEach { cell ->
+                            if (cell.liveIntensity > 0f) {
+                                val liveIntensity = frequencyGridDisplayIntensity(cell.liveIntensity)
+                                drawRect(
+                                    palette.visualizerPrimary.copy(alpha = liveIntensity * GRID_LIVE_MAX_ALPHA),
+                                    topLeft = Offset(cell.left, cell.top),
+                                    size = Size(cell.size, cell.size),
+                                )
+                                if (liveIntensity > GRID_PEAK_THRESHOLD) {
+                                    val peakStrength = (liveIntensity - GRID_PEAK_THRESHOLD) / (1f - GRID_PEAK_THRESHOLD)
+                                    drawRect(
+                                        palette.visualizerPeak.copy(alpha = peakStrength * GRID_PEAK_ALPHA),
+                                        topLeft = Offset(cell.left, cell.top),
+                                        size = Size(cell.size, cell.size),
+                                    )
+                                }
+                            }
                         }
                     }
                     VisualizerDisplayMode.ART -> Unit

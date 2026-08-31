@@ -204,7 +204,7 @@ class ProductSiteContractTest {
             ManualContract("library.md", 20, "/manual/library/", listOf("GRID", "FLOW", "ARTIST", "TITLE", "YEAR", "MOST PLAYED", "SET COVER", "CHANGE MUSIC FOLDER")),
             ManualContract("playback.md", 30, "/manual/playback/", listOf("Play or pause", "Previous", "Next", "Repeat all", "Repeat one", "lock screen", "audio focus", "restore")),
             ManualContract("queue.md", 40, "/manual/queue/", listOf("ADD QUEUE", "UPCOMING", "drag", "UNDO", "CLEAR UPCOMING", "SHUFFLE", "REPEAT ALL", "QUEUE CHANGED")),
-            ManualContract("visualizers.md", 50, "/manual/visualizers/", listOf("Album art", "Circular radar", "Spectrum bars", "CRT EFFECTS", "SIGNAL UNAVAILABLE", "25 ms", "-2000", "+2000")),
+            ManualContract("visualizers.md", 50, "/manual/visualizers/", listOf("Album art", "Circular radar", "Spectrum bars", "Frequency grid", "CRT EFFECTS", "SIGNAL UNAVAILABLE", "25 ms", "-2000", "+2000")),
             ManualContract("playlists.md", 60, "/manual/playlists/", listOf("CREATE", "RENAME", "DELETE", "M3U", "M3U8", "ZIP", "EXPORT ALL", "unavailable")),
             ManualContract("listening-activity.md", 70, "/manual/listening-activity/", listOf("favorites", "play counts", "MOST PLAYED", "qualified", "CLEAR HISTORY + COUNTS", "resume")),
             ManualContract("settings.md", 80, "/manual/settings/", listOf("CHANGE MUSIC FOLDER", "RESCAN LIBRARY", "CRT EFFECTS", "reduced-motion", "COLOR THEME", "GREEN TERMINAL", "AMBER TERMINAL", "BLUE TERMINAL", "'80S SYNTHWAVE", "'90S NEON", "album covers", "glow", "FONT PRESET", "CLASSIC", "MAINFRAME", "PIXEL", "MODERN", "immediately", "offline", "PRIVACY POLICY", "CLEAR HISTORY + COUNTS")),

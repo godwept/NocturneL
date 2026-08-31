@@ -134,7 +134,8 @@ internal fun updateVisualizerAfterglow(
                 elapsedNanos,
             ),
         )
-        VisualizerDisplayMode.BANDS -> VisualizerAfterglowState(
+        VisualizerDisplayMode.BANDS,
+        VisualizerDisplayMode.GRID -> VisualizerAfterglowState(
             activeMode = mode,
             size = size,
             lastFrameId = frame.frameId,

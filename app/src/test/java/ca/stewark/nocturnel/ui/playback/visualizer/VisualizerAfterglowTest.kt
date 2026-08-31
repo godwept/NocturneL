@@ -209,6 +209,29 @@ class VisualizerAfterglowTest {
         assertEquals(2, bands.bands.size)
     }
 
+    @Test fun gridReusesBandEnvelopeAndLifecycleClearing() {
+        val size = VisualizerSizeKey(200, 200)
+        var grid = updateVisualizerAfterglow(
+            VisualizerAfterglowState.Empty,
+            VisualizerDisplayMode.GRID,
+            frame(2),
+            true,
+            size,
+            0,
+        )
+        assertEquals(VisualizerDisplayMode.GRID, grid.activeMode)
+        assertEquals(2, grid.bands.size)
+        assertTrue(grid.radar.samples.isEmpty())
+
+        grid = updateVisualizerAfterglow(grid, VisualizerDisplayMode.GRID, frame(3), true, size, 1)
+        assertEquals(2, grid.bands.size)
+        assertEquals(
+            VisualizerAfterglowState.Empty,
+            updateVisualizerAfterglow(grid, VisualizerDisplayMode.GRID, frame(4), false, size, 1),
+        )
+        assertTrue(updateVisualizerAfterglow(grid, VisualizerDisplayMode.GRID, frame(1), true, size, 1).bands.all { it.alpha == 0f })
+    }
+
     private fun frame(id: Long, status: AnalysisStatus = AnalysisStatus.ACTIVE) = AudioAnalysisFrame(
         waveform = emptyList(),
         bands = listOf(.8f, .2f),
