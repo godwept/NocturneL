@@ -42,6 +42,8 @@ class VisualizerDeckTest {
         compose.onNodeWithTag("visualizer-deck").performClick()
         compose.onNodeWithTag("visualizer-bands").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-deck").performClick()
+        compose.onNodeWithTag("visualizer-grid").assertIsDisplayed()
+        compose.onNodeWithTag("visualizer-deck").performClick()
         compose.onNodeWithTag("visualizer-art").assertIsDisplayed()
         assertEquals(false, activity.last())
     }
@@ -122,6 +124,10 @@ class VisualizerDeckTest {
         compose.onNodeWithTag("visualizer-bands").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-deck").performClick()
         advanceUi()
+        compose.onNodeWithTag("visualizer-grid").assertIsDisplayed()
+        compose.onNodeWithTag("visualizer-sync-controls").assertIsDisplayed()
+        compose.onNodeWithTag("visualizer-deck").performClick()
+        advanceUi()
         compose.onNodeWithTag("visualizer-sync-controls").assertDoesNotExist()
     }
 
@@ -191,6 +197,10 @@ class VisualizerDeckTest {
         compose.onNodeWithTag("visualizer-deck").performClick()
         advanceUi()
         compose.onNodeWithTag("visualizer-bands").assertIsDisplayed()
+        compose.onNodeWithTag("visualizer-sync-reset").assertIsDisplayed()
+        compose.onNodeWithTag("visualizer-deck").performClick()
+        advanceUi()
+        compose.onNodeWithTag("visualizer-grid").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-sync-reset").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-deck").performClick()
         advanceUi()

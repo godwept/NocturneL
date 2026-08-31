@@ -103,6 +103,10 @@ class NowPlayingVisualizerTest {
         compose.onNodeWithTag("visualizer-sync-controls").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-deck").performClick()
         repeat(2) { compose.mainClock.advanceTimeByFrame() }
+        compose.onNodeWithTag("visualizer-grid").assertIsDisplayed()
+        compose.onNodeWithTag("visualizer-sync-controls").assertIsDisplayed()
+        compose.onNodeWithTag("visualizer-deck").performClick()
+        repeat(2) { compose.mainClock.advanceTimeByFrame() }
         compose.onNodeWithTag("visualizer-art").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-sync-controls").assertDoesNotExist()
     }
