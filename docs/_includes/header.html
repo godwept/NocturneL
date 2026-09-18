@@ -1,7 +1,7 @@
 <header class="site-header">
   <div class="site-header__inner">
     <a class="wordmark" href="{{ '/' | relative_url }}" aria-label="NocturneL home">
-      <span aria-hidden="true">&gt;_</span> NocturneL
+      <span aria-hidden="true">C:\&gt;</span> NocturneL
     </a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-navigation">
       <span class="nav-toggle__label">Menu</span>
@@ -19,6 +19,7 @@
             {% endif %}
           </li>
         {% endfor %}
+        <li><a class="site-nav__install" href="{{ site.play_store_url }}" aria-label="Install NocturneL from Google Play">Install ↗</a></li>
       </ul>
     </nav>
   </div>
