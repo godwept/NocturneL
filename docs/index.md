@@ -68,7 +68,7 @@ body_class: home
     <article class="feature-card terminal-panel">
       <span class="feature-code">QUE</span>
       <h3>Editable queue</h3>
-      <p>Add tracks or albums, jump to any item, drag to reorder, remove and undo, or clear what is coming next.</p>
+      <p>Use an editable queue: add tracks or albums, jump to any item, drag to reorder, remove and undo, or clear what is coming next.</p>
     </article>
     <article class="feature-card terminal-panel">
       <span class="feature-code">VIS</span>
@@ -78,7 +78,7 @@ body_class: home
     <article class="feature-card terminal-panel">
       <span class="feature-code">PLY</span>
       <h3>Portable playlists</h3>
-      <p>Create and reorder local playlists, import or export M3U/M3U8 files, and back up every playlist in a ZIP.</p>
+      <p>Build portable playlists, import or export M3U/M3U8 files, reorder tracks, and back up every playlist in a ZIP.</p>
     </article>
     <article class="feature-card terminal-panel">
       <span class="feature-code">LOG</span>
