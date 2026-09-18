@@ -33,6 +33,65 @@ jobs:
         run: |
           mkdir -p _preview/NocturneL
           cp -R _site/. _preview/NocturneL/
+      - name: Add local preview launchers
+        shell: bash
+        run: |
+          cat > _preview/open-preview.bat <<'EOF'
+          @echo off
+          cd /d "%~dp0"
+
+          where py >nul 2>nul
+          if %errorlevel%==0 (
+            start "NocturneL preview server" cmd /c "py -3 -m http.server 4173"
+            timeout /t 1 /nobreak >nul
+            start "" "http://127.0.0.1:4173/NocturneL/"
+            exit /b 0
+          )
+
+          where python >nul 2>nul
+          if %errorlevel%==0 (
+            start "NocturneL preview server" cmd /c "python -m http.server 4173"
+            timeout /t 1 /nobreak >nul
+            start "" "http://127.0.0.1:4173/NocturneL/"
+            exit /b 0
+          )
+
+          echo Python 3 is required to run this local preview.
+          echo Install Python, then run open-preview.bat again.
+          pause
+          EOF
+
+          cat > _preview/open-preview.sh <<'EOF'
+          #!/usr/bin/env sh
+          cd "$(dirname "$0")" || exit 1
+          python3 -m http.server 4173 >/tmp/nocturnel-preview.log 2>&1 &
+          sleep 1
+          url="http://127.0.0.1:4173/NocturneL/"
+          if command -v open >/dev/null 2>&1; then
+            open "$url"
+          elif command -v xdg-open >/dev/null 2>&1; then
+            xdg-open "$url"
+          else
+            printf 'Open %s in your browser.\n' "$url"
+          fi
+          EOF
+          chmod +x _preview/open-preview.sh
+
+          cat > _preview/README.txt <<'EOF'
+          NOCTURNEL LOCAL WEBSITE PREVIEW
+
+          Windows:
+          1. Extract this ZIP.
+          2. Double-click open-preview.bat.
+          3. Your browser should open http://127.0.0.1:4173/NocturneL/
+          4. Close the "NocturneL preview server" window when finished.
+
+          macOS / Linux:
+          Run ./open-preview.sh from a terminal.
+
+          The local web server is needed because the production site is hosted
+          at the /NocturneL/ project path on GitHub Pages.
+          EOF
       - name: Serve and capture responsive previews
         shell: bash
         run: |
@@ -59,4 +118,10 @@ jobs:
         with:
           name: nocturnel-site-previews
           path: site-previews/
+          if-no-files-found: error
+      - name: Upload browsable site build
+        uses: actions/upload-artifact@v4
+        with:
+          name: nocturnel-site-build
+          path: _preview/
           if-no-files-found: error
