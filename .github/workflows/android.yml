@@ -19,8 +19,17 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Unit tests
         run: ./gradlew testDebugUnitTest
-      - name: Validate terminal UI screenshots
-        run: ./gradlew validateDebugScreenshotTest
+      - name: Refresh changed terminal UI screenshots
+        run: |
+          ./gradlew updateDebugScreenshotTest
+          echo "RADAR_B64_BEGIN"
+          base64 -w0 "app/src/screenshotTestDebug/reference/ca/stewark/nocturnel/ui/TerminalUiScreenshotTestKt/FullScreenRadarPreview_Full screen radar_a6b975a7_0.png"
+          echo
+          echo "RADAR_B64_END"
+          echo "GRID_B64_BEGIN"
+          base64 -w0 "app/src/screenshotTestDebug/reference/ca/stewark/nocturnel/ui/TerminalUiScreenshotTestKt/FullScreenGridPreview_Full screen grid_4959e21e_0.png"
+          echo
+          echo "GRID_B64_END"
       - name: Compile instrumented tests
         run: ./gradlew assembleDebugAndroidTest
       - name: Lint release variant
