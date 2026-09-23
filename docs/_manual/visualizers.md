@@ -1,7 +1,7 @@
 ---
 layout: manual
 title: Visualizers and sync
-description: Cycle visual modes, control terminal effects, and align visuals with audio.
+description: Cycle visual modes, open full screen visualizers, and align visuals with audio.
 section: Listening
 nav_order: 50
 permalink: /manual/visualizers/
@@ -17,6 +17,17 @@ Tap the square display on **NOW** to cycle through four modes:
 4. **Frequency grid**
 
 The current mode label appears briefly after each tap. Live audio analysis runs only while a visualizer is visible. **SIGNAL UNAVAILABLE** means the active playback path is not currently providing analyzable audio; playback itself may continue normally.
+
+## Full screen visualizers
+
+Long-press the display on **NOW** to open the current visualizer in full screen. If **Album art** is showing, full screen opens at **Circular radar**. Full screen cycles through Circular radar, Spectrum bars, and Frequency grid; album artwork stays on NOW. The app controls and Android system bars hide while full screen is open.
+
+- **Swipe left** for the next visualizer: Circular radar → Spectrum bars → Frequency grid → Circular radar.
+- **Swipe right** to move through those three modes in reverse.
+- **Tap** the display to reveal **EXIT**. It hides again after about three seconds.
+- Select **EXIT** or use **Android Back** to return to NOW. The last full screen mode remains selected on NOW.
+
+Radar and Grid stay centered as squares on a tall screen; Spectrum uses the available height. With CRT effects enabled and active audio analysis, a soft beat glow spreads into the space around Radar and Grid. Sync controls remain on NOW.
 
 ## CRT effects and motion
 

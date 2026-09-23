@@ -88,6 +88,7 @@ internal fun FullScreenVisualizer(
             frame = frame,
             effectsEnabled = effectsEnabled,
             modifier = if (square) Modifier.align(Alignment.Center).size(side) else Modifier.fillMaxSize(),
+            showBorder = false,
         )
         Box(
             Modifier

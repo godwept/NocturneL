@@ -223,6 +223,17 @@ class ProductSiteContractTest {
         assertFalse("SET must not remain a primary navigation entry", "**SET** —" in gettingStarted)
     }
 
+    @Test fun manualExplainsFullScreenVisualizerControls() {
+        val visualizers = read("docs/_manual/visualizers.md")
+        assertContainsAll(
+            visualizers,
+            "Long-press", "Album art", "Circular radar", "Swipe left", "Swipe right",
+            "EXIT", "three seconds", "Android Back", "system bars", "NOW",
+        )
+        val playback = read("docs/_manual/playback.md")
+        assertContainsAll(playback, "full screen visualizer", "'/manual/visualizers/' | relative_url")
+    }
+
     @Test fun policy404AndMetadataUseTheSharedSite() {
         val policy = read("docs/privacy/index.md")
         assertContainsAll(policy, "layout: page", "title:", "description:", "Last updated:", "does not collect")

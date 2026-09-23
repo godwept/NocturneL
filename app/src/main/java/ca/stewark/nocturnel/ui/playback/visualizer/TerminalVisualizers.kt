@@ -58,6 +58,7 @@ internal fun TerminalVisualizerScene(
     frame: AudioAnalysisFrame,
     effectsEnabled: Boolean,
     modifier: Modifier = Modifier,
+    showBorder: Boolean = true,
 ) {
     var measuredSize by remember { mutableStateOf(IntSize.Zero) }
     var afterglow by remember { mutableStateOf(VisualizerAfterglowState.Empty) }
@@ -106,6 +107,7 @@ internal fun TerminalVisualizerScene(
         effectsEnabled = effectsEnabled,
         afterglow = visibleAfterglow,
         modifier = modifier.onSizeChanged { measuredSize = it },
+        showBorder = showBorder,
     )
 }
 
@@ -116,6 +118,7 @@ internal fun TerminalVisualizerFrame(
     effectsEnabled: Boolean,
     afterglow: VisualizerAfterglowState,
     modifier: Modifier = Modifier,
+    showBorder: Boolean = true,
 ) {
     val palette = TerminalTheme.palette
     val tag = when (mode) {
@@ -127,7 +130,7 @@ internal fun TerminalVisualizerFrame(
     Box(
         modifier
             .background(palette.background)
-            .terminalBorder(palette.borderEmphasis, emphasized = true)
+            .then(if (showBorder) Modifier.terminalBorder(palette.borderEmphasis, emphasized = true) else Modifier)
             .testTag(tag),
         contentAlignment = Alignment.Center,
     ) {

@@ -13,6 +13,8 @@ Select a track from an album or search result, or use **PLAY** on an album or pl
 
 Open **NOW** to see the track title, artist, album, elapsed time, duration, favorite state, play count, and current visual display.
 
+Long-press the NOW display to open the full screen visualizer. See [Visualizers and sync]({{ '/manual/visualizers/' | relative_url }}) for its swipe and exit controls.
+
 ## Transport controls
 
 - **Play or pause** with the centre transport button.

@@ -440,6 +440,20 @@ fun FullScreenRadarPreview() = TerminalPreview {
     FullScreenVisualizer(VisualizerDisplayMode.RADAR, radarFrame, true, {}, {}, {})
 }
 
+@PreviewTest
+@Preview(name = "Full screen spectrum", widthDp = 412, heightDp = 915)
+@Composable
+fun FullScreenSpectrumPreview() = TerminalPreview {
+    FullScreenVisualizer(VisualizerDisplayMode.BANDS, spectrumFrame, true, {}, {}, {})
+}
+
+@PreviewTest
+@Preview(name = "Full screen grid", widthDp = 412, heightDp = 915)
+@Composable
+fun FullScreenGridPreview() = TerminalPreview {
+    FullScreenVisualizer(VisualizerDisplayMode.GRID, spectrumFrame, true, {}, {}, {})
+}
+
 @Preview(name = "Visualizer bands", widthDp = 320, heightDp = 320)
 @Composable
 fun VisualizerBandsPreview() = TerminalPreview {
