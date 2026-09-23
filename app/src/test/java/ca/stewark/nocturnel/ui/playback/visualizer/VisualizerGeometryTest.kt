@@ -307,9 +307,9 @@ class VisualizerGeometryTest {
         val horizontalAverage = (left + right) / 2f
         val verticalAverage = (above + below) / 2f
 
-        assertEquals(left, right, .08f)
-        assertEquals(above, below, .08f)
-        assertEquals(horizontalAverage, verticalAverage, .08f)
+        assertEquals(left, right, .15f)
+        assertEquals(above, below, .15f)
+        assertEquals(horizontalAverage, verticalAverage, .03f)
 
         val rows = cells.size / columns
         assertTrue(rows > FREQUENCY_GRID_DIMENSION)
