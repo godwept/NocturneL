@@ -3,7 +3,9 @@ package ca.stewark.nocturnel.ui.playback.visualizer
 internal const val RADAR_FULL_SCREEN_PULSE_DURATION_NANOS = 750_000_000L
 internal const val RADAR_FULL_SCREEN_MAX_PULSES = 4
 
-internal const val RADAR_EXTENDED_BEAM_ALPHA = .14f
+internal const val RADAR_EXTENDED_BEAM_START_ALPHA = .30f
+internal const val RADAR_EXTENDED_BEAM_END_ALPHA = .07f
+internal const val RADAR_EXTENDED_BEAM_SEGMENTS = 16
 internal const val RADAR_EXTENDED_BEAM_WIDTH = 2.5f
 internal const val RADAR_EXTENDED_WAKE_ALPHA_SCALE = .10f
 internal const val RADAR_EXTENDED_WAKE_WIDTH = 6f

@@ -158,4 +158,36 @@ class VisualizerSourceGuardTest {
         assertFalse("ambientGlowAlpha" in source)
         assertFalse("full-screen-glow" in source)
     }
+
+    @Test fun expandedRadarBeamUsesOutsideCoreFadeSegmentsOnly() {
+        val source = File(
+            "src/main/java/ca/stewark/nocturnel/ui/playback/visualizer/TerminalVisualizers.kt",
+        ).readText()
+        val beamHelper = source
+            .substringAfter("private fun DrawScope.drawRadarExtendedBeam(")
+            .substringBefore("private fun DrawScope.drawRadarBloom(")
+
+        assertTrue("radarExtendedBeamSegments(" in beamHelper)
+        assertTrue("outerRadius = geometry.gridRadii.last()" in beamHelper)
+        assertTrue("segment.start" in beamHelper)
+        assertTrue("segment.end" in beamHelper)
+        assertFalse(
+            "drawLine(\n        palette.visualizerPeak.copy(alpha = RADAR_EXTENDED_BEAM_ALPHA)" in beamHelper,
+        )
+    }
+
+    @Test fun standardGridKeepsUnscaledHotspotDistanceWhilePortraitUsesAspectScale() {
+        val source = File(
+            "src/main/java/ca/stewark/nocturnel/ui/playback/visualizer/VisualizerGeometry.kt",
+        ).readText()
+        val square = source
+            .substringAfter("internal fun frequencyGridGeometry(")
+            .substringBefore("internal fun frequencyGridPortraitGeometry(")
+        val portrait = source
+            .substringAfter("internal fun frequencyGridPortraitGeometry(")
+            .substringBefore("private fun frequencyGridGhostLevels(")
+
+        assertTrue("hotspotYScale = 1f" in square)
+        assertTrue("hotspotYScale = contentHeight / contentWidth" in portrait)
+    }
 }

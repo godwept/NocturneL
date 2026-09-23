@@ -320,14 +320,23 @@ private fun DrawScope.drawRadarExtendedBeam(
     geometry: RadarGeometry,
     palette: TerminalPalette,
 ) {
-    val center = Offset(geometry.center.x, geometry.center.y)
-    val endpoint = radarViewportEndpoint(geometry.center, size.width, size.height, geometry.sweepDegrees)
-    drawLine(
-        palette.visualizerPeak.copy(alpha = RADAR_EXTENDED_BEAM_ALPHA),
-        center,
-        Offset(endpoint.x, endpoint.y),
-        RADAR_EXTENDED_BEAM_WIDTH,
-    )
+    radarExtendedBeamSegments(
+        center = geometry.center,
+        outerRadius = geometry.gridRadii.last(),
+        width = size.width,
+        height = size.height,
+        sweepDegrees = geometry.sweepDegrees,
+        startAlpha = RADAR_EXTENDED_BEAM_START_ALPHA,
+        endAlpha = RADAR_EXTENDED_BEAM_END_ALPHA,
+        segmentCount = RADAR_EXTENDED_BEAM_SEGMENTS,
+    ).forEach { segment ->
+        drawLine(
+            palette.visualizerPeak.copy(alpha = segment.alpha),
+            Offset(segment.start.x, segment.start.y),
+            Offset(segment.end.x, segment.end.y),
+            RADAR_EXTENDED_BEAM_WIDTH,
+        )
+    }
 }
 
 private fun DrawScope.drawRadarBloom(

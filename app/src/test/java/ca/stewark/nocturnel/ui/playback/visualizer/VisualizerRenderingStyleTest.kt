@@ -41,11 +41,14 @@ class VisualizerRenderingStyleTest {
     }
 
     @Test fun fullScreenRadarEffectsRemainSubordinateToTheCore() {
-        assertTrue(RADAR_EXTENDED_WAKE_ALPHA_SCALE < RADAR_EXTENDED_BEAM_ALPHA)
-        assertTrue(RADAR_EXTENDED_BEAM_ALPHA < .90f)
+        assertTrue(RADAR_EXTENDED_BEAM_START_ALPHA > .14f)
+        assertTrue(RADAR_EXTENDED_BEAM_END_ALPHA > 0f)
+        assertTrue(RADAR_EXTENDED_BEAM_END_ALPHA < RADAR_EXTENDED_BEAM_START_ALPHA)
+        assertTrue(RADAR_EXTENDED_WAKE_ALPHA_SCALE < RADAR_EXTENDED_BEAM_START_ALPHA)
+        assertTrue(RADAR_EXTENDED_BEAM_START_ALPHA < .90f)
         assertTrue(RADAR_PULSE_BODY_MAX_ALPHA < RADAR_PULSE_EDGE_MAX_ALPHA)
         assertTrue(RADAR_PULSE_EDGE_MAX_ALPHA < .90f)
-        assertTrue(RADAR_EXTENDED_BEAM_ALPHA > 0f)
+        assertTrue(RADAR_EXTENDED_BEAM_SEGMENTS > 1)
         assertTrue(RADAR_EXTENDED_BEAM_WIDTH > 0f)
         assertTrue(RADAR_EXTENDED_WAKE_WIDTH > RADAR_EXTENDED_BEAM_WIDTH)
         assertTrue(RADAR_PULSE_BODY_WIDTH > RADAR_PULSE_EDGE_WIDTH)

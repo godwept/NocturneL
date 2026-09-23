@@ -252,4 +252,69 @@ class VisualizerGeometryTest {
         assertEquals(240f, tall.center.y, .001f)
         assertEquals(100.8f, tall.gridRadii.last(), .001f)
     }
+
+    @Test fun radarExtendedBeamStartsAtOuterCircleAndFadesTowardViewportEdge() {
+        val center = VisualizerPoint(120f, 240f)
+        val segments = radarExtendedBeamSegments(
+            center = center,
+            outerRadius = 100f,
+            width = 240f,
+            height = 480f,
+            sweepDegrees = 0f,
+            startAlpha = .30f,
+            endAlpha = .07f,
+            segmentCount = 8,
+        )
+        val outer = radarSweepEndpoint(center, 100f, 0f)
+        val edge = radarViewportEndpoint(center, 240f, 480f, 0f)
+
+        assertEquals(8, segments.size)
+        assertEquals(outer.x, segments.first().start.x, .001f)
+        assertEquals(outer.y, segments.first().start.y, .001f)
+        assertEquals(edge.x, segments.last().end.x, .001f)
+        assertEquals(edge.y, segments.last().end.y, .001f)
+        assertEquals(.30f, segments.first().alpha, .001f)
+        assertEquals(.07f, segments.last().alpha, .001f)
+        assertTrue(segments.zipWithNext().all { (a, b) ->
+            b.start.y <= a.start.y && b.alpha <= a.alpha
+        })
+        assertTrue(segments.last().alpha > 0f)
+
+        val wrapped = radarExtendedBeamSegments(
+            center, 100f, 240f, 480f, 360f, .30f, .07f, 8,
+        )
+        assertEquals(segments, wrapped)
+        assertTrue(
+            radarExtendedBeamSegments(center, 100f, 0f, 480f, 0f, .30f, .07f, 8).isEmpty(),
+        )
+    }
+
+    @Test fun portraitGridHotspotsRemainPhysicallySymmetrical() {
+        val levels = List(32) { if (it == 20) 1f else 0f }
+        val cells = frequencyGridPortraitGeometry(levels, emptyList(), 300f, 600f)
+        val columns = FREQUENCY_GRID_DIMENSION
+        val peakIndex = cells.indices.maxBy { cells[it].liveIntensity }
+        val peakRow = peakIndex / columns
+        val peakColumn = peakIndex % columns
+
+        assertTrue(peakRow > 0 && peakRow < cells.size / columns - 1)
+        assertTrue(peakColumn > 0 && peakColumn < columns - 1)
+
+        val left = cells[peakIndex - 1].liveIntensity
+        val right = cells[peakIndex + 1].liveIntensity
+        val above = cells[peakIndex - columns].liveIntensity
+        val below = cells[peakIndex + columns].liveIntensity
+        val horizontalAverage = (left + right) / 2f
+        val verticalAverage = (above + below) / 2f
+
+        assertEquals(left, right, .08f)
+        assertEquals(above, below, .08f)
+        assertEquals(horizontalAverage, verticalAverage, .08f)
+
+        val rows = cells.size / columns
+        assertTrue(rows > FREQUENCY_GRID_DIMENSION)
+        assertTrue(cells.any { it.top + it.size / 2f < 150f })
+        assertTrue(cells.any { it.top + it.size / 2f > 450f })
+        assertEquals(900, frequencyGridGeometry(levels, emptyList(), 300f, 300f).size)
+    }
 }

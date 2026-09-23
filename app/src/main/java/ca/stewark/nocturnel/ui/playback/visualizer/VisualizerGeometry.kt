@@ -20,6 +20,12 @@ internal data class RadarGeometry(
     val sweepDegrees: Float,
 )
 
+internal data class RadarExtendedBeamSegment(
+    val start: VisualizerPoint,
+    val end: VisualizerPoint,
+    val alpha: Float,
+)
+
 internal data class SpectrumBarGeometry(
     val left: Float,
     val right: Float,
@@ -143,6 +149,48 @@ internal fun radarViewportEndpoint(
     )
 }
 
+internal fun radarExtendedBeamSegments(
+    center: VisualizerPoint,
+    outerRadius: Float,
+    width: Float,
+    height: Float,
+    sweepDegrees: Float,
+    startAlpha: Float,
+    endAlpha: Float,
+    segmentCount: Int,
+): List<RadarExtendedBeamSegment> {
+    if (
+        !outerRadius.isFinite() || outerRadius < 0f ||
+        !width.isFinite() || width <= 0f ||
+        !height.isFinite() || height <= 0f ||
+        !center.x.isFinite() || !center.y.isFinite() ||
+        segmentCount <= 0
+    ) return emptyList()
+
+    val start = radarSweepEndpoint(center, outerRadius, sweepDegrees)
+    val edge = radarViewportEndpoint(center, width, height, sweepDegrees)
+    val dx = edge.x - start.x
+    val dy = edge.y - start.y
+    if (!dx.isFinite() || !dy.isFinite() || hypot(dx, dy) <= 0f) return emptyList()
+
+    val safeStartAlpha = if (startAlpha.isFinite()) startAlpha.coerceIn(0f, 1f) else 0f
+    val safeEndAlpha = if (endAlpha.isFinite()) endAlpha.coerceIn(0f, safeStartAlpha) else 0f
+
+    return List(segmentCount) { index ->
+        val startProgress = index.toFloat() / segmentCount
+        val endProgress = (index + 1).toFloat() / segmentCount
+        val fadeProgress = if (segmentCount == 1) 1f else {
+            val normalized = index.toFloat() / (segmentCount - 1)
+            normalized * normalized
+        }
+        RadarExtendedBeamSegment(
+            start = VisualizerPoint(start.x + dx * startProgress, start.y + dy * startProgress),
+            end = VisualizerPoint(start.x + dx * endProgress, start.y + dy * endProgress),
+            alpha = safeStartAlpha + (safeEndAlpha - safeStartAlpha) * fadeProgress,
+        )
+    }
+}
+
 internal fun spectrumGeometry(frame: AudioAnalysisFrame, width: Float, height: Float): List<SpectrumBarGeometry> =
     spectrumGeometry(frame.bands, width, height)
 
@@ -224,6 +272,7 @@ internal fun frequencyGridGeometry(
         liveLevels = liveLevels,
         ghostLevels = frequencyGridGhostLevels(liveLevels, afterglow),
         anchors = frequencyGridAnchors,
+        hotspotYScale = 1f,
     )
 }
 
@@ -261,6 +310,7 @@ internal fun frequencyGridPortraitGeometry(
         liveLevels = liveLevels,
         ghostLevels = frequencyGridGhostLevels(liveLevels, afterglow),
         anchors = frequencyGridPortraitAnchors,
+        hotspotYScale = contentHeight / contentWidth,
     )
 }
 
@@ -288,6 +338,7 @@ private fun frequencyGridCells(
     liveLevels: List<Float>,
     ghostLevels: List<Float>,
     anchors: List<VisualizerPoint>,
+    hotspotYScale: Float,
 ): List<FrequencyGridCell> = List(columns * rows) { index ->
     val row = index / columns
     val column = index % columns
@@ -297,8 +348,20 @@ private fun frequencyGridCells(
         left = originX + column * pitch + gap / 2f,
         top = originY + row * pitch + gap / 2f,
         size = cellSize,
-        liveIntensity = blendedHotspotIntensity(normalizedX, normalizedY, liveLevels, anchors),
-        ghostIntensity = blendedHotspotIntensity(normalizedX, normalizedY, ghostLevels, anchors),
+        liveIntensity = blendedHotspotIntensity(
+            normalizedX,
+            normalizedY,
+            liveLevels,
+            anchors,
+            hotspotYScale,
+        ),
+        ghostIntensity = blendedHotspotIntensity(
+            normalizedX,
+            normalizedY,
+            ghostLevels,
+            anchors,
+            hotspotYScale,
+        ),
     )
 }
 
@@ -307,12 +370,14 @@ private fun blendedHotspotIntensity(
     y: Float,
     levels: List<Float>,
     anchors: List<VisualizerPoint>,
+    hotspotYScale: Float,
 ): Float {
     var unlit = 1f
     val count = min(levels.size, anchors.size)
     repeat(count) { index ->
         val anchor = anchors[index]
-        val distance = hypot(x - anchor.x, y - anchor.y)
+        val yScale = hotspotYScale.takeIf { it.isFinite() && it > 0f } ?: 1f
+        val distance = hypot(x - anchor.x, (y - anchor.y) * yScale)
         if (distance < FREQUENCY_HOTSPOT_RADIUS) {
             val falloff = 1f - distance / FREQUENCY_HOTSPOT_RADIUS
             val contribution = sanitizeFrequencyLevel(levels[index]) * falloff * falloff
