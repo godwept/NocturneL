@@ -40,6 +40,8 @@ class QueueEditingWiringTest {
         val service = File("src/main/java/ca/stewark/nocturnel/playback/NocturneLPlaybackService.kt").readText()
 
         assertTrue("QueueShufflePolicy.toggle" in connection)
+        assertTrue("QueueShufflePolicy.forNewQueue" in connection)
+        assertTrue("shuffleEnabled = player.shuffleModeEnabled" in connection)
         assertTrue("ShuffleOrder.UnshuffledShuffleOrder" in service)
     }
 }

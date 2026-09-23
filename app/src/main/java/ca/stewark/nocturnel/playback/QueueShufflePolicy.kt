@@ -1,6 +1,15 @@
 package ca.stewark.nocturnel.playback
 
 object QueueShufflePolicy {
+    fun forNewQueue(
+        snapshot: QueueSnapshot,
+        shuffleEnabled: Boolean,
+        shuffler: (List<QueueEntry>) -> List<QueueEntry> = { it.shuffled() },
+    ): QueueSnapshot {
+        val ordered = snapshot.copy(shuffle = false)
+        return if (shuffleEnabled) toggle(ordered, shuffler) else ordered
+    }
+
     fun toggle(
         snapshot: QueueSnapshot,
         shuffler: (List<QueueEntry>) -> List<QueueEntry> = { it.shuffled() },

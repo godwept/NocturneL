@@ -99,8 +99,18 @@ class PlaybackConnection(context: Context) {
         )
         val requestedPath = tracks.getOrNull(startIndex)?.relativePath
         val playableStartIndex = playableTracks.indexOfFirst { it.relativePath == requestedPath }.takeIf { it >= 0 } ?: 0
+        val mediaItems = playableTracks.map(::itemFor)
+        val queueOrder = QueueShufflePolicy.forNewQueue(
+            snapshot = QueueSnapshot(
+                entries = mediaItems.map(::entryFor),
+                currentIndex = playableStartIndex,
+            ),
+            shuffleEnabled = player.shuffleModeEnabled,
+        )
+        val itemsByOccurrenceId = mediaItems.associateBy(::occurrenceId)
+        val orderedMediaItems = queueOrder.entries.map { entry -> itemsByOccurrenceId.getValue(entry.occurrenceId) }
         player.apply {
-            setMediaItems(playableTracks.map(::itemFor), playableStartIndex, 0)
+            setMediaItems(orderedMediaItems, queueOrder.currentIndex, 0)
             prepare()
             play()
         }

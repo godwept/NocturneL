@@ -37,6 +37,29 @@ class QueueShufflePolicyTest {
         assertTrue(shuffled.shuffle)
     }
 
+    @Test fun startingNewQueueWithShuffleEnabledKeepsStartItemAndShufflesUpcoming() {
+        val snapshot = QueueSnapshot(
+            entries = entries("history", "selected", "a", "b", "c"),
+            currentIndex = 1,
+        )
+
+        val started = QueueShufflePolicy.forNewQueue(snapshot, shuffleEnabled = true) { it.reversed() }
+
+        assertEquals(listOf("history", "selected", "c", "b", "a"), started.entries.map { it.occurrenceId })
+        assertEquals(1, started.currentIndex)
+        assertTrue(started.shuffle)
+    }
+
+    @Test fun startingNewQueueWithShuffleDisabledKeepsCollectionOrder() {
+        val snapshot = QueueSnapshot(entries("first", "second", "third"), currentIndex = 0)
+
+        val started = QueueShufflePolicy.forNewQueue(snapshot, shuffleEnabled = false) { it.reversed() }
+
+        assertEquals(snapshot.entries, started.entries)
+        assertEquals(snapshot.currentIndex, started.currentIndex)
+        assertFalse(started.shuffle)
+    }
+
     private fun entries(vararg ids: String) = ids.map { id ->
         QueueEntry(id, "$id.flac", id, "Artist", "Album", 1_000)
     }
