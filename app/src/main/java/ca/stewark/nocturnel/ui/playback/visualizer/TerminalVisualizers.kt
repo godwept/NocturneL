@@ -28,6 +28,7 @@ import ca.stewark.nocturnel.ui.theme.TerminalPalette
 import ca.stewark.nocturnel.ui.theme.TerminalTheme
 import ca.stewark.nocturnel.visualizer.AnalysisStatus
 import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
+import kotlin.math.hypot
 
 internal const val RADAR_GRID_BLOOM_ALPHA = .16f
 internal const val RADAR_GRID_BLOOM_WIDTH = 4f
@@ -59,12 +60,14 @@ internal fun TerminalVisualizerScene(
     effectsEnabled: Boolean,
     modifier: Modifier = Modifier,
     showBorder: Boolean = true,
+    expanded: Boolean = false,
 ) {
     var measuredSize by remember { mutableStateOf(IntSize.Zero) }
     var afterglow by remember { mutableStateOf(VisualizerAfterglowState.Empty) }
+    var radarFullScreenEffects by remember { mutableStateOf(RadarFullScreenEffectState.Empty) }
     val latestFrame by rememberUpdatedState(frame)
 
-    LaunchedEffect(mode, effectsEnabled, frame.status, measuredSize) {
+    LaunchedEffect(mode, effectsEnabled, frame.status, measuredSize, expanded) {
         val eligible = mode != VisualizerDisplayMode.ART &&
             effectsEnabled &&
             frame.status == AnalysisStatus.ACTIVE &&
@@ -72,7 +75,11 @@ internal fun TerminalVisualizerScene(
             measuredSize.height > 0
         if (!eligible) {
             afterglow = VisualizerAfterglowState.Empty
+            radarFullScreenEffects = RadarFullScreenEffectState.Empty
             return@LaunchedEffect
+        }
+        if (!expanded || mode != VisualizerDisplayMode.RADAR) {
+            radarFullScreenEffects = RadarFullScreenEffectState.Empty
         }
 
         var previousFrameNanos: Long? = null
@@ -90,6 +97,15 @@ internal fun TerminalVisualizerScene(
                     size = VisualizerSizeKey(measuredSize.width, measuredSize.height),
                     elapsedNanos = elapsedNanos,
                 )
+                radarFullScreenEffects = if (expanded && mode == VisualizerDisplayMode.RADAR) {
+                    updateRadarFullScreenEffects(
+                        state = radarFullScreenEffects,
+                        transient = latestFrame.transient,
+                        elapsedNanos = elapsedNanos,
+                    )
+                } else {
+                    RadarFullScreenEffectState.Empty
+                }
             }
         }
     }
@@ -101,6 +117,13 @@ internal fun TerminalVisualizerScene(
         afterglow.size == VisualizerSizeKey(measuredSize.width, measuredSize.height)
     ) afterglow else VisualizerAfterglowState.Empty
 
+    val visibleRadarFullScreenEffects = if (
+        expanded &&
+        effectsEnabled &&
+        frame.status == AnalysisStatus.ACTIVE &&
+        mode == VisualizerDisplayMode.RADAR
+    ) radarFullScreenEffects else RadarFullScreenEffectState.Empty
+
     TerminalVisualizerFrame(
         mode = mode,
         frame = frame,
@@ -108,6 +131,8 @@ internal fun TerminalVisualizerScene(
         afterglow = visibleAfterglow,
         modifier = modifier.onSizeChanged { measuredSize = it },
         showBorder = showBorder,
+        radarFullScreenEffects = visibleRadarFullScreenEffects,
+        expanded = expanded,
     )
 }
 
@@ -119,6 +144,8 @@ internal fun TerminalVisualizerFrame(
     afterglow: VisualizerAfterglowState,
     modifier: Modifier = Modifier,
     showBorder: Boolean = true,
+    radarFullScreenEffects: RadarFullScreenEffectState = RadarFullScreenEffectState.Empty,
+    expanded: Boolean = false,
 ) {
     val palette = TerminalTheme.palette
     val tag = when (mode) {
@@ -141,6 +168,11 @@ internal fun TerminalVisualizerFrame(
                 when (mode) {
                     VisualizerDisplayMode.RADAR -> {
                         val geometry = radarGeometry(frame, size.width, size.height)
+                        if (expanded && effectsEnabled && frame.status == AnalysisStatus.ACTIVE) {
+                            drawRadarFullScreenPulses(geometry, radarFullScreenEffects.pulses, palette)
+                            drawRadarExtendedWake(geometry, afterglow.radar.samples, palette)
+                            drawRadarExtendedBeam(geometry, palette)
+                        }
                         if (effectsEnabled) {
                             drawRadarBloom(geometry, frame, afterglow.radar.samples, palette)
                         }
@@ -176,12 +208,21 @@ internal fun TerminalVisualizerFrame(
                         }
                     }
                     VisualizerDisplayMode.GRID -> {
-                        val cells = frequencyGridGeometry(
-                            liveLevels = frame.bands,
-                            afterglow = afterglow.bands,
-                            width = size.width,
-                            height = size.height,
-                        )
+                        val cells = if (expanded) {
+                            frequencyGridPortraitGeometry(
+                                liveLevels = frame.bands,
+                                afterglow = afterglow.bands,
+                                width = size.width,
+                                height = size.height,
+                            )
+                        } else {
+                            frequencyGridGeometry(
+                                liveLevels = frame.bands,
+                                afterglow = afterglow.bands,
+                                width = size.width,
+                                height = size.height,
+                            )
+                        }
                         cells.forEach { cell ->
                             drawRect(
                                 palette.visualizerSecondary.copy(alpha = GRID_BASE_ALPHA),
@@ -224,6 +265,69 @@ internal fun TerminalVisualizerFrame(
         }
         Scanlines(effectsEnabled, Modifier.matchParentSize())
     }
+}
+
+private fun DrawScope.drawRadarFullScreenPulses(
+    geometry: RadarGeometry,
+    pulses: List<RadarFullScreenPulse>,
+    palette: TerminalPalette,
+) {
+    if (pulses.isEmpty()) return
+    val center = Offset(geometry.center.x, geometry.center.y)
+    val farthestX = maxOf(center.x, size.width - center.x)
+    val farthestY = maxOf(center.y, size.height - center.y)
+    val maximumRadius = hypot(farthestX, farthestY)
+    pulses.forEach { pulse ->
+        val radius = maximumRadius * radarFullScreenPulseProgress(pulse)
+        if (radius <= 0f) return@forEach
+        drawCircle(
+            palette.visualizerPrimary.copy(
+                alpha = radarFullScreenPulseAlpha(pulse, RADAR_PULSE_BODY_MAX_ALPHA),
+            ),
+            radius,
+            center,
+            style = Stroke(RADAR_PULSE_BODY_WIDTH),
+        )
+        drawCircle(
+            palette.visualizerPrimary.copy(
+                alpha = radarFullScreenPulseAlpha(pulse, RADAR_PULSE_EDGE_MAX_ALPHA),
+            ),
+            radius,
+            center,
+            style = Stroke(RADAR_PULSE_EDGE_WIDTH),
+        )
+    }
+}
+
+private fun DrawScope.drawRadarExtendedWake(
+    geometry: RadarGeometry,
+    samples: List<RadarAfterglowSample>,
+    palette: TerminalPalette,
+) {
+    val center = Offset(geometry.center.x, geometry.center.y)
+    samples.forEach { sample ->
+        val endpoint = radarViewportEndpoint(geometry.center, size.width, size.height, sample.angleDegrees)
+        drawLine(
+            palette.visualizerPrimary.copy(alpha = sample.alpha * RADAR_EXTENDED_WAKE_ALPHA_SCALE),
+            center,
+            Offset(endpoint.x, endpoint.y),
+            RADAR_EXTENDED_WAKE_WIDTH,
+        )
+    }
+}
+
+private fun DrawScope.drawRadarExtendedBeam(
+    geometry: RadarGeometry,
+    palette: TerminalPalette,
+) {
+    val center = Offset(geometry.center.x, geometry.center.y)
+    val endpoint = radarViewportEndpoint(geometry.center, size.width, size.height, geometry.sweepDegrees)
+    drawLine(
+        palette.visualizerPeak.copy(alpha = RADAR_EXTENDED_BEAM_ALPHA),
+        center,
+        Offset(endpoint.x, endpoint.y),
+        RADAR_EXTENDED_BEAM_WIDTH,
+    )
 }
 
 private fun DrawScope.drawRadarBloom(

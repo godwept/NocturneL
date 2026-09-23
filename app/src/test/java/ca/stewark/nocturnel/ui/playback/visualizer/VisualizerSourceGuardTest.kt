@@ -86,4 +86,76 @@ class VisualizerSourceGuardTest {
         assertFalse("RenderEffect" in source)
         assertFalse("BlurEffect" in source)
     }
+
+    @Test fun fullScreenUsesExpandedSceneWhileNormalCallersDefaultToStandard() {
+        val sceneSource = File(
+            "src/main/java/ca/stewark/nocturnel/ui/playback/visualizer/TerminalVisualizers.kt",
+        ).readText()
+        val fullScreenSource = File(
+            "src/main/java/ca/stewark/nocturnel/ui/playback/visualizer/FullScreenVisualizer.kt",
+        ).readText()
+
+        assertTrue("expanded: Boolean = false" in sceneSource)
+        assertTrue("expanded = true" in fullScreenSource)
+    }
+
+    @Test fun expandedGridUsesPortraitGeometryAndStandardGridKeepsSquareGeometry() {
+        val source = File(
+            "src/main/java/ca/stewark/nocturnel/ui/playback/visualizer/TerminalVisualizers.kt",
+        ).readText()
+        val gridBranch = source
+            .substringAfter("VisualizerDisplayMode.GRID -> {")
+            .substringBefore("VisualizerDisplayMode.ART ->")
+
+        assertTrue("if (expanded)" in gridBranch)
+        assertTrue("frequencyGridPortraitGeometry(" in gridBranch)
+        assertTrue("frequencyGridGeometry(" in gridBranch)
+        assertTrue(
+            gridBranch.indexOf("frequencyGridPortraitGeometry(") <
+                gridBranch.indexOf("frequencyGridGeometry("),
+        )
+    }
+
+    @Test fun fullScreenRadarPulseStateUsesTheExistingFrameClockAndEligibility() {
+        val source = File(
+            "src/main/java/ca/stewark/nocturnel/ui/playback/visualizer/TerminalVisualizers.kt",
+        ).readText()
+
+        assertTrue("RadarFullScreenEffectState.Empty" in source)
+        assertTrue("withFrameNanos" in source)
+        assertTrue("updateRadarFullScreenEffects(" in source)
+        assertTrue("expanded && mode == VisualizerDisplayMode.RADAR" in source)
+        assertTrue("frame.status == AnalysisStatus.ACTIVE" in source)
+    }
+
+    @Test fun expandedRadarDrawsOuterEffectsBeforeTheExistingCore() {
+        val source = File(
+            "src/main/java/ca/stewark/nocturnel/ui/playback/visualizer/TerminalVisualizers.kt",
+        ).readText()
+        val radarBranch = source
+            .substringAfter("VisualizerDisplayMode.RADAR -> {")
+            .substringBefore("VisualizerDisplayMode.BANDS ->")
+
+        val pulse = radarBranch.indexOf("drawRadarFullScreenPulses(")
+        val wake = radarBranch.indexOf("drawRadarExtendedWake(")
+        val beam = radarBranch.indexOf("drawRadarExtendedBeam(")
+        val bloom = radarBranch.indexOf("drawRadarBloom(")
+        val core = radarBranch.indexOf("drawRadarCore(")
+
+        assertTrue("expanded && effectsEnabled && frame.status == AnalysisStatus.ACTIVE" in radarBranch)
+        assertTrue(pulse >= 0 && pulse < wake)
+        assertTrue(wake < beam)
+        assertTrue(beam < bloom)
+        assertTrue(bloom < core)
+    }
+
+    @Test fun legacyMarginGlowImplementationIsAbsent() {
+        val sourceRoot = File("src/main/java/ca/stewark/nocturnel/ui/playback/visualizer")
+        val source = sourceRoot.walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .joinToString("\n") { it.readText() }
+
+        assertFalse("ambientGlowAlpha" in source)
+        assertFalse("full-screen-glow" in source)
+    }
 }

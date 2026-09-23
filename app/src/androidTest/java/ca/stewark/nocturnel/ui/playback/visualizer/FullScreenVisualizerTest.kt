@@ -6,7 +6,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -21,6 +24,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import kotlin.math.abs
 
 class FullScreenVisualizerTest {
     @get:Rule val compose = createComposeRule()
@@ -88,7 +92,7 @@ class FullScreenVisualizerTest {
         compose.onNodeWithTag("visualizer-bands").assertIsDisplayed()
     }
 
-    @Test fun squareModesAreCenteredAndBandsFillTheViewport() {
+    @Test fun audioModesUseTheFullViewport() {
         var mode by mutableStateOf(VisualizerDisplayMode.RADAR)
         compose.setContent {
             NocturneLTheme {
@@ -97,40 +101,102 @@ class FullScreenVisualizerTest {
                 }
             }
         }
-        val root = compose.onNodeWithTag("full-screen-visualizer").fetchSemanticsNode().boundsInRoot
-        val radar = compose.onNodeWithTag("visualizer-radar").fetchSemanticsNode().boundsInRoot
-        assertEquals(radar.width, radar.height, 1f)
-        assertEquals(root.center.x, radar.center.x, 1f)
-        assertEquals(root.center.y, radar.center.y, 1f)
+
+        fun assertFills(tag: String) {
+            val root = compose.onNodeWithTag("full-screen-visualizer").fetchSemanticsNode().boundsInRoot
+            val scene = compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
+            assertEquals(root.width, scene.width, 1f)
+            assertEquals(root.height, scene.height, 1f)
+        }
+
+        assertFills("visualizer-radar")
         compose.runOnIdle { mode = VisualizerDisplayMode.GRID }
-        val grid = compose.onNodeWithTag("visualizer-grid").fetchSemanticsNode().boundsInRoot
-        assertEquals(grid.width, grid.height, 1f)
-        assertEquals(root.center.y, grid.center.y, 1f)
+        assertFills("visualizer-grid")
         compose.runOnIdle { mode = VisualizerDisplayMode.BANDS }
-        val bands = compose.onNodeWithTag("visualizer-bands").fetchSemanticsNode().boundsInRoot
-        assertTrue(bands.height > bands.width)
-        assertEquals(root.height, bands.height, 1f)
+        assertFills("visualizer-bands")
     }
 
-    @Test fun glowAppearsOnlyForActiveSquareModesWithEffects() {
-        var mode by mutableStateOf(VisualizerDisplayMode.RADAR)
-        var frame by mutableStateOf(AudioAnalysisFrame.Idle.copy(status = AnalysisStatus.ACTIVE, transient = 1f))
-        var effects by mutableStateOf(true)
+    @Test fun gridSceneOccupiesTheTallFullScreenViewport() {
         compose.setContent {
             NocturneLTheme {
                 Box(Modifier.size(240.dp, 480.dp)) {
-                    FullScreenVisualizer(mode, frame, effects, {}, {}, {})
+                    FullScreenVisualizer(
+                        VisualizerDisplayMode.GRID,
+                        AudioAnalysisFrame.Idle,
+                        false,
+                        {},
+                        {},
+                        {},
+                    )
                 }
             }
         }
-        compose.onNodeWithTag("full-screen-glow").assertIsDisplayed()
+
+        val root = compose.onNodeWithTag("full-screen-visualizer").fetchSemanticsNode().boundsInRoot
+        val grid = compose.onNodeWithTag("visualizer-grid").fetchSemanticsNode().boundsInRoot
+        assertEquals(root.width, grid.width, 1f)
+        assertEquals(root.height, grid.height, 1f)
+        assertTrue(grid.height > grid.width)
+    }
+
+    @Test fun legacyMarginGlowIsAbsent() {
+        var mode by mutableStateOf(VisualizerDisplayMode.RADAR)
+        val frame = AudioAnalysisFrame.Idle.copy(status = AnalysisStatus.ACTIVE, transient = 1f)
+        compose.setContent {
+            NocturneLTheme {
+                Box(Modifier.size(240.dp, 480.dp)) {
+                    FullScreenVisualizer(mode, frame, true, {}, {}, {})
+                }
+            }
+        }
+
+        compose.onNodeWithTag("full-screen-glow").assertDoesNotExist()
         compose.runOnIdle { mode = VisualizerDisplayMode.GRID }
-        compose.onNodeWithTag("full-screen-glow").assertIsDisplayed()
+        compose.onNodeWithTag("full-screen-glow").assertDoesNotExist()
         compose.runOnIdle { mode = VisualizerDisplayMode.BANDS }
         compose.onNodeWithTag("full-screen-glow").assertDoesNotExist()
-        compose.runOnIdle { mode = VisualizerDisplayMode.RADAR; frame = AudioAnalysisFrame.Unavailable }
-        compose.onNodeWithTag("full-screen-glow").assertDoesNotExist()
-        compose.runOnIdle { frame = AudioAnalysisFrame.Idle.copy(status = AnalysisStatus.ACTIVE, transient = 1f); effects = false }
-        compose.onNodeWithTag("full-screen-glow").assertDoesNotExist()
+    }
+
+    @Test fun activeExpandedRadarDrawsBeyondTheCircularCoreOnlyWhenEffectsAreEnabled() {
+        var effects by mutableStateOf(true)
+        val frame = AudioAnalysisFrame.Idle.copy(
+            status = AnalysisStatus.ACTIVE,
+            transient = .8f,
+            frameId = 0L,
+        )
+        compose.setContent {
+            NocturneLTheme {
+                Box(Modifier.size(240.dp, 480.dp)) {
+                    FullScreenVisualizer(
+                        VisualizerDisplayMode.RADAR,
+                        frame,
+                        effects,
+                        {},
+                        {},
+                        {},
+                    )
+                }
+            }
+        }
+
+        fun difference(first: Color, second: Color): Float =
+            abs(first.red - second.red) +
+                abs(first.green - second.green) +
+                abs(first.blue - second.blue)
+
+        val enabledImage = compose.onNodeWithTag("visualizer-radar").captureToImage()
+        val enabled = enabledImage.toPixelMap()
+        val enabledY = enabledImage.height / 8
+        val enabledBeam = enabled[enabledImage.width / 2, enabledY]
+        val enabledBackground = enabled[enabledImage.width / 8, enabledY]
+        assertTrue(difference(enabledBeam, enabledBackground) > .01f)
+
+        compose.runOnIdle { effects = false }
+        val disabledImage = compose.onNodeWithTag("visualizer-radar").captureToImage()
+        val disabled = disabledImage.toPixelMap()
+        val disabledY = disabledImage.height / 8
+        val disabledCenter = disabled[disabledImage.width / 2, disabledY]
+        val disabledBackground = disabled[disabledImage.width / 8, disabledY]
+        assertTrue(difference(disabledCenter, disabledBackground) < .01f)
     }
 }

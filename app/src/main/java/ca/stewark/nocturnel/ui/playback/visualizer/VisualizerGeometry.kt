@@ -65,6 +65,20 @@ private val frequencyGridAnchors = listOf(
     VisualizerPoint(.70f, .18f), VisualizerPoint(.48f, .92f),
 )
 
+private val frequencyGridPortraitAnchors = listOf(
+    VisualizerPoint(.12f, .08f), VisualizerPoint(.72f, .52f), VisualizerPoint(.38f, .88f),
+    VisualizerPoint(.86f, .24f), VisualizerPoint(.22f, .66f), VisualizerPoint(.58f, .12f),
+    VisualizerPoint(.90f, .78f), VisualizerPoint(.44f, .36f), VisualizerPoint(.10f, .46f),
+    VisualizerPoint(.68f, .92f), VisualizerPoint(.30f, .18f), VisualizerPoint(.82f, .58f),
+    VisualizerPoint(.52f, .72f), VisualizerPoint(.18f, .30f), VisualizerPoint(.74f, .40f),
+    VisualizerPoint(.36f, .96f), VisualizerPoint(.92f, .10f), VisualizerPoint(.26f, .80f),
+    VisualizerPoint(.60f, .28f), VisualizerPoint(.08f, .60f), VisualizerPoint(.48f, .48f),
+    VisualizerPoint(.78f, .86f), VisualizerPoint(.34f, .56f), VisualizerPoint(.64f, .04f),
+    VisualizerPoint(.14f, .90f), VisualizerPoint(.88f, .34f), VisualizerPoint(.42f, .76f),
+    VisualizerPoint(.24f, .42f), VisualizerPoint(.70f, .68f), VisualizerPoint(.54f, .20f),
+    VisualizerPoint(.16f, .54f), VisualizerPoint(.56f, .84f),
+)
+
 internal fun radarGeometry(frame: AudioAnalysisFrame, width: Float, height: Float): RadarGeometry {
     val diameter = min(width, height)
     val center = VisualizerPoint(width / 2f, height / 2f)
@@ -93,6 +107,39 @@ internal fun radarSweepEndpoint(center: VisualizerPoint, radius: Float, sweepDeg
     return VisualizerPoint(
         center.x + cos(angle).toFloat() * radius,
         center.y + sin(angle).toFloat() * radius,
+    )
+}
+
+internal fun radarViewportEndpoint(
+    center: VisualizerPoint,
+    width: Float,
+    height: Float,
+    sweepDegrees: Float,
+): VisualizerPoint {
+    val safeWidth = width.takeIf { it.isFinite() && it > 0f } ?: return center
+    val safeHeight = height.takeIf { it.isFinite() && it > 0f } ?: return center
+    if (!center.x.isFinite() || !center.y.isFinite()) return center
+
+    val normalized = if (sweepDegrees.isFinite()) ((sweepDegrees % 360f) + 360f) % 360f else 0f
+    val angle = (normalized - 90f) * PI / 180.0
+    val directionX = cos(angle).toFloat()
+    val directionY = sin(angle).toFloat()
+    val toVerticalEdge = when {
+        directionX > 0f -> (safeWidth - center.x) / directionX
+        directionX < 0f -> (0f - center.x) / directionX
+        else -> Float.POSITIVE_INFINITY
+    }
+    val toHorizontalEdge = when {
+        directionY > 0f -> (safeHeight - center.y) / directionY
+        directionY < 0f -> (0f - center.y) / directionY
+        else -> Float.POSITIVE_INFINITY
+    }
+    val distance = min(toVerticalEdge, toHorizontalEdge)
+    if (!distance.isFinite() || distance < 0f) return center
+
+    return VisualizerPoint(
+        (center.x + directionX * distance).coerceIn(0f, safeWidth),
+        (center.y + directionY * distance).coerceIn(0f, safeHeight),
     )
 }
 
@@ -166,35 +213,105 @@ internal fun frequencyGridGeometry(
     val cellSize = pitch - gap
     val originX = (safeWidth - contentSide) / 2f
     val originY = (safeHeight - contentSide) / 2f
-    val hasGhosts = liveLevels.isNotEmpty() && afterglow.size == liveLevels.size
-    val ghostLevels = if (hasGhosts) afterglow.mapIndexed { bandIndex, retained ->
+    return frequencyGridCells(
+        columns = FREQUENCY_GRID_DIMENSION,
+        rows = FREQUENCY_GRID_DIMENSION,
+        pitch = pitch,
+        gap = gap,
+        cellSize = cellSize,
+        originX = originX,
+        originY = originY,
+        liveLevels = liveLevels,
+        ghostLevels = frequencyGridGhostLevels(liveLevels, afterglow),
+        anchors = frequencyGridAnchors,
+    )
+}
+
+internal fun frequencyGridPortraitGeometry(
+    liveLevels: List<Float>,
+    afterglow: List<BandAfterglow>,
+    width: Float,
+    height: Float,
+): List<FrequencyGridCell> {
+    val safeWidth = width.takeIf { it.isFinite() && it > 0f } ?: return emptyList()
+    val safeHeight = height.takeIf { it.isFinite() && it > 0f } ?: return emptyList()
+    val inset = min(FREQUENCY_GRID_MAX_INSET, min(safeWidth, safeHeight) * .04f)
+    val contentWidth = safeWidth - inset * 2f
+    val availableHeight = safeHeight - inset * 2f
+    if (contentWidth <= 0f || availableHeight <= 0f) return emptyList()
+
+    val pitch = contentWidth / FREQUENCY_GRID_DIMENSION
+    if (!pitch.isFinite() || pitch <= 0f) return emptyList()
+    val rows = floor(availableHeight / pitch).toInt()
+    if (rows <= 0) return emptyList()
+
+    val gap = pitch * FREQUENCY_GRID_GAP_RATIO
+    val cellSize = pitch - gap
+    val contentHeight = rows * pitch
+    val originX = (safeWidth - contentWidth) / 2f
+    val originY = (safeHeight - contentHeight) / 2f
+    return frequencyGridCells(
+        columns = FREQUENCY_GRID_DIMENSION,
+        rows = rows,
+        pitch = pitch,
+        gap = gap,
+        cellSize = cellSize,
+        originX = originX,
+        originY = originY,
+        liveLevels = liveLevels,
+        ghostLevels = frequencyGridGhostLevels(liveLevels, afterglow),
+        anchors = frequencyGridPortraitAnchors,
+    )
+}
+
+private fun frequencyGridGhostLevels(
+    liveLevels: List<Float>,
+    afterglow: List<BandAfterglow>,
+): List<Float> {
+    if (liveLevels.isEmpty() || afterglow.size != liveLevels.size) return emptyList()
+    return afterglow.mapIndexed { bandIndex, retained ->
         val live = sanitizeFrequencyLevel(liveLevels[bandIndex])
         val retainedLevel = sanitizeFrequencyLevel(retained.retainedLevel)
         val alphaScale = (retained.alpha / BAND_AFTERGLOW_MAX_ALPHA).coerceIn(0f, 1f)
         (retainedLevel - live).coerceAtLeast(0f) * alphaScale
-    } else emptyList()
-
-    return List(FREQUENCY_GRID_DIMENSION * FREQUENCY_GRID_DIMENSION) { index ->
-        val row = index / FREQUENCY_GRID_DIMENSION
-        val column = index % FREQUENCY_GRID_DIMENSION
-        val normalizedX = (column + .5f) / FREQUENCY_GRID_DIMENSION
-        val normalizedY = (row + .5f) / FREQUENCY_GRID_DIMENSION
-        val liveIntensity = blendedHotspotIntensity(normalizedX, normalizedY, liveLevels)
-        FrequencyGridCell(
-            left = originX + column * pitch + gap / 2f,
-            top = originY + row * pitch + gap / 2f,
-            size = cellSize,
-            liveIntensity = liveIntensity,
-            ghostIntensity = blendedHotspotIntensity(normalizedX, normalizedY, ghostLevels),
-        )
     }
 }
 
-private fun blendedHotspotIntensity(x: Float, y: Float, levels: List<Float>): Float {
+private fun frequencyGridCells(
+    columns: Int,
+    rows: Int,
+    pitch: Float,
+    gap: Float,
+    cellSize: Float,
+    originX: Float,
+    originY: Float,
+    liveLevels: List<Float>,
+    ghostLevels: List<Float>,
+    anchors: List<VisualizerPoint>,
+): List<FrequencyGridCell> = List(columns * rows) { index ->
+    val row = index / columns
+    val column = index % columns
+    val normalizedX = (column + .5f) / columns
+    val normalizedY = (row + .5f) / rows
+    FrequencyGridCell(
+        left = originX + column * pitch + gap / 2f,
+        top = originY + row * pitch + gap / 2f,
+        size = cellSize,
+        liveIntensity = blendedHotspotIntensity(normalizedX, normalizedY, liveLevels, anchors),
+        ghostIntensity = blendedHotspotIntensity(normalizedX, normalizedY, ghostLevels, anchors),
+    )
+}
+
+private fun blendedHotspotIntensity(
+    x: Float,
+    y: Float,
+    levels: List<Float>,
+    anchors: List<VisualizerPoint>,
+): Float {
     var unlit = 1f
-    val count = min(levels.size, frequencyGridAnchors.size)
+    val count = min(levels.size, anchors.size)
     repeat(count) { index ->
-        val anchor = frequencyGridAnchors[index]
+        val anchor = anchors[index]
         val distance = hypot(x - anchor.x, y - anchor.y)
         if (distance < FREQUENCY_HOTSPOT_RADIUS) {
             val falloff = 1f - distance / FREQUENCY_HOTSPOT_RADIUS

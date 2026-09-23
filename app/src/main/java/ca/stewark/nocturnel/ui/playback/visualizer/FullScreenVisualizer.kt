@@ -1,17 +1,14 @@
 package ca.stewark.nocturnel.ui.playback.visualizer
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,9 +19,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.onClick
@@ -60,35 +54,14 @@ internal fun FullScreenVisualizer(
         exitVisible = false
     }
 
-    BoxWithConstraints(modifier.fillMaxSize().background(palette.background).testTag("full-screen-visualizer")) {
-        val square = mode == VisualizerDisplayMode.RADAR || mode == VisualizerDisplayMode.GRID
-        val side = minOf(maxWidth, maxHeight)
-        val glowAlpha = ambientGlowAlpha(mode, frame, effectsEnabled)
-        if (square && glowAlpha > 0f) {
-            Canvas(Modifier.fillMaxSize().testTag("full-screen-glow")) {
-                val squareSide = minOf(size.width, size.height)
-                val top = (size.height - squareSide) / 2f
-                val bottom = top + squareSide
-                val glow = palette.visualizerPrimary.copy(alpha = glowAlpha)
-                if (top > 0f) {
-                    drawRect(
-                        brush = Brush.verticalGradient(listOf(palette.background, glow), startY = 0f, endY = top),
-                        size = Size(size.width, top),
-                    )
-                    drawRect(
-                        brush = Brush.verticalGradient(listOf(glow, palette.background), startY = bottom, endY = size.height),
-                        topLeft = Offset(0f, bottom),
-                        size = Size(size.width, size.height - bottom),
-                    )
-                }
-            }
-        }
+    Box(modifier.fillMaxSize().background(palette.background).testTag("full-screen-visualizer")) {
         TerminalVisualizerScene(
             mode = mode,
             frame = frame,
             effectsEnabled = effectsEnabled,
-            modifier = if (square) Modifier.align(Alignment.Center).size(side) else Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize(),
             showBorder = false,
+            expanded = true,
         )
         Box(
             Modifier
