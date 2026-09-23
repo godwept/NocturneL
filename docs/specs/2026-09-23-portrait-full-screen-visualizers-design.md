@@ -261,3 +261,31 @@ Verify on a Pixel device:
 ## Open Questions
 
 None.
+
+## Approved Refinement — Radar Fade and Grid Symmetry
+
+**Date:** 2026-09-23
+
+Physical Pixel testing of the first portrait implementation identified two visual refinements.
+
+### Radar extended sweep
+
+The live sweep inside the circular radar remains unchanged. The full-screen continuation should no longer read as a uniformly faint line from the center.
+
+- The extended beam begins at the radar's outer circular boundary.
+- Its brightness is strongest at that boundary so the continuation reads as connected to the core sweep.
+- From the outer boundary to the physical viewport edge, the beam fades gradually with distance.
+- The fade is monotonic and slow; it should remain visible for most of its travel and be faintest near the screen edge.
+- The existing broader phosphor wake remains secondary to the live extended beam.
+- The normal NOW Radar remains unchanged.
+
+### Portrait Grid hotspot shape
+
+The portrait Grid keeps its taller square-cell field and deterministic full-height hotspot distribution, but hotspot falloff must account for the physical aspect ratio of the field.
+
+- Hotspot influence should appear approximately circular/symmetrical in physical screen space, matching the visual character of the regular square Grid.
+- The portrait layout must not create vertically stretched blobs merely because normalized Y coordinates span a taller field.
+- Correct the hotspot distance calculation for the portrait field's width/height relationship rather than stretching cells or reverting to a square visualization.
+- Keep the current portrait row/column geometry and deterministic anchor positions unless physical testing later shows a separate placement problem.
+- The regular square Grid remains mathematically and visually unchanged.
+
