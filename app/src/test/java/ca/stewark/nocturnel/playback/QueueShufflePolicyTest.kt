@@ -6,6 +6,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class QueueShufflePolicyTest {
+    @Test fun startingCollectionWithShuffleEnabledCanStartAtAnyTrack() {
+        val snapshot = QueueSnapshot(entries("first", "second", "third"), currentIndex = 0)
+
+        val started = QueueShufflePolicy.forNewQueue(snapshot, shuffleEnabled = true) { it.reversed() }
+
+        assertEquals(listOf("third", "second", "first"), started.entries.map { it.occurrenceId })
+        assertEquals(0, started.currentIndex)
+        assertTrue(started.shuffle)
+    }
+
     @Test fun enablingShuffleRandomizesEveryUpcomingOccurrenceExactlyOnce() {
         val snapshot = QueueSnapshot(
             entries = entries("history", "current", "a", "b", "c", "d"),
@@ -43,7 +53,7 @@ class QueueShufflePolicyTest {
             currentIndex = 1,
         )
 
-        val started = QueueShufflePolicy.forNewQueue(snapshot, shuffleEnabled = true) { it.reversed() }
+        val started = QueueShufflePolicy.forNewQueue(snapshot, shuffleEnabled = true, startItemSelected = true) { it.reversed() }
 
         assertEquals(listOf("history", "selected", "c", "b", "a"), started.entries.map { it.occurrenceId })
         assertEquals(1, started.currentIndex)

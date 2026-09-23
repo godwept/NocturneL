@@ -31,7 +31,7 @@ class PlaybackConnection(context: Context) {
     private val playbackStateRepository: PlaybackStateRepository = SharedPreferencesPlaybackStateRepository(appContext)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var controller: MediaController? = null
-    private var pendingQueue: Pair<List<TrackEntity>, Int>? = null
+    private var pendingQueue: Pair<List<TrackEntity>, Int?>? = null
     private val pendingQueueActions = PendingQueueActions<PendingQueueAction>()
     private var pendingRemoval: PendingRemoval? = null
     private val future = MediaController.Builder(appContext, SessionToken(appContext, ComponentName(appContext, NocturneLPlaybackService::class.java))).buildAsync()
@@ -72,7 +72,7 @@ class PlaybackConnection(context: Context) {
         playQueue(listOf(track), 0)
     }
 
-    fun playQueue(tracks: List<TrackEntity>, startIndex: Int = 0) {
+    fun playQueue(tracks: List<TrackEntity>, startIndex: Int? = null) {
         scope.launch {
             val canPlay = canAccessLibrary()
             if (!canPlay) {
@@ -83,7 +83,7 @@ class PlaybackConnection(context: Context) {
         }
     }
 
-    private fun playValidatedQueue(tracks: List<TrackEntity>, startIndex: Int) {
+    private fun playValidatedQueue(tracks: List<TrackEntity>, startIndex: Int?) {
         val player = controller
         if (player == null) {
             pendingQueue = tracks to startIndex
@@ -97,7 +97,7 @@ class PlaybackConnection(context: Context) {
         _state.value = _state.value.copy(
             error = if (playableTracks.size < tracks.size) "Unavailable tracks were skipped." else null,
         )
-        val requestedPath = tracks.getOrNull(startIndex)?.relativePath
+        val requestedPath = startIndex?.let { tracks.getOrNull(it)?.relativePath }
         val playableStartIndex = playableTracks.indexOfFirst { it.relativePath == requestedPath }.takeIf { it >= 0 } ?: 0
         val mediaItems = playableTracks.map(::itemFor)
         val queueOrder = QueueShufflePolicy.forNewQueue(
@@ -106,6 +106,7 @@ class PlaybackConnection(context: Context) {
                 currentIndex = playableStartIndex,
             ),
             shuffleEnabled = player.shuffleModeEnabled,
+            startItemSelected = startIndex != null,
         )
         val itemsByOccurrenceId = mediaItems.associateBy(::occurrenceId)
         val orderedMediaItems = queueOrder.entries.map { entry -> itemsByOccurrenceId.getValue(entry.occurrenceId) }

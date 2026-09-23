@@ -4,10 +4,14 @@ object QueueShufflePolicy {
     fun forNewQueue(
         snapshot: QueueSnapshot,
         shuffleEnabled: Boolean,
+        startItemSelected: Boolean = false,
         shuffler: (List<QueueEntry>) -> List<QueueEntry> = { it.shuffled() },
     ): QueueSnapshot {
         val ordered = snapshot.copy(shuffle = false)
-        return if (shuffleEnabled) toggle(ordered, shuffler) else ordered
+        if (!shuffleEnabled) return ordered
+        // A collection PLAY has no selected track; shuffle its first item too.
+        val shuffled = toggle(ordered.copy(currentIndex = if (startItemSelected) snapshot.currentIndex else -1), shuffler)
+        return if (startItemSelected) shuffled else shuffled.copy(currentIndex = 0)
     }
 
     fun toggle(
