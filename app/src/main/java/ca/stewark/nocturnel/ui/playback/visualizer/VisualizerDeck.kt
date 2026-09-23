@@ -3,7 +3,7 @@ package ca.stewark.nocturnel.ui.playback.visualizer
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.MutatorMutex
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -40,9 +39,11 @@ import kotlinx.coroutines.launch
 
 @Composable
 internal fun VisualizerDeck(
+    mode: VisualizerDisplayMode,
+    onModeChange: (VisualizerDisplayMode) -> Unit,
+    onExpand: () -> Unit,
     frame: AudioAnalysisFrame,
     effectsEnabled: Boolean,
-    onVisualizerActiveChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     syncOffsetMs: Int = VisualizerSyncOffset.DEFAULT_MS,
     onDecreaseSyncOffset: () -> Unit = {},
@@ -50,7 +51,6 @@ internal fun VisualizerDeck(
     onResetSyncOffset: () -> Unit = {},
     albumArt: @Composable () -> Unit,
 ) {
-    var mode by remember { mutableStateOf(VisualizerDisplayMode.ART) }
     var modeTapCount by remember { mutableIntStateOf(0) }
     var modeLabelVisible by remember { mutableStateOf(false) }
     val modeLabelAlpha = remember { Animatable(0f) }
@@ -59,10 +59,6 @@ internal fun VisualizerDeck(
     val syncLabelAlpha = remember { Animatable(0f) }
     val visualizerActive = mode != VisualizerDisplayMode.ART
 
-    DisposableEffect(visualizerActive) {
-        onVisualizerActiveChanged(visualizerActive)
-        onDispose { onVisualizerActiveChanged(false) }
-    }
     LaunchedEffect(modeTapCount) {
         if (modeTapCount == 0) return@LaunchedEffect
         modeLabelVisible = true
@@ -99,10 +95,15 @@ internal fun VisualizerDeck(
                 .fillMaxSize()
                 .testTag(if (mode == VisualizerDisplayMode.ART) "visualizer-art" else "visualizer-deck")
                 .semantics { stateDescription = mode.accessibilityName }
-                .clickable(onClickLabel = "Show ${mode.next().accessibilityName}") {
-                    mode = mode.next()
-                    modeTapCount++
-                },
+                .combinedClickable(
+                    onClickLabel = "Show ${mode.next().accessibilityName}",
+                    onLongClickLabel = "Open full screen visualization",
+                    onLongClick = onExpand,
+                    onClick = {
+                        onModeChange(mode.next())
+                        modeTapCount++
+                    },
+                ),
         ) {
         }
         if (visualizerActive) {

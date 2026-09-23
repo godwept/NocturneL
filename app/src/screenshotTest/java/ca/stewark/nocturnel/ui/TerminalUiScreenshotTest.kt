@@ -45,6 +45,7 @@ import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerAfterglowState
 import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerDisplayMode
 import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerSizeKey
 import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerSyncControls
+import ca.stewark.nocturnel.ui.playback.visualizer.FullScreenVisualizer
 import ca.stewark.nocturnel.ui.playlist.PlaylistDetailScreen
 import ca.stewark.nocturnel.ui.playlist.PlaylistTrackEntryRow
 import ca.stewark.nocturnel.ui.playlist.PlaylistTrackRow
@@ -341,6 +342,9 @@ fun NowPlayingPreview() = TerminalPreview {
         previewAlbums.first(),
         true,
         {}, {}, {}, {}, {}, {},
+        visualizerMode = VisualizerDisplayMode.ART,
+        onVisualizerModeChange = {},
+        onExpandVisualizer = {},
         currentTrackFavorite = true,
         currentTrackPlayCount = 7,
     )
@@ -427,6 +431,13 @@ fun QueueDraggedRowPreview() = TerminalPreview {
 @Composable
 fun VisualizerRadarPreview() = TerminalPreview {
     TerminalVisualizerScene(VisualizerDisplayMode.RADAR, radarFrame, true, Modifier.fillMaxSize())
+}
+
+@PreviewTest
+@Preview(name = "Full screen radar", widthDp = 412, heightDp = 915)
+@Composable
+fun FullScreenRadarPreview() = TerminalPreview {
+    FullScreenVisualizer(VisualizerDisplayMode.RADAR, radarFrame, true, {}, {}, {})
 }
 
 @Preview(name = "Visualizer bands", widthDp = 320, heightDp = 320)

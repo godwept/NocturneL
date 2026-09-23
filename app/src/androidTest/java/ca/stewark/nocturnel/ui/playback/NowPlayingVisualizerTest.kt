@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import ca.stewark.nocturnel.playback.PlaybackUiState
+import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerDisplayMode
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -21,12 +22,16 @@ class NowPlayingVisualizerTest {
 
     @Test fun startsOnArtworkAndKeepsModeAcrossTrackChanges() {
         var state by mutableStateOf(PlaybackUiState(title = "First", currentPath = "first", playing = true))
+        var visualizerMode by mutableStateOf(VisualizerDisplayMode.ART)
         compose.setContent {
             NocturneLTheme {
                 NowPlayingScreen(
                     state = state,
                     albumArtwork = null,
                     effectsEnabled = false,
+                    visualizerMode = visualizerMode,
+                    onVisualizerModeChange = { visualizerMode = it },
+                    onExpandVisualizer = {},
                     onPrevious = {},
                     onToggle = {},
                     onNext = {},
@@ -46,6 +51,7 @@ class NowPlayingVisualizerTest {
 
     @Test fun exposesSharedSyncControlsOnlyForVisualizerModes() {
         var offsetMs by mutableIntStateOf(75)
+        var visualizerMode by mutableStateOf(VisualizerDisplayMode.ART)
         var decreases = 0
         var increases = 0
         var resets = 0
@@ -55,6 +61,9 @@ class NowPlayingVisualizerTest {
                     state = PlaybackUiState(title = "Track", currentPath = "track", playing = true),
                     albumArtwork = null,
                     effectsEnabled = false,
+                    visualizerMode = visualizerMode,
+                    onVisualizerModeChange = { visualizerMode = it },
+                    onExpandVisualizer = {},
                     onPrevious = {},
                     onToggle = {},
                     onNext = {},

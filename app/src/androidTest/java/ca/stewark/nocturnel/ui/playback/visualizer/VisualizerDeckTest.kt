@@ -2,8 +2,11 @@ package ca.stewark.nocturnel.ui.playback.visualizer
 
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -17,7 +20,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.unit.dp
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
 import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
@@ -31,10 +36,9 @@ class VisualizerDeckTest {
     @get:Rule val compose = createComposeRule()
 
     @Test fun startsOnArtAndCyclesThroughEveryMode() {
-        val activity = mutableListOf<Boolean>()
         compose.setContent {
             NocturneLTheme {
-                VisualizerDeck(AudioAnalysisFrame.Idle, true, activity::add, Modifier.width(200.dp)) { Text("ARTWORK") }
+                StatefulVisualizerDeck(AudioAnalysisFrame.Idle, true, Modifier.width(200.dp)) { Text("ARTWORK") }
             }
         }
         compose.onNodeWithTag("visualizer-art").assertIsDisplayed().performClick()
@@ -45,7 +49,30 @@ class VisualizerDeckTest {
         compose.onNodeWithTag("visualizer-grid").assertIsDisplayed()
         compose.onNodeWithTag("visualizer-deck").performClick()
         compose.onNodeWithTag("visualizer-art").assertIsDisplayed()
-        assertEquals(false, activity.last())
+    }
+
+    @Test fun longPressOpensWithoutCyclingAndAnExternalModeIsShown() {
+        var mode by mutableStateOf(VisualizerDisplayMode.ART)
+        var expansions = 0
+        compose.setContent {
+            NocturneLTheme {
+                VisualizerDeck(
+                    mode = mode,
+                    onModeChange = { mode = it },
+                    onExpand = { expansions++ },
+                    frame = AudioAnalysisFrame.Idle,
+                    effectsEnabled = false,
+                    modifier = Modifier.width(200.dp),
+                ) { Text("ARTWORK") }
+            }
+        }
+        compose.onNodeWithTag("visualizer-art").performSemanticsAction(SemanticsActions.OnLongClick)
+        assertEquals(1, expansions)
+        assertEquals(VisualizerDisplayMode.ART, mode)
+        compose.runOnIdle { mode = VisualizerDisplayMode.GRID }
+        compose.onNodeWithTag("visualizer-grid").assertIsDisplayed()
+        compose.onNodeWithTag("visualizer-deck").performClick()
+        assertEquals(VisualizerDisplayMode.ART, mode)
     }
 
     @Test fun syncControlsAdjustWithoutCyclingAndRespectLimits() {
@@ -55,10 +82,9 @@ class VisualizerDeckTest {
         var resets = 0
         compose.setContent {
             NocturneLTheme {
-                VisualizerDeck(
+                StatefulVisualizerDeck(
                     frame = AudioAnalysisFrame.Idle,
                     effectsEnabled = true,
-                    onVisualizerActiveChanged = {},
                     modifier = Modifier.width(240.dp),
                     syncOffsetMs = offsetMs,
                     onDecreaseSyncOffset = {
@@ -134,10 +160,9 @@ class VisualizerDeckTest {
     @Test fun syncControlsOverlayAnUnmovedSquareVisualizer() {
         compose.setContent {
             NocturneLTheme {
-                VisualizerDeck(
+                StatefulVisualizerDeck(
                     frame = AudioAnalysisFrame.Idle,
                     effectsEnabled = true,
-                    onVisualizerActiveChanged = {},
                     modifier = Modifier.width(240.dp),
                 ) { Text("ARTWORK") }
             }
@@ -176,10 +201,9 @@ class VisualizerDeckTest {
     @Test fun syncLabelAppearsForThreeSecondsOnEachVisualizerSelection() {
         compose.setContent {
             NocturneLTheme {
-                VisualizerDeck(
+                StatefulVisualizerDeck(
                     frame = AudioAnalysisFrame.Idle,
                     effectsEnabled = true,
-                    onVisualizerActiveChanged = {},
                     modifier = Modifier.width(240.dp),
                 ) { Text("ARTWORK") }
             }
@@ -213,10 +237,9 @@ class VisualizerDeckTest {
         var increases = 0
         compose.setContent {
             NocturneLTheme {
-                VisualizerDeck(
+                StatefulVisualizerDeck(
                     frame = AudioAnalysisFrame.Idle,
                     effectsEnabled = true,
-                    onVisualizerActiveChanged = {},
                     modifier = Modifier.width(240.dp),
                     syncOffsetMs = offsetMs,
                     onIncreaseSyncOffset = {
@@ -255,10 +278,9 @@ class VisualizerDeckTest {
         var increases = 0
         compose.setContent {
             NocturneLTheme {
-                VisualizerDeck(
+                StatefulVisualizerDeck(
                     frame = AudioAnalysisFrame.Idle,
                     effectsEnabled = true,
-                    onVisualizerActiveChanged = {},
                     modifier = Modifier.width(240.dp),
                     syncOffsetMs = offsetMs,
                     onIncreaseSyncOffset = {
@@ -307,10 +329,9 @@ class VisualizerDeckTest {
         var increases = 0
         compose.setContent {
             NocturneLTheme {
-                VisualizerDeck(
+                StatefulVisualizerDeck(
                     frame = AudioAnalysisFrame.Idle,
                     effectsEnabled = true,
-                    onVisualizerActiveChanged = {},
                     modifier = Modifier.width(240.dp),
                     syncOffsetMs = offsetMs,
                     onIncreaseSyncOffset = {
@@ -359,10 +380,9 @@ class VisualizerDeckTest {
         var increases = 0
         compose.setContent {
             NocturneLTheme {
-                VisualizerDeck(
+                StatefulVisualizerDeck(
                     frame = AudioAnalysisFrame.Idle,
                     effectsEnabled = true,
-                    onVisualizerActiveChanged = {},
                     modifier = Modifier.width(240.dp),
                     syncOffsetMs = offsetMs,
                     onDecreaseSyncOffset = {
@@ -405,4 +425,31 @@ class VisualizerDeckTest {
     }
 
     private fun advanceUi() = repeat(2) { compose.mainClock.advanceTimeByFrame() }
+}
+
+@Composable
+private fun StatefulVisualizerDeck(
+    frame: AudioAnalysisFrame,
+    effectsEnabled: Boolean,
+    modifier: Modifier = Modifier,
+    syncOffsetMs: Int = VisualizerSyncOffset.DEFAULT_MS,
+    onDecreaseSyncOffset: () -> Unit = {},
+    onIncreaseSyncOffset: () -> Unit = {},
+    onResetSyncOffset: () -> Unit = {},
+    albumArt: @Composable () -> Unit,
+) {
+    var mode by remember { mutableStateOf(VisualizerDisplayMode.ART) }
+    VisualizerDeck(
+        mode = mode,
+        onModeChange = { mode = it },
+        onExpand = {},
+        frame = frame,
+        effectsEnabled = effectsEnabled,
+        modifier = modifier,
+        syncOffsetMs = syncOffsetMs,
+        onDecreaseSyncOffset = onDecreaseSyncOffset,
+        onIncreaseSyncOffset = onIncreaseSyncOffset,
+        onResetSyncOffset = onResetSyncOffset,
+        albumArt = albumArt,
+    )
 }

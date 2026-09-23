@@ -17,7 +17,7 @@ class LibraryAppWiringTest {
         assertEquals(1, "val libraryFlowState = rememberLazyListState()".occurrencesIn(app))
         assertEquals(2, "viewMode = settings.libraryViewMode".occurrencesIn(app))
         assertEquals(2, "flowState = libraryFlowState".occurrencesIn(app))
-        assertEquals(4, "effectsEnabled = settings.effectiveEffectsEnabled".occurrencesIn(app))
+        assertEquals(5, "effectsEnabled = settings.effectiveEffectsEnabled".occurrencesIn(app))
         assertEquals(2, "onToggleView = settingsViewModel::toggleLibraryViewMode".occurrencesIn(app))
         assertFalse("librarySubview" in app)
         assertFalse("FavoritesScreen" in app)

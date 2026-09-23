@@ -14,6 +14,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import ca.stewark.nocturnel.playback.PlaybackUiState
+import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerDisplayMode
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
@@ -33,6 +34,9 @@ class NowPlayingControlsTest {
                     state = state,
                     albumArtwork = null,
                     effectsEnabled = false,
+                    visualizerMode = VisualizerDisplayMode.ART,
+                    onVisualizerModeChange = {},
+                    onExpandVisualizer = {},
                     onPrevious = {},
                     onToggle = {},
                     onNext = {},
@@ -80,6 +84,9 @@ class NowPlayingControlsTest {
                     ),
                     albumArtwork = null,
                     effectsEnabled = false,
+                    visualizerMode = VisualizerDisplayMode.ART,
+                    onVisualizerModeChange = {},
+                    onExpandVisualizer = {},
                     onPrevious = {},
                     onToggle = {},
                     onNext = {},
@@ -115,6 +122,9 @@ class NowPlayingControlsTest {
                         state = state,
                         albumArtwork = null,
                         effectsEnabled = false,
+                        visualizerMode = VisualizerDisplayMode.ART,
+                        onVisualizerModeChange = {},
+                        onExpandVisualizer = {},
                         onPrevious = {},
                         onToggle = {},
                         onNext = {},

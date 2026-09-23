@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import ca.stewark.nocturnel.playback.PlaybackQueueItem
 import ca.stewark.nocturnel.playback.PlaybackUiState
+import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerDisplayMode
 import ca.stewark.nocturnel.ui.theme.NocturneLTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -21,7 +22,15 @@ class NowPlayingQueueTest {
             PlaybackQueueItem("two", "two.flac", "Hidden Two", "Artist"),
         ))
         compose.setContent {
-            NocturneLTheme { NowPlayingScreen(state, null, false, {}, {}, {}, {}, {}, {}, onOpenQueue = { opened++ }) }
+            NocturneLTheme {
+                NowPlayingScreen(
+                    state, null, false, {}, {}, {}, {}, {}, {},
+                    onOpenQueue = { opened++ },
+                    visualizerMode = VisualizerDisplayMode.ART,
+                    onVisualizerModeChange = {},
+                    onExpandVisualizer = {},
+                )
+            }
         }
 
         compose.onNodeWithText("2 TRACK(S) UPCOMING").assertIsDisplayed()

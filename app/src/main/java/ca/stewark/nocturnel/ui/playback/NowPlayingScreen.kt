@@ -26,6 +26,7 @@ import ca.stewark.nocturnel.ui.components.TerminalSeekBar
 import ca.stewark.nocturnel.ui.library.formatDuration
 import ca.stewark.nocturnel.ui.theme.TerminalDimensions
 import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerDeck
+import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerDisplayMode
 import ca.stewark.nocturnel.visualizer.AudioAnalysisFrame
 import ca.stewark.nocturnel.visualizer.VisualizerSyncOffset
 
@@ -42,7 +43,9 @@ fun NowPlayingScreen(
     onSeek: (Long) -> Unit,
     onOpenQueue: () -> Unit = {},
     analysisFrame: AudioAnalysisFrame = AudioAnalysisFrame.Idle,
-    onVisualizerActiveChanged: (Boolean) -> Unit = {},
+    visualizerMode: VisualizerDisplayMode,
+    onVisualizerModeChange: (VisualizerDisplayMode) -> Unit,
+    onExpandVisualizer: () -> Unit,
     visualizerSyncOffsetMs: Int = VisualizerSyncOffset.DEFAULT_MS,
     onDecreaseVisualizerSyncOffset: () -> Unit = {},
     onIncreaseVisualizerSyncOffset: () -> Unit = {},
@@ -70,9 +73,11 @@ fun NowPlayingScreen(
         item {
             AsciiFrame {
                 VisualizerDeck(
+                    mode = visualizerMode,
+                    onModeChange = onVisualizerModeChange,
+                    onExpand = onExpandVisualizer,
                     frame = analysisFrame,
                     effectsEnabled = effectsEnabled,
-                    onVisualizerActiveChanged = onVisualizerActiveChanged,
                     modifier = Modifier.fillMaxWidth(),
                     syncOffsetMs = visualizerSyncOffsetMs,
                     onDecreaseSyncOffset = onDecreaseVisualizerSyncOffset,

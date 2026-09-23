@@ -38,6 +38,8 @@ import ca.stewark.nocturnel.ui.navigation.NocturneLDestination
 import ca.stewark.nocturnel.ui.playback.NowPlayingScreen
 import ca.stewark.nocturnel.ui.playback.QueueEditorScreen
 import ca.stewark.nocturnel.ui.playback.toQueueEditorState
+import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerPresentation
+import ca.stewark.nocturnel.ui.playback.visualizer.VisualizerSessionState
 import ca.stewark.nocturnel.ui.playlist.PlaylistsScreen
 import ca.stewark.nocturnel.ui.playlist.AlbumPlaylistUiState
 import ca.stewark.nocturnel.ui.playlist.PlaylistViewModel
@@ -87,6 +89,7 @@ fun NocturneLApp(
     var playlistPickerExpanded by rememberSaveable(selectedAlbumId) { mutableStateOf(false) }
     var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
     var queueEditorOpen by rememberSaveable { mutableStateOf(false) }
+    var visualizerSession by remember { mutableStateOf(VisualizerSessionState()) }
     val selectedAlbum = albums.firstOrNull { it.id == selectedAlbumId }
     val selectedArtist: ArtistRow? = groupArtists(albums).firstOrNull { it.name == selectedArtistName }
     LaunchedEffect(selectedAlbumId) {
@@ -96,7 +99,8 @@ fun NocturneLApp(
     LaunchedEffect(albumPlaylistState) {
         if (albumPlaylistState is AlbumPlaylistUiState.Success) playlistPickerExpanded = false
     }
-    BackHandler(enabled = queueEditorOpen || playlistPickerExpanded || selectedAlbumId != null || selectedArtistName != null) {
+    BackHandler(enabled = !visualizerSession.expanded &&
+        (queueEditorOpen || playlistPickerExpanded || selectedAlbumId != null || selectedArtistName != null)) {
         when {
             queueEditorOpen -> { playback.expireQueueUndo(); queueEditorOpen = false }
             playlistPickerExpanded -> playlistPickerExpanded = false
@@ -115,6 +119,15 @@ fun NocturneLApp(
         return
     }
 
+    VisualizerPresentation(
+        session = visualizerSession,
+        frame = analysisFrame,
+        effectsEnabled = settings.effectiveEffectsEnabled,
+        nowVisible = destination == NocturneLDestination.NOW_PLAYING && !queueEditorOpen &&
+            selectedAlbum == null && selectedArtist == null,
+        onSessionChange = { visualizerSession = it },
+        onVisualizerActiveChanged = playback::setVisualizerActive,
+    ) {
     TerminalScaffold(
         selected = destination,
         onSelected = {
@@ -256,7 +269,9 @@ fun NocturneLApp(
                         onSeek = playback::seekTo,
                         onOpenQueue = { queueEditorOpen = true },
                         analysisFrame = analysisFrame,
-                        onVisualizerActiveChanged = playback::setVisualizerActive,
+                        visualizerMode = visualizerSession.mode,
+                        onVisualizerModeChange = { visualizerSession = visualizerSession.copy(mode = it) },
+                        onExpandVisualizer = { visualizerSession = visualizerSession.open() },
                         visualizerSyncOffsetMs = settings.visualizerSyncOffsetMs,
                         onDecreaseVisualizerSyncOffset = settingsViewModel::decreaseVisualizerSyncOffset,
                         onIncreaseVisualizerSyncOffset = settingsViewModel::increaseVisualizerSyncOffset,
@@ -285,6 +300,7 @@ fun NocturneLApp(
                 )
             }
         }
+    }
     }
 }
 
